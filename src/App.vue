@@ -15,7 +15,7 @@
 
     import 'xterm/css/xterm.css'
 
-    const pty = require('node-pty')
+    // const pty = require('node-pty')
 
     export default {
         name: 'App',
