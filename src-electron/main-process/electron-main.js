@@ -1,7 +1,8 @@
 import {
     app,
     BrowserWindow,
-    nativeTheme
+    nativeTheme,
+    ipcMain
 } from 'electron'
 
 try {
@@ -60,4 +61,10 @@ app.on('activate', () => {
     if (mainWindow === null) {
         createWindow()
     }
+})
+
+ipcMain.on('terminal', (event, arg) => {
+    console.log('------------------------');
+    console.log('主进程接受到的数据是: ',arg);
+    event.reply('terminal', `主进程返回给 ipcRenderer ${arg}`);
 })

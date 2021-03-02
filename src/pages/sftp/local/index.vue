@@ -37,8 +37,9 @@
                      @click="selectFile(index)"
                      @dblclick="dirEnter"
                      @keydown.enter="dirEnter"
-                     @keydown.backspace="dirBack"
+                     @keydown.exact.backspace="dirBack"
                      @keydown.f2="renameOpen(item, index)"
+                     @keydown.meta.delete="removeFile(item)"
                      @keydown.prevent.up="moveFocus('up')"
                      @keydown.prevent.down="moveFocus('down')">
                     <div class="item icon">
@@ -74,6 +75,7 @@
                                @click="openMenu = index"
                                @close="selectFile(index)"
                                @download="download(item)"
+                               @remove="removeFile(item)"
                                @rename="renameOpen(item, index)"/>
                 </div>
             </q-scroll-area>
@@ -301,7 +303,6 @@ export default {
                 this.loading = false
                 if (err) return this.tools.confirm(err)
                 this.la(this.renameItem.name)
-                this.fileFocus()
                 this.renameItem = {}
             });
         },
@@ -310,6 +311,21 @@ export default {
             this.renameItem.name = this.renameItem.oldname
             this.$refs['rename-input'][index].blur()
         },
+        // 删除文件
+        removeFile(item) {
+            this.tools.confirm({
+                message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
+                confirm: () => {
+                    this.loading = true
+                    fs.rmdir(path.join(this.pwd, item.name), { recursive: true }, err => {
+                        this.loading = false
+                        if (err) return this.tools.confirm(err)
+                        this.la()
+                    })
+                },
+                cancel: () => {},
+            })
+        }
     },
     created() {
         this.la()

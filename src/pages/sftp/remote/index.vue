@@ -37,8 +37,9 @@
                      @click="selectFile(index)"
                      @dblclick="dirEnter"
                      @keydown.enter="dirEnter"
-                     @keydown.backspace="dirBack"
+                     @keydown.exact.backspace="dirBack"
                      @keydown.f2="renameOpen(item, index)"
+                     @keydown.meta.delete="removeFile(item)"
                      @keydown.prevent.up="moveFocus('up')"
                      @keydown.prevent.down="moveFocus('down')">
                     <div class="item icon">
@@ -60,6 +61,7 @@
                                @keydown.stop.delete=""
                                @keydown.stop.up=""
                                @keydown.stop.down=""
+                               @keydown.stop.delete=""
                                @keydown.stop.alt.r=""
                                @keydown.stop.enter="$refs['rename-input'][index].blur()">
                     </div>
@@ -74,7 +76,8 @@
                                @click="openMenu = index"
                                @close="selectFile(index)"
                                @download="download(item)"
-                               @rename="renameOpen(item, index)"/>
+                               @rename="renameOpen(item, index)"
+                               @remove="removeFile(item)"/>
                 </div>
             </q-scroll-area>
         </div>
@@ -88,7 +91,6 @@
 import fs from 'fs'
 import path from 'path'
 import menuList from '../menuList'
-import { type } from 'os'
 
 export default {
     name: 'SFTPRemote',
@@ -333,7 +335,6 @@ export default {
                     this.loading = false
                     if (res.stderr) return this.tools.confirm(res.stderr)
                     this.la(this.renameItem.name)
-                    this.fileFocus()
                     this.renameItem = {}
                 })
         },
@@ -341,6 +342,22 @@ export default {
         renameCancel(index) {
             this.renameItem.name = this.renameItem.oldname
             this.$refs['rename-input'][index].blur()
+        },
+        // 删除文件
+        removeFile(item) {
+            this.tools.confirm({
+                message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
+                confirm: () => {
+                    this.loading = true
+                    this.ssh.execCommand(`rm -rf ${item.name}`, { cwd: this.pwd })
+                        .then(res => {
+                            this.loading = false
+                            if (res.stderr) return this.tools.confirm(res.stderr)
+                            this.la()
+                        })
+                },
+                cancel: () => {},
+            })
         },
     },
     created() {
