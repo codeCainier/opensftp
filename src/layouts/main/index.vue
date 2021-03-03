@@ -1,6 +1,6 @@
 <template>
     <q-layout view="lHh Lpr lFf">
-        <q-header elevated :class="{ 'bg-dark': $q.dark.isActive }">
+        <q-header elevated class="header" :class="{ 'bg-dark': $q.dark.isActive }">
             <header-bar-mac v-if="$q.platform.is.mac"/>
             <header-bar-win v-if="$q.platform.is.win"/>
         </q-header>
@@ -27,3 +27,9 @@ export default {
     }
 };
 </script>
+
+<style scoped lang="sass">
+.header
+    transition: all .3s
+    z-index: 99999
+</style>
