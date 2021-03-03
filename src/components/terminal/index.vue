@@ -1,5 +1,9 @@
 <template>
-    <div ref="terminal" style="height: 100vh"></div>
+    <q-dialog v-model="show" maximized position="bottom">
+        <q-card class="terminal-container">
+            <div ref="terminal" style="height: 90vh"></div>
+        </q-card>
+    </q-dialog>
 </template>
 
 <script>
@@ -17,6 +21,7 @@
         },
         data() {
             return {
+                show: false,
                 term: '',
             }
         },
@@ -83,14 +88,21 @@
             changeSelection() {
 
             },
+            open() {
+                this.show = true
+                this.$nextTick(() => {
+                    this.init()
+                })
+            },
         },
         beforeCreate() {
         },
         mounted() {
-            this.init()
         },
     }
 </script>
 
 <style lang="sass" scope>
+.terminal-container
+    background: #000
 </style>

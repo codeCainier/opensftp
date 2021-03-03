@@ -1,6 +1,6 @@
 <template>
     <div class="ssh row overflow-hidden">
-        <q-btn icon="code" class="no-border-radius" flat size="sm"/>
+        <q-btn icon="code" class="no-border-radius" flat size="sm" @click="openTerminal"/>
         <input v-model.trim="cmd"
                type="text" 
                class="ssh-input col no-margin no-border" 
@@ -8,6 +8,7 @@
                @keydown.ctrl.u="cmd = ''">
         <q-space/>
         <q-btn icon="settings" class="no-border-radius" flat size="sm"/>
+        <terminal ref="terminal"/>
     </div>
 </template>
 
@@ -22,6 +23,11 @@
             }
         },
         watch: {
+        },
+        methods: {
+            openTerminal() {
+                this.$refs.terminal.open()
+            },
         },
         beforeCreate() {
         },

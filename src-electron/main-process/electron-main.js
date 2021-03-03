@@ -76,10 +76,6 @@ app.on('activate', () => {
     }
 })
 
-ipcMain.on('terminal', (event, arg) => {
-    ptyProcess.write(arg)
-})
+ipcMain.on('terminal', (event, arg) => ptyProcess.write(arg))
 
-ptyProcess.on('data', data => {
-    mainWindow.webContents.send('terminal', data);
-})
+ptyProcess.on('data', data => mainWindow.webContents.send('terminal', data))

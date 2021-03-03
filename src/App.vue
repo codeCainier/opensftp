@@ -15,6 +15,9 @@
         },
         methods: {
         },
+        beforeCreate() {
+            this.$router.push({ path: '/' })
+        },
         created() {
         },
         mounted() {
