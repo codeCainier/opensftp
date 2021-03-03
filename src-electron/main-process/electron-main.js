@@ -5,6 +5,19 @@ import {
     ipcMain
 } from 'electron'
 
+import os from 'os'
+
+// node-pty 只能在主进程内引入
+const pty = require('node-pty')
+const shell = process.env[os.platform() === 'win32' ? 'COMSPEC' : 'SHELL']
+const ptyProcess = pty.spawn(shell, [], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 30,
+    cwd: process.cwd(),
+    env: process.env
+})
+
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
         require('fs').unlinkSync(require('path').join(app.getPath('userData'), 'DevTools Extensions'))
@@ -64,7 +77,9 @@ app.on('activate', () => {
 })
 
 ipcMain.on('terminal', (event, arg) => {
-    console.log('------------------------');
-    console.log('主进程接受到的数据是: ',arg);
-    event.reply('terminal', `主进程返回给 ipcRenderer ${arg}`);
+    ptyProcess.write(arg)
+})
+
+ptyProcess.on('data', data => {
+    mainWindow.webContents.send('terminal', data);
 })
