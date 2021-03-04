@@ -63,8 +63,8 @@ export default {
             this.panelName = `${this.session.name} 属性`
         },
         confirm() {
-            this.$store.commit('sshInfo/SSH_UPDATE', {
-                sshKey: this.session.id,
+            this.$store.commit('session/SESSION_UPDATE', {
+                sessionKey: this.session.sessionKey,
                 updateItem: {
                     name: this.session.name,
                     host: this.session.host,

@@ -1,12 +1,13 @@
 <template>
     <q-dialog v-model="show" maximized position="bottom">
         <q-card class="terminal-container">
-            <div ref="terminal" class="full-height q-pa-sm"></div>
+            <div ref="terminal" class="full-height overflow-hidden q-pa-sm"></div>
         </q-card>
     </q-dialog>
 </template>
 
 <script>
+    import { debounce, uid } from 'quasar'
     import { Terminal } from 'xterm'
     import { WebLinksAddon } from 'xterm-addon-web-links'
     import { FitAddon } from 'xterm-addon-fit'
@@ -23,6 +24,7 @@
             return {
                 show: false,
                 term: '',
+                ipcRenderer: '',
                 option: {
                     // 鼠标右键选择
                     rightClickSelectsWord: true,
@@ -56,16 +58,27 @@
             }
         },
         watch: {
+            show(newVal) {
+                if (!newVal) this.termClose()
+            },
+        },
+        computed: {
+            termSize() {
+                return () => ({
+                    // TODO: 确认 16 是否为 line-height 基数
+                    rows: parseInt((this.$refs.terminal.clientHeight - 16) / (16 * this.option.lineHeight), 0),
+                    // TODO: 确认 cols 计算方式
+                    cols: parseInt(100, 0),
+                })
+            }
         },
         methods: {
-            init() {
-                // TODO: 确认 16 是否为 line-height 基数
-                const rows = (this.$refs.terminal.clientHeight - 16) / (16 * this.option.lineHeight)
-                // TODO: 确认 cols 计算方式
-                // const cols = 300
-
-                this.option.rows = parseInt(rows, 0)
-                // this.option.cols = parseInt(cols, 0)
+            // Terminal 初始化
+            termInit() {
+                // 计算 rows & cols
+                const { rows, cols }  = this.termSize()
+                this.option.rows = rows
+                // this.option.cols = cols
                 // Terminal 实例化
                 const term            = new Terminal(this.option)
                 // 为 xterm 提供终端的尺寸适合包含元素功能
@@ -87,16 +100,19 @@
                 // TODO: 参数 true 含义
                 term.open(this.$refs.terminal, true)
                 // 监听 Terminal Focus
-                term.textarea.addEventListener('focus', this.terminalFocus)
+                term.textarea.addEventListener('focus', this.listenerTermFocus)
                 // 监听 Terminal Blur
-                term.textarea.addEventListener('blur', this.terminalBlur)
+                term.textarea.addEventListener('blur', this.listenerTermBlur)
                 // 监听 Terminal Title Change
-                term.onTitleChange(this.changeTitle)
+                term.onTitleChange(this.listenerTermTitle)
                 // 监听 Terminal Selection Change
-                term.onSelectionChange(this.changeSelection)
+                term.onSelectionChange(this.listenerTermSelection)
 
                 // 监听 Terminal 内容
                 term.onData(data => ipcRenderer.send('terminal', data))
+
+                // 监听 Window 窗口 Resize
+                window.addEventListener('resize', () => this.termResize())
 
                 // 监听主进程
                 ipcRenderer.on('terminal', (event, args) => term.write(args))
@@ -107,33 +123,56 @@
                 term.focus()
 
                 this.term = term
+                this.ipcRenderer = ipcRenderer
             },
             // Terminal Focus 事件
-            terminalFocus() {
-                console.log('Terminal Focus');
+            listenerTermFocus() {
+                console.log('Terminal Focus');                    
             },
             // Terminal Blur 事件
-            terminalBlur() {
+            listenerTermBlur() {
                 console.log('Terminal Blur');
             },
             // Termianl Change Title 事件
-            changeTitle() {
+            listenerTermTitle() {
 
             },
             // Termianl Change Selection 事件
-            changeSelection() {
+            listenerTermSelection() {
 
             },
+            // Terminal Resize 事件
+            termResize() {
+                this.$nextTick(() => {
+                    const { rows, cols }  = this.termSize()
+                    this.term.resize(cols, rows)
+                })
+            },
+            // Terminal Close 事件
+            termClose() {
+                // 关闭 Terminal
+                // this.ipcRenderer.send('terminalKill', this.uid)
+                // 移除 Window 窗口 Resize 监听
+                window.removeEventListener('resize', () => this.termResize())
+            },
+            // Terminal Dialog Open
             open() {
                 this.show = true
-                this.$nextTick(() => {
-                    this.init()
-                })
+                this.$nextTick(() => this.termInit())
             },
         },
         beforeCreate() {
         },
+        created() {
+            // Term Resize 事件 防抖
+            this.termResize = debounce(this.termResize, 500)
+        },
         mounted() {
+        },
+        beforeDestroy() {
+        },
+        destroyed() {
+            this.termClose()
         },
     }
 </script>

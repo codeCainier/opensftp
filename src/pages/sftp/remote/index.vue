@@ -244,9 +244,8 @@ export default {
         // 连接 SSH
         sshLogin() {
             this.loading = true
-            const { sshList, sshTags, sshActive } = this.$store.state.sshInfo
-            const sshInfo = sshList.get(sshTags[sshActive].sshKey)
-            const { host, port, username, password } = sshInfo
+            const { tags, active } = this.$store.state.session
+            const { host, port, username, password } = tags.filter(item => item.id === active)[0].sessionInfo
             this.tools.ssh({
                 params: { host, port, username, password },
                 success: ssh => {

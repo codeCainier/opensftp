@@ -1,10 +1,22 @@
 import {
     app,
     BrowserWindow,
-    nativeTheme
+    nativeTheme,
+    ipcMain
 } from 'electron'
 
-import terminal from '../core/terminal'
+import os from 'os'
+
+// node-pty 只能在主进程内引入
+const pty = require('node-pty')
+const shell = process.env[os.platform() === 'win32' ? 'COMSPEC' : 'SHELL']
+const ptyProcess = pty.spawn(shell, [], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 30,
+    cwd: process.cwd(),
+    env: process.env
+})
 
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
@@ -64,4 +76,15 @@ app.on('activate', () => {
     }
 })
 
-terminal(mainWindow)
+let ptyProcess = {}
+
+ipcMain.on('terminal', (event, arg) => {
+    ptyProcess.write(arg)
+})
+
+ipcMain.on('terminalCtrl', (event, arg) => {
+    if (arg === 'init') ptyProcess.kill()
+    if (arg === 'kill') ptyProcess.kill()
+})
+
+ptyProcess.on('data', data => mainWindow.webContents.send('terminal', data))

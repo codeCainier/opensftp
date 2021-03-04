@@ -3,13 +3,8 @@
         <q-btn style="font-size: 1rem" class="no-border-radius" flat no-caps>Open SFTP
             <header-menu/>
         </q-btn>
-        <!-- <div class="text-weight-bold">Open SFTP
-            <header-menu/>
-        </div> -->
         <session-tag/>
-
         <q-space />
-
         <q-btn dense flat icon="minimize" @click="minimize"/>
         <q-btn dense flat icon="crop_square" @click="maximize"/>
         <q-btn dense flat icon="close" @click="closeApp"/>

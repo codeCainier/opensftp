@@ -36,15 +36,14 @@
             }
         },
         watch: {
-            '$store.state.sshInfo.sshTags': function (newVal) {
+            '$store.state.session.tags': function (newVal) {
                 if (!newVal.length) return this.$router.push({ path: '/' })
             },
-            '$store.state.sshInfo.sshActive': function () {
+            '$store.state.session.active': function () {
                 this.keys.remote = Date.now()
             }
         },
         beforeCreate() {
-            if (!this.$store.state.sshInfo.sshTags.length) return this.$router.push({ path: '/' })
         },
     }
 </script>

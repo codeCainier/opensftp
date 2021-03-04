@@ -16,15 +16,11 @@ import headerBarMac from 'src/components/headerBar/mac'
 import headerBarWin from 'src/components/headerBar/win'
 
 export default {
-    name: "MainLayout",
+    name: 'MainLayout',
     components: {
         'header-bar-mac': headerBarMac,
         'header-bar-win': headerBarWin,
     },
-    data() {
-        return {
-        };
-    }
 };
 </script>
 

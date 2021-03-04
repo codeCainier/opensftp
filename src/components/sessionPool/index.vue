@@ -2,14 +2,14 @@
     <q-scroll-area class="full-height">
         <q-list dense>
             <q-item v-for="(item, index) in list" 
-                    :key="item.id"
+                    :key="item.sessionKey"
                     :ref="'session-' + index"
-                    :class="{ 'focus-temp': renameItem.id === item.id || openMenu === index }"
+                    :class="{ 'focus-temp': renameItem.sessionKey === item.sessionKey || openMenu === index }"
                     class="list-item cursor-inherit"
                     clickable v-ripple
                     @click="selectSession(index)"
-                    @dblclick="login(item, index)"
-                    @keydown.enter="login(item, index)"
+                    @dblclick="login(item)"
+                    @keydown.enter="login(item)"
                     @keydown.f2="renameOpen(item, index)"
                     @keydown.delete="removeItem(item)"
                     @keydown.alt.r="showAttr(item)"
@@ -25,9 +25,9 @@
                     </q-avatar>
                 </q-item-section>
                 <q-item-section>
-                    <q-item-section v-show="renameItem.id !== item.id">{{ itemName(item) }}</q-item-section>
+                    <q-item-section v-show="renameItem.sessionKey !== item.sessionKey">{{ itemName(item) }}</q-item-section>
                     <input v-model="renameItem.name"
-                           v-show="renameItem.id === item.id"
+                           v-show="renameItem.sessionKey === item.sessionKey"
                            type="text"
                            ref="rename-input"
                            class="rename-input no-outline no-border no-padding"
@@ -49,10 +49,10 @@
                 </q-item-section>
                 <menu-list @click="openMenu = index"
                            @close="selectSession(index)"
-                           @login="login(item, index)"
+                           @login="login(item)"
                            @rename="renameOpen(item, index)"
-                           @remove="removeItem(item, index)"
-                           @showAttr="showAttr(item, index)"/>
+                           @remove="removeItem(item)"
+                           @showAttr="showAttr(item)"/>
             </q-item>
         </q-list>
         <attr-panel ref="attr-panel" @update="getList"/>
@@ -87,20 +87,17 @@ export default {
     },
     methods: {
         getList() {
-            const list = [...this.$store.state.sshInfo.sshList]
-            const arr  = []
-            list.forEach(item => {
-                arr.push({
-                    ...{ id: item[0] },
-                    ...item[1],
+            this.list = ((arr = []) => {
+                this.$store.state.session.pool.forEach((sessionInfo, sessionKey) => {
+                    arr.push({ sessionKey, ...sessionInfo })
                 })
-            })
-            this.list = arr
+                return arr
+            })()
         },
         // 连接会话
-        login(item, index) {
-            const { id, host, port, username, password } = item
-            this.$store.commit('sshInfo/SSH_TAGS_ADD', id)
+        login(item) {
+            const { sessionKey } = item
+            this.$store.commit('session/TAGS_ADD', sessionKey)
             this.$router.push({ path: '/sftp' })
         },
         // 重命名开始
@@ -112,8 +109,8 @@ export default {
         },
         // 重命名结束
         renameClose() {
-            this.$store.commit('sshInfo/SSH_UPDATE', {
-                sshKey: this.renameItem.id,
+            this.$store.commit('session/SESSION_UPDATE', {
+                sessionKey: this.renameItem.sessionKey,
                 updateItem: {
                     name: this.renameItem.name,
                 },
@@ -128,18 +125,18 @@ export default {
             this.$refs['rename-input'][index].blur()
         },
         // 删除项目
-        removeItem(item, index) {
+        removeItem(item) {
             this.tools.confirm({
                 message: `确定要删除会话 [${item.name}] 吗？`,
                 confirm: () => {
-                    this.$store.commit('sshInfo/SSH_DEL', item.id)
+                    this.$store.commit('session/SESSION_DEL', item.sessionKey)
                     this.getList()
                 },
                 cancel: () => {}
             })
         },
         // 显示属性
-        showAttr(item, index) {
+        showAttr(item) {
             this.$refs['attr-panel'].open(item)
         },
         // 移动聚焦元素

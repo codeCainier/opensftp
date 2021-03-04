@@ -4,17 +4,17 @@
                icon="home" flat 
                class="no-border-radius"
                @click="backHome"/>
-        <q-btn v-for="(item, index) in tagList"
-               :key="index"
-               :color="$store.state.sshInfo.sshActive === index ? 'teal-7' : 'blue-10'"
+        <q-btn v-for="item in tagList"
+               :key="item.id"
+               :color="$store.state.session.active === item.id ? 'teal-7' : 'blue-10'"
                class="no-border-radius"
                style="margin-right: 1px"
                unelevated no-caps
-               @click="changeSession(index)">
+               @click="changeTag(item.id)">
             <q-icon name="dns"/>
-            <div class="label q-mx-sm" style="font-size: .85rem">{{ item.name }}</div>
+            <div class="label q-mx-sm" style="font-size: .85rem">{{ item.sessionInfo.name }}</div>
             <q-space/>
-            <q-btn flat round size="xs" icon="close" @click="closeSSH(index)"/>
+            <q-btn flat round size="xs" icon="close" @click="closeTag(item.id)"/>
         </q-btn>
     </div>
 </template>
@@ -28,27 +28,20 @@
             }
         },
         watch: {
-            '$store.state.sshInfo.sshTags': function () {
-                const arr = []
-                this.$store.state.sshInfo.sshTags.forEach(item => {
-                    arr.push({
-                        ...{ id: item.sshKey },
-                        ...this.$store.state.sshInfo.sshList.get(item.sshKey),
-                    })
-                })
-                this.tagList = arr
+            '$store.state.session.tags': function (newVal) {
+                this.tagList = newVal
             }
         },
         methods: {
-            closeSSH(index) {
-                this.$store.commit('sshInfo/SSH_TAGS_DEL', index)
+            closeTag(id) {
+                this.$store.commit('session/TAGS_DEL', id)
             },
             backHome() {
-                this.$store.commit('sshInfo/CHANGE_ACTIVE', -1)
+                this.$store.commit('session/SET_ACTIVE', '')
                 this.$router.push({ path: '/', query: { t: Date.now() } })
             },
-            changeSession(index) {
-                this.$store.commit('sshInfo/CHANGE_ACTIVE', index)
+            changeTag(id) {
+                this.$store.commit('session/SET_ACTIVE', id)
                 this.$router.push({ path: '/sftp', query: { t: Date.now() } })
             },
         },

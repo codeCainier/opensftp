@@ -53,9 +53,9 @@
                 this.tools.ssh({
                     params: { host, port, username, password },
                     success: ssh => {
-                        this.$store.commit('sshInfo/SSH_ADD', { host, port, username, password,
-                            callback: sshKey => {
-                                this.$store.commit('sshInfo/SSH_TAGS_ADD', sshKey)
+                        this.$store.commit('session/SESSION_ADD', { host, port, username, password,
+                            callback: sessionKey => {
+                                this.$store.commit('session/TAGS_ADD', sessionKey)
                                 this.$router.push({ path: '/sftp' })
                             }
                         })

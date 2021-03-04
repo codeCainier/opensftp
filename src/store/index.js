@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 
 import setting from './module-setting'
-import sshInfo from './module-sshInfo'
+import session from './module-session'
 
 Vue.use(Vuex)
 
@@ -19,7 +19,7 @@ export default function (/* { ssrContext } */) {
     const Store = new Vuex.Store({
         modules: {
             setting,
-            sshInfo,
+            session,
         },
 
         // enable strict mode (adds overhead!)
