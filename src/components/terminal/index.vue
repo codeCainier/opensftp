@@ -61,6 +61,9 @@
             show(newVal) {
                 if (!newVal) this.termClose()
             },
+            '$store.state.session.active': function () {
+                this.checkTagTerm()
+            },
         },
         computed: {
             termSize() {
@@ -73,6 +76,25 @@
             }
         },
         methods: {
+            // 检查当前 Tag 是否创建 SSH 会话
+            checkTagTerm() {
+                const activeTagId = this.$store.state.session.active.id
+                const { sshMap } = this.$store.state.session
+
+                let processId = sshMap.get(activeTagId)
+
+                // 若该 Tag 未创建 SSH 会话
+                if (!processId) {
+                    // 为该 Tag 创建 SSH 会话
+                    this.$store.commit('session/SSH_ADD')
+                    // 获取 SSH 会话的进程 ID
+                    processId = sshMap.get(activeTagId)
+                    // 根据会话 id 创建 Terminal 进程
+                    this.$q.electron.ipcRenderer.send('terminal-add', processId)
+                }
+
+                this.processId = processId
+            },
             // Terminal 初始化
             termInit() {
                 // 计算 rows & cols
@@ -109,15 +131,15 @@
                 term.onSelectionChange(this.listenerTermSelection)
 
                 // 监听 Terminal 内容
-                term.onData(data => ipcRenderer.send('terminal', data))
+                term.onData(data => ipcRenderer.send(this.processId, data))
 
                 // 监听 Window 窗口 Resize
                 window.addEventListener('resize', () => this.termResize())
 
                 // 监听主进程
-                ipcRenderer.on('terminal', (event, args) => term.write(args))
+                ipcRenderer.on(this.processId, (event, args) => term.write(args))
                 // 传入 Enter 来初始化 Terminal
-                ipcRenderer.send('terminal', 'clear\n')
+                ipcRenderer.send(this.processId, 'clear\n')
 
                 // Terminal Focus
                 term.focus()
@@ -168,6 +190,7 @@
             this.termResize = debounce(this.termResize, 500)
         },
         mounted() {
+            this.checkTagTerm()
         },
         beforeDestroy() {
         },

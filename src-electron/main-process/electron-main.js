@@ -4,8 +4,6 @@ import {
     nativeTheme
 } from 'electron'
 
-import terminal from '../core/terminal'
-
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
         require('fs').unlinkSync(require('path').join(app.getPath('userData'), 'DevTools Extensions'))
@@ -63,5 +61,3 @@ app.on('activate', () => {
         createWindow()
     }
 })
-
-terminal(mainWindow)

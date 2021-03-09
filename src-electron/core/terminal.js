@@ -9,32 +9,30 @@ const shell = process.env[os.platform() === 'win32' ? 'COMSPEC' : 'SHELL']
 class Terminal {
     constructor(mainWindow) {
         this.mainWindow = mainWindow
-        this.pool = new Map()
     }
 
-    init(uid) {
-        const ptyProcess = pty.spawn(shell, [], {
+    init(processId) {
+        this[processId] = pty.spawn(shell, [], {
             name: 'xterm-color',
             cols: 80,
             rows: 30,
             cwd: process.cwd(),
             env: process.env
         })
-        
-        ptyProcess.on('data', data => mainWindow.webContents.send('terminal', data))
-        ipcMain.on('terminal', (event, arg) => ptyProcess.write(arg))
 
-        this.pool.set(uid, ptyProcess)
+        this[processId].on('data', data => this.mainWindow.webContents.send(processId, data))
+
+        ipcMain.on(processId, (event, arg) => this[processId].write(arg))
     }
 
-    kill(uid) {
-        this.pool.get(uid).kill()
+    kill(processId) {
+        this[processId].kill()
     }
 }
 
 export default (mainWindow) => {
     const terminal = new Terminal(mainWindow)
 
-    ipcMain.on('terminalInit', (event, arg) => terminal.init(arg))
-    ipcMain.on('terminalKill', (event, arg) => terminal.kill(arg))
+    ipcMain.on('terminal-add', (event, processId) => terminal.init(processId))
+    ipcMain.on('terminal-del', (event, processId) => terminal.kill(processId))
 }

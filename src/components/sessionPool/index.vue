@@ -17,7 +17,7 @@
                     @keydown.down="moveFocus('down')">
                 <q-item-section avatar>
                     <q-avatar rounded size="md">
-                        <q-spinner-gears v-if="loading === index" class="session-icon" />
+                        <q-spinner-gears v-if="loading === item.sessionKey" class="session-icon" />
                         <q-btn v-else flat
                                class="session-icon" 
                                :class="{ 'text-positive': $q.dark.isActive }" 
@@ -44,7 +44,7 @@
                 </q-item-section>
                 <q-item-section side>
                     <q-item-label style="width: 100px" caption class="site-label">
-                        {{ loading === index ? '正在连接...' : item.host }}
+                        {{ loading === item.sessionKey ? '正在连接...' : item.host }}
                     </q-item-label>
                 </q-item-section>
                 <menu-list @click="openMenu = index"
@@ -96,9 +96,24 @@ export default {
         },
         // 连接会话
         login(item) {
-            const { sessionKey } = item
-            this.$store.commit('session/TAGS_ADD', sessionKey)
-            this.$router.push({ path: '/sftp' })
+            this.loading = item.sessionKey
+
+            const { host, port, username, password } = item
+
+            this.$store.commit('session/SESSION_ADD', { host, port, username, password,
+                callback: sessionKey => {
+                    this.connect({
+                        params: this.$store.state.session.pool.get(sessionKey),
+                        success: () => {
+                            this.$router.push({ path: '/sftp' })
+                            this.loading = null
+                        },
+                        error: () => {
+                            this.loading = null
+                        },
+                    })
+                }
+            })
         },
         // 重命名开始
         renameOpen(item, index) {

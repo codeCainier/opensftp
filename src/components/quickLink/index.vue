@@ -40,27 +40,29 @@
             return {
                 loading: false,
                 showPwd: false,
-                host: '',
+                host: '192.168.0.241',
                 port: '22',
                 username: 'root',
-                password: '',
+                password: 'srunsoft@xian',
             };
         },
         methods: {
             sshLogin() {
                 this.loading = true
                 const { host, port, username, password } = this
-                this.tools.ssh({
-                    params: { host, port, username, password },
-                    success: ssh => {
-                        this.$store.commit('session/SESSION_ADD', { host, port, username, password,
-                            callback: sessionKey => {
-                                this.$store.commit('session/TAGS_ADD', sessionKey)
+                this.$store.commit('session/SESSION_ADD', { host, port, username, password,
+                    callback: sessionKey => {
+                        this.connect({
+                            params: this.$store.state.session.pool.get(sessionKey),
+                            success: () => {
                                 this.$router.push({ path: '/sftp' })
-                            }
+                                this.loading = false
+                            },
+                            error: () => {
+                                this.loading = false
+                            },
                         })
-                    },
-                    finish: () => this.loading = false
+                    }
                 })
             },
         },

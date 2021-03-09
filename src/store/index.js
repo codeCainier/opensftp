@@ -1,8 +1,9 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 
-import setting from './module-setting'
-import session from './module-session'
+import setting  from './module-setting'
+import session  from './module-session'
+import transfer from './module-transfer'
 
 Vue.use(Vuex)
 
@@ -15,17 +16,13 @@ Vue.use(Vuex)
  * with the Store instance.
  */
 
-export default function (/* { ssrContext } */) {
-    const Store = new Vuex.Store({
-        modules: {
-            setting,
-            session,
-        },
-
-        // enable strict mode (adds overhead!)
-        // for dev mode only
-        strict: process.env.DEBUGGING
-    })
-
-    return Store
-}
+export default new Vuex.Store({
+    modules: {
+        setting,
+        session,
+        transfer,
+    },
+    // enable strict mode (adds overhead!)
+    // for dev mode only
+    // strict: process.env.DEV,
+})

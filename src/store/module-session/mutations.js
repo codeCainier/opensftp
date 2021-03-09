@@ -1,4 +1,4 @@
-import { LocalStorage, Dialog, uid } from 'quasar'
+import { LocalStorage, Dialog } from 'quasar'
 import tools from 'src/utils'
 
 // 会话池 新增会话
@@ -55,14 +55,9 @@ export function SESSION_DEL(state, sessionKey) {
 }
 
 // 标签池 新增会话
-export function TAGS_ADD(state, sessionKey) {
-    const id = uid()
-    const sessionInfo = state.pool.get(sessionKey)
-    state.tags.push({
-        id,
-        sessionInfo,
-    })
-    SET_ACTIVE(state, id)
+export function TAGS_ADD(state, obj) {
+    state.tags.push(obj)
+    SET_ACTIVE(state, obj)
 }
 
 // 标签池 删除会话
@@ -73,10 +68,15 @@ export function TAGS_DEL(state, id) {
             break
         }
     }
-    SET_ACTIVE(state, state[0].id)
+    SET_ACTIVE(state, state.tags[0])
 }
 
 // 更换当前会话
-export function SET_ACTIVE(state, id) {
-    state.active = id
+export function SET_ACTIVE(state, obj) {
+    state.active = obj
+}
+
+// 新增 SSH 会话
+export function SSH_ADD(state, tagId = state.active) {
+    // state.sshMap.set(tagId, uid())
 }

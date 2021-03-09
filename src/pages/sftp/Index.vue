@@ -10,29 +10,30 @@
                 <remote :key="keys.remote"/>
             </template>
         </q-splitter>
-        <ssh/>
+        <!-- <ssh/> -->
     </page>
 </template>
 
 <script>
-    import local  from './local'
-    import remote from './remote'
-    import ssh    from 'src/components/ssh'
+    import { uid } from 'quasar'
+    import local   from './local'
+    import remote  from './remote'
+    // import ssh     from 'src/components/ssh'
 
     export default {
         name: 'SFTP',
         components: {
             local,
             remote,
-            ssh,
+            // ssh,
         },
         data() {
             return {
                 splitterModel: 50,
                 keys: {
-                    local: Date.now(),
-                    remote: Date.now(),
-                }
+                    local: uid(),
+                    remote: uid(),
+                },
             }
         },
         watch: {
@@ -40,8 +41,8 @@
                 if (!newVal.length) return this.$router.push({ path: '/' })
             },
             '$store.state.session.active': function () {
-                this.keys.remote = Date.now()
-            }
+                this.keys.remote = uid()
+            },
         },
         beforeCreate() {
         },

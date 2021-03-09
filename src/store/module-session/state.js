@@ -7,6 +7,8 @@ const state = {
     tags: [],
     // 活跃的 session 会话 - 标签 uid
     active: '',
+    // 开启的会话 Map
+    sshMap: new Map(),
 }
 
 state.pool = new Map(state.pool)

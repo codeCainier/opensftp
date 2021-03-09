@@ -6,13 +6,13 @@
                @click="backHome"/>
         <q-btn v-for="item in tagList"
                :key="item.id"
-               :color="$store.state.session.active === item.id ? 'teal-7' : 'blue-10'"
+               :color="$store.state.session.active.id === item.id ? 'teal-7' : 'blue-10'"
                class="no-border-radius"
                style="margin-right: 1px"
                unelevated no-caps
-               @click="changeTag(item.id)">
+               @click="changeTag(item)">
             <q-icon name="dns"/>
-            <div class="label q-mx-sm" style="font-size: .85rem">{{ item.sessionInfo.name }}</div>
+            <div class="label q-mx-sm" style="font-size: .85rem">{{ item.params.name }}</div>
             <q-space/>
             <q-btn flat round size="xs" icon="close" @click="closeTag(item.id)"/>
         </q-btn>
@@ -37,11 +37,11 @@
                 this.$store.commit('session/TAGS_DEL', id)
             },
             backHome() {
-                this.$store.commit('session/SET_ACTIVE', '')
+                this.$store.commit('session/SET_ACTIVE', {})
                 this.$router.push({ path: '/', query: { t: Date.now() } })
             },
-            changeTag(id) {
-                this.$store.commit('session/SET_ACTIVE', id)
+            changeTag(item) {
+                this.$store.commit('session/SET_ACTIVE', item)
                 this.$router.push({ path: '/sftp', query: { t: Date.now() } })
             },
         },

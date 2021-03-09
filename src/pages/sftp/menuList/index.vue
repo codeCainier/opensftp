@@ -5,7 +5,7 @@
             @before-show="$emit('click')"
             @before-hide="$emit('close')"
             @keydown.f2="emitHandle('rename')"
-            @keydown.meta.delete="emitHandle('delete')">
+            @keydown.delete="emitHandle('delete')">
         <q-list dense style="min-width: 150px">
             <q-item clickable v-close-popup v-show="listItem.type === '-'">
                 <q-item-section>以 Webstorm 编辑</q-item-section>
@@ -38,7 +38,7 @@
             <q-item clickable v-close-popup @click="emitHandle('remove')">
                 <q-item-section>删除</q-item-section>
                 <q-item-section side>
-                    <q-item-label caption>Command + Delete</q-item-label>
+                    <q-item-label caption>Delete</q-item-label>
                 </q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="emitHandle('rename')">

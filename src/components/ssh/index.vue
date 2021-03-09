@@ -22,8 +22,6 @@
                 cmd: '',
             }
         },
-        watch: {
-        },
         methods: {
             openTerminal() {
                 this.$refs.terminal.open()
