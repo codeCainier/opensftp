@@ -328,7 +328,7 @@ export default {
         }
     },
     created() {
-        this.la()
+        // this.la()
     }
 }
 </script>
