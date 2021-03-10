@@ -12,6 +12,7 @@ input
         -moz-appearance: textfield
 
 body
+    @include disable-copy
     transition: all .3s
     &.body--light
         background: rgba(#FFFFFF, .8)
@@ -23,9 +24,6 @@ body
         .bg-aero
             background: rgba($dark, .5)
             backdrop-filter: blur(10px) saturate(180%)
-
-.disable-copy
-    @include disable-copy
 
 .q-dialog__backdrop
     backdrop-filter: blur(10px)

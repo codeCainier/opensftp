@@ -5,16 +5,19 @@
             <q-spinner-gears size="50px" color="primary" />
         </q-inner-loading>
         <!-- 文件系统 - 控制栏 -->
-        <div class="fs-control flex">
-            <input class="pwd-input" type="text" v-model.trim="pwdInput"
+        <div class="fs-control">
+            <input class="pwd-input" type="text"
+                   :spellcheck="false"
+                   v-model.trim="pwdInput"
                    @keydown.enter="getFileList(null, pwdInput)">
-            <q-space/>
-            <button type="button" v-ripple class="btn-enter" @click="getFileList(null, pwdInput)">
-                <q-icon name="chevron_right"/>
-            </button>
-            <button type="button" v-ripple class="btn-enter" @click="getFileList('.')">
-                <q-icon name="refresh"/>
-            </button>
+            <div class="btn-group">
+                <button type="button" v-ripple class="btn-enter" @click="getFileList(null, pwdInput)">
+                    <q-icon name="chevron_right"/>
+                </button>
+                <button type="button" v-ripple class="btn-enter" @click="getFileList('.')">
+                    <q-icon name="refresh"/>
+                </button>
+            </div>
         </div>
         <!-- 文件系统 - 标题栏 -->
         <div class="fs-head">
@@ -50,8 +53,8 @@
                          'focus-temp': openMenu === index || renameItem.name === item.name,
                      }"
                          @click="fileFocus(index)"
-                         @dblclick="getFileList(item.name)"
-                         @keydown.enter="getFileList(item.name)"
+                         @dblclick="item.type === 'd' ? getFileList(item.name) : ''"
+                         @keydown.enter="item.type === 'd' ? getFileList(item.name) : ''"
                          @keydown.exact.delete="removeFile(item)"
                          @keydown.f2="renameOpen(item, index)"
                          @keydown.prevent.up="moveFocus('up')"
@@ -101,7 +104,6 @@
 /**
  * Linux 思想，一切皆文件
  */
-import { throttle, uid } from 'quasar'
 import fs from 'fs'
 import path from 'path'
 import menuList from 'src/pages/sftp/menuList'
@@ -181,20 +183,39 @@ export default {
         },
     },
     methods: {
+        // SFTP 初始化
         async sftpInit() {
             this.loading = true
             this.sessionInfo = this.$store.state.session.active.params
             this.sftp = new SFTP()
             await this.sftp.init(this.sessionInfo)
-            this.getFileList('/srun3/www/srun_loginweb/download')
+            this.getFileList('/')
         },
         // 下载
-        async download(item) {
+        download(item) {
+            const localPath = path.join('/Users/xingrong/Downloads/', item.name)
+
+            try {
+                const stats = fs.statSync(localPath)
+                if (stats) this.tools.confirm({
+                    message: `${item === 'd' ? '目录' : '文件'} ${localPath} 已存在，是否进行覆盖？`,
+                    confirm: () => {
+                        this.sftpDownload(item)
+                    },
+                    cancel: () => {
+                    },
+                })
+            } catch (err) {
+                this.sftpDownload(item)
+            }
+        },
+        // SFTP 下载
+        async sftpDownload(item) {
             this.$store.commit('transfer/TASK_INIT', this.$store.state.session.active.id)
 
             await this.sftp.download(
                 path.join(this.pwd, item.name),
-                path.join('/Users/xingrong/Downloads', item.name),
+                path.join('/Users/xingrong/Downloads/', item.name),
                 this.downloadProgress,
             )
 
@@ -326,118 +347,8 @@ export default {
             if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
             this.fileFocus()
         },
-        // SftpJs 文件列表
-        async sftpList(cwd) {
-            const conn = new Client()
-            return new Promise((resolve, reject) => {
-                conn
-                    .on('ready', () => {
-                        conn.sftp((err, sftp) => {
-                            if (err) return reject(err)
-                            sftp.readdir(cwd, (err, list) => {
-                                if (err) return reject(err)
-                                resolve(list)
-                                conn.end()
-                            })
-                        })
-                    })
-                    .on('error', () => reject())
-                    .connect(this.sessionInfo)
-            })
-        },
-        // SftpJs 文件下载
-        async sftpDownload(params) {
-            const { remote, local, isDir, progress } = params
-
-            if (isDir) return fs.mkdirSync(local, { recursive: true })
-
-            const conn = new Client()
-            const option = {
-                step: (finish, chunk, total) => {
-                    if (progress) progress(finish, chunk, total)
-                    const percent = (finish / total).toFixed(2)
-                },
-            }
-
-            return new Promise((resolve, reject) => {
-                conn
-                    .on('ready', () => {
-                        conn.sftp((err, sftp) => {
-                            if (err) return reject(err)
-                            sftp.fastGet(remote, local, option, err => {
-                                if (err) return reject(err)
-                                resolve()
-                                conn.end()
-                            })
-                        })
-                    })
-                    .on('error', () => reject())
-                    .connect(this.sessionInfo)
-            })
-        },
-        // 创建下载任务
-        async createDownloadTask(params) {
-            // find . -print 2>/dev/null|awk '!/\.$/ {for (i=1;i<NF;i++){d=length($i);if ( d < 50 && i != 1 )d=2;printf("%"d"s","|")}print "---"$NF}' FS='/'
-            const {
-                id,
-                remotePath,
-                localPath,
-                fileName,
-                fileSize,
-                isDir,
-            } = params
-            const task = {}
-            const tid = uid()
-            // 文件的远程地址
-            const fileRemotePath = path.join(remotePath, fileName)
-            // 文件的本地地址
-            const fileLocalPath  = path.join(localPath, fileName)
-            // 文件名称
-            task.name       = fileName
-            task.size       = fileSize
-            task.remotePath = fileRemotePath
-            task.localPath  = fileLocalPath
-            // 若文件非目录类型
-            if (!isDir) {
-                this.$store.commit('transfer/TASK_ADD', { id, tid, task })
-                // 下载文件
-                await this.sftpDownload({
-                    remote   : task.remotePath,
-                    local    : task.localPath,
-                    isDir    : false,
-                    progress : finish => {
-                        this.$store.commit('transfer/TASK_UPDATE', { id, tid, finish })
-                    },
-                })
-            }
-            // 若文件为目录类型
-            if (isDir) {
-                // 下载文件
-                await this.sftpDownload({
-                    remote   : task.remotePath,
-                    local    : task.localPath,
-                    isDir    : true,
-                })
-                task.list = []
-                // 目录下的文件列表
-                const fileList = await this.sftpList(fileRemotePath)
-                // 遍历文件列表
-                for(const item of fileList) {
-                    task.list.push(await this.createDownloadTask({
-                        id,
-                        remotePath : fileRemotePath,
-                        localPath  : fileLocalPath,
-                        fileName   : item.filename,
-                        fileSize   : item.attrs.size,
-                        isDir      : item.longname.substring(0, 1) === 'd',
-                    }))
-                }
-            }
-        },
     },
     created() {
-        // 下载进度事件 节流
-        // this.downloadProgress = throttle(this.downloadProgress, 100)
         this.sftpInit()
     }
 }

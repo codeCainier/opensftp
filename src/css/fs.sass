@@ -7,6 +7,8 @@
             color: $dark
         .btn-enter:hover
             background: rgba($dark, .1)
+        .pwd-input:focus
+            background: rgba($primary, .3)
 
 
 .body--dark
@@ -16,6 +18,9 @@
             color: #FFFFFF
         .btn-enter:hover
             background: rgba(#FFFFFF, .1)
+        .pwd-input:focus
+            background: $primary
+            color: #FFFFFF
 
 .fs-system
     display: flex
@@ -27,6 +32,10 @@
     top: 0
     z-index: 99
     box-sizing: border-box
+    .btn-group
+        position: absolute
+        top: 0
+        right: 0
     .pwd-input,
     .btn-enter
         position: relative
@@ -36,8 +45,9 @@
         outline: none
         background: none
     .pwd-input
-        width: calc( 100% - 60px )
+        width: 100%
         padding: 0 5px
+        transition: all .3s
     .btn-enter
         width: 30px
         text-align: center

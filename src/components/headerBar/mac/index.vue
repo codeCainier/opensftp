@@ -6,19 +6,19 @@
         <session-tag/>
         <q-space />
         <q-btn v-if="progress"
-               class="relative-position full-height"
+               class="relative-position full-height no-border-radius"
                unelevated no-caps>
             <div class="ellipsis text-left" style="width: 150px">
                 <q-spinner-gears class="q-mr-sm"/>
                 {{ progressLabel() }}
             </div>
             <q-linear-progress :value="progress.transferring.percent"
-                               color="primary"
+                               :color="$q.dark.isActive ? 'primary' : 'positive'"
                                style="z-index: -1"
                                class="progress-bar absolute-top-left full-height full-width"/>
             <q-skeleton type="rect"
                         style="z-index: -1"
-                        class="absolute-top-left full-height full-width"/>
+                        class="absolute-top-left full-height full-width no-border-radius"/>
         </q-btn>
         <q-toggle v-model="dark"
                   color="dark"

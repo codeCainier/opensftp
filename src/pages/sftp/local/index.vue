@@ -3,17 +3,19 @@
         <q-inner-loading :showing="loading" style="z-index: 100">
             <q-spinner-gears size="50px" color="primary" />
         </q-inner-loading>
-        <div class="fs-control flex">
+        <div class="fs-control">
             <input class="pwd-input" type="text" v-model.trim="pwd"
+                   :spellcheck="false"
                    @keydown.enter="la"
                    @blur="pwd = lastPwd">
-            <q-space/>
-            <button type="button" class="btn-enter" @click="la">
-                <q-icon name="chevron_right"/>
-            </button>
-            <button type="button" class="btn-enter" @click="la">
-                <q-icon name="refresh"/>
-            </button>
+            <div class="btn-group">
+                <button type="button" class="btn-enter" @click="la">
+                    <q-icon name="chevron_right"/>
+                </button>
+                <button type="button" class="btn-enter" @click="la">
+                    <q-icon name="refresh"/>
+                </button>
+            </div>
         </div>
         <div class="fs-head">
             <div class="item select-all"></div>

@@ -8,6 +8,7 @@ function confirm(obj) {
     Dialog.create({
         title: obj.title || '提示',
         message: obj.message || '',
+        ok: obj.textConfirm || '确认',
         cancel: !obj.cancel ? '' : '取消',
         'no-backdrop-dismiss': true,
         'no-esc-dismiss': false,
