@@ -8,17 +8,17 @@
                 </template>
             </q-input>
             <q-input label="用户" v-model.trim="username"/>
-            <q-input label="密码" v-model.trim="password" 
-                     :type="showPwd ? 'text' : 'password'" 
+            <q-input label="密码" v-model.trim="password"
+                     :type="showPwd ? 'text' : 'password'"
                      @keydown.enter="sshLogin">
                 <template v-slot:append>
-                    <q-btn v-show="password" 
-                           :icon="showPwd ? 'visibility' : 'visibility_off'" 
-                           flat round 
+                    <q-btn v-show="password"
+                           :icon="showPwd ? 'visibility' : 'visibility_off'"
+                           flat round
                            @click="showPwd = !showPwd"/>
                 </template>
             </q-input>
-            <q-btn color="primary" 
+            <q-btn color="primary"
                    unelevated
                    :loading="loading"
                    label="快速连接"
@@ -29,6 +29,7 @@
 </template>
 
 <script>
+    import { uid } from 'quasar'
     import svgQuickLink from 'src/components/svg/quickLink'
 
     export default {
@@ -52,16 +53,12 @@
                 const { host, port, username, password } = this
                 this.$store.commit('session/SESSION_ADD', { host, port, username, password,
                     callback: sessionKey => {
-                        this.connect({
-                            params: this.$store.state.session.pool.get(sessionKey),
-                            success: () => {
-                                this.$router.push({ path: '/sftp' })
-                                this.loading = false
-                            },
-                            error: () => {
-                                this.loading = false
-                            },
+                        this.$store.commit('session/TAGS_ADD', {
+                            id: uid(),
+                            params: this.$store.state.session.pool.get(sessionKey)
                         })
+                        this.$router.push({ path: '/sftp' })
+                        this.loading = false
                     }
                 })
             },

@@ -1,6 +1,6 @@
-# Open SFTP
+# Open SftpJs
 
-> Open SFTP Client 基于 Electron 与 Vue 的 SFTP 跨平台客户端
+> Open SftpJs Client 基于 Electron 与 Vue 的 SftpJs 跨平台客户端
 
 ## Status
 

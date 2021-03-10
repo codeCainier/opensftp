@@ -5,7 +5,22 @@
         <q-btn dense flat round icon="lens" size="8.5px" color="green" @click="maximize"/>
         <session-tag/>
         <q-space />
-        <q-toggle v-model="dark" 
+        <q-btn v-if="progress"
+               class="relative-position full-height"
+               unelevated no-caps>
+            <div class="ellipsis text-left" style="width: 150px">
+                <q-spinner-gears class="q-mr-sm"/>
+                {{ progressLabel() }}
+            </div>
+            <q-linear-progress :value="progress.transferring.percent"
+                               color="primary"
+                               style="z-index: -1"
+                               class="progress-bar absolute-top-left full-height full-width"/>
+            <q-skeleton type="rect"
+                        style="z-index: -1"
+                        class="absolute-top-left full-height full-width"/>
+        </q-btn>
+        <q-toggle v-model="dark"
                   color="dark"
                   checked-icon="ion-md-moon"
                   unchecked-icon="ion-md-sunny"
@@ -25,9 +40,23 @@ export default {
         'session-tag': sessionTag,
         'header-menu': headerMenu,
     },
+    watch: {
+        '$store.state.transfer.listener': function () {
+            this.progress = this.$store.state.transfer.list[this.$store.state.session.active.id]
+        }
+    },
+    computed: {
+        progressLabel() {
+            return () => `正在下载 ${this.progress.transferring.remotePath.split('/').pop()}`
+        },
+        progressValue() {
+            return () => this.progress.transferring.percent * 100
+        }
+    },
     data() {
         return {
-            dark: this.$store.state.setting.dark
+            dark: this.$store.state.setting.dark,
+            progress: null,
         };
     },
     methods: {
@@ -41,6 +70,19 @@ export default {
         closeApp() {
             this.$q.electron.remote.BrowserWindow.getFocusedWindow().close()
         },
+    },
+    created() {
     }
 }
 </script>
+
+<style scoped lang="sass">
+.progress-bar
+    //transform: translateY(100%)
+</style>
+
+<style lang="sass">
+//.q-linear-progress__model--determinate,
+//.q-linear-progress__stripe
+//    border-radius: 10px
+</style>

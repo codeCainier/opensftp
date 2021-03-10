@@ -1,7 +1,7 @@
 <template>
     <q-scroll-area class="full-height">
         <q-list dense>
-            <q-item v-for="(item, index) in list" 
+            <q-item v-for="(item, index) in list"
                     :key="item.sessionKey"
                     :ref="'session-' + index"
                     :class="{ 'focus-temp': renameItem.sessionKey === item.sessionKey || openMenu === index }"
@@ -19,8 +19,8 @@
                     <q-avatar rounded size="md">
                         <q-spinner-gears v-if="loading === item.sessionKey" class="session-icon" />
                         <q-btn v-else flat
-                               class="session-icon" 
-                               :class="{ 'text-positive': $q.dark.isActive }" 
+                               class="session-icon"
+                               :class="{ 'text-positive': $q.dark.isActive }"
                                icon="dns" size="sm"/>
                     </q-avatar>
                 </q-item-section>
@@ -60,6 +60,7 @@
 </template>
 
 <script>
+import { uid } from 'quasar'
 import menuList from './menuList'
 import attrPanel from './attrPanel'
 
@@ -102,16 +103,12 @@ export default {
 
             this.$store.commit('session/SESSION_ADD', { host, port, username, password,
                 callback: sessionKey => {
-                    this.connect({
-                        params: this.$store.state.session.pool.get(sessionKey),
-                        success: () => {
-                            this.$router.push({ path: '/sftp' })
-                            this.loading = null
-                        },
-                        error: () => {
-                            this.loading = null
-                        },
+                    this.$store.commit('session/TAGS_ADD', {
+                        id: uid(),
+                        params: this.$store.state.session.pool.get(sessionKey)
                     })
+                    this.$router.push({ path: '/sftp' })
+                    this.loading = null
                 }
             })
         },

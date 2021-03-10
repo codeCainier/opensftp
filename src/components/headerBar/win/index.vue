@@ -1,6 +1,6 @@
 <template>
     <q-bar class="q-electron-drag">
-        <q-btn style="font-size: 1rem" class="no-border-radius" flat no-caps>Open SFTP
+        <q-btn style="font-size: 1rem" class="no-border-radius" flat no-caps>Open SftpJs
             <header-menu/>
         </q-btn>
         <session-tag/>

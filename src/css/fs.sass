@@ -1,16 +1,21 @@
-@import "./quasar.variables"
+@import "src/css/quasar.variables"
 
 .body--light
     .fs-control, .fs-head
         background: rgba(#FFFFFF, .5)
         .pwd-input,button
             color: $dark
+        .btn-enter:hover
+            background: rgba($dark, .1)
+
 
 .body--dark
     .fs-control, .fs-head
         background: rgba($dark, .5)
         .pwd-input,button
             color: #FFFFFF
+        .btn-enter:hover
+            background: rgba(#FFFFFF, .1)
 
 .fs-system
     display: flex
@@ -24,6 +29,7 @@
     box-sizing: border-box
     .pwd-input,
     .btn-enter
+        position: relative
         height: 25px
         padding: 0
         border: 0
@@ -36,29 +42,28 @@
         width: 30px
         text-align: center
         cursor: pointer
-        &:hover
-            background: rgba($dark, .1)
 
 .fs-item,
 .fs-head
     display: flex
     height: 25px
     line-height: 25px
+    padding: 0 5px
+
+.fs-item
+    border-radius: 4px
+    margin-bottom: 2px
 
 .item
     margin-right: 5px
     white-space: nowrap
     overflow: hidden
     text-overflow: ellipsis
-    &:first-child
-        padding-left: 5px
-    &:last-child
-        padding-right: 5px
     &.select-all
-        min-width: 30px
+        min-width: 25px
         margin-right: 5px
     &.icon
-        min-width: 30px
+        min-width: 25px
         margin-right: 5px
     &.name
         width: 200px

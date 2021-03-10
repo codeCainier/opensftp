@@ -4,7 +4,7 @@
             <q-spinner-gears size="50px" color="primary" />
         </q-inner-loading>
         <div class="fs-control flex">
-            <input class="pwd-input" type="text" v-model.trim="pwd" 
+            <input class="pwd-input" type="text" v-model.trim="pwd"
                    @keydown.enter="la"
                    @blur="pwd = lastPwd">
             <q-space/>
@@ -25,58 +25,60 @@
         </div>
         <div class="fs-body full-height">
             <q-scroll-area class="full-height">
-                <div v-for="(item, index) in list" 
-                     class="fs-item"
-                     tabindex="0"
-                     :ref="'file-' + index"
-                     :key="index" 
-                     :class="{ 
-                         hidden: hideItem(item),
-                         'focus-temp': openMenu === index || renameItem.index === index,
-                     }"
-                     @click="selectFile(index)"
-                     @dblclick="dirEnter"
-                     @keydown.enter="dirEnter"
-                     @keydown.exact.backspace="dirBack"
-                     @keydown.f2="renameOpen(item, index)"
-                     @keydown.meta.delete="removeFile(item)"
-                     @keydown.prevent.up="moveFocus('up')"
-                     @keydown.prevent.down="moveFocus('down')">
-                    <div class="item icon">
-                        <img :src="getFileIcon(item)" alt="">
+                <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
+                    <div v-for="(item, index) in list"
+                         class="fs-item"
+                         tabindex="0"
+                         :ref="'file-' + index"
+                         :key="index"
+                         :class="{
+                             hidden: hideItem(item),
+                             'focus-temp': openMenu === index || renameItem.index === index,
+                         }"
+                         @click="selectFile(index)"
+                         @dblclick="dirEnter"
+                         @keydown.enter="dirEnter"
+                         @keydown.exact.backspace="dirBack"
+                         @keydown.f2="renameOpen(item, index)"
+                         @keydown.meta.delete="removeFile(item)"
+                         @keydown.prevent.up="moveFocus('up')"
+                         @keydown.prevent.down="moveFocus('down')">
+                        <div class="item icon">
+                            <img :src="getFileIcon(item)" alt="">
+                        </div>
+                        <div class="item name">
+                            <div v-show="renameItem.index !== index">{{ item.name }}</div>
+                            <input v-model="renameItem.name"
+                                   v-show="renameItem.index === index && item.name !== '..'"
+                                   type="text"
+                                   tabindex="0"
+                                   ref="rename-input"
+                                   class="rename-input no-outline no-border no-padding"
+                                   :placeholder="item.oldname"
+                                   @blur="renameClose(index)"
+                                   @click.stop=""
+                                   @dblclick.stop=""
+                                   @keydown.esc="renameCancel(index)"
+                                   @keydown.stop.delete=""
+                                   @keydown.stop.up=""
+                                   @keydown.stop.down=""
+                                   @keydown.stop.alt.r=""
+                                   @keydown.stop.enter="$refs['rename-input'][index].blur()">
+                        </div>
+                        <div v-if="item.name !== '..'" class="item size">{{ fileSize(item) }}</div>
+                        <div v-if="item.name !== '..'" class="item date">{{ fileCreatedTime(item.date) }}</div>
+                        <div v-if="item.name !== '..'" class="item owner">{{ item.owner }}</div>
+                        <div v-if="item.name !== '..'" class="item group">{{ item.group }}</div>
+                        <!-- 右键菜单 -->
+                        <menu-list v-if="item.name !== '..'"
+                                   action="local"
+                                   :listItem="item"
+                                   @click="openMenu = index"
+                                   @close="selectFile(index)"
+                                   @download="download(item)"
+                                   @remove="removeFile(item)"
+                                   @rename="renameOpen(item, index)"/>
                     </div>
-                    <div class="item name">
-                        <div v-show="renameItem.index !== index">{{ item.name }}</div>
-                        <input v-model="renameItem.name"
-                               v-show="renameItem.index === index && item.name !== '..'"
-                               type="text"
-                               tabindex="0"
-                               ref="rename-input"
-                               class="rename-input no-outline no-border no-padding"
-                               :placeholder="item.oldname"
-                               @blur="renameClose(index)"
-                               @click.stop=""
-                               @dblclick.stop=""
-                               @keydown.esc="renameCancel(index)"
-                               @keydown.stop.delete=""
-                               @keydown.stop.up=""
-                               @keydown.stop.down=""
-                               @keydown.stop.alt.r=""
-                               @keydown.stop.enter="$refs['rename-input'][index].blur()">
-                    </div>
-                    <div v-if="item.name !== '..'" class="item size">{{ fileSize(item) }}</div>
-                    <div v-if="item.name !== '..'" class="item date">{{ fileCreatedTime(item.date) }}</div>
-                    <div v-if="item.name !== '..'" class="item owner">{{ item.owner }}</div>
-                    <div v-if="item.name !== '..'" class="item group">{{ item.group }}</div>
-                    <!-- 右键菜单 -->
-                    <menu-list v-if="item.name !== '..'"
-                               action="local"
-                               :listItem="item" 
-                               @click="openMenu = index"
-                               @close="selectFile(index)"
-                               @download="download(item)"
-                               @remove="removeFile(item)"
-                               @rename="renameOpen(item, index)"/>
                 </div>
             </q-scroll-area>
         </div>
@@ -328,7 +330,7 @@ export default {
         }
     },
     created() {
-        // this.la()
+        this.la()
     }
 }
 </script>

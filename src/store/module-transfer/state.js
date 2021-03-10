@@ -1,5 +1,6 @@
 const state = {
-    list: new Map(),
+    list: {},
+    listener: '',
 }
 
 export default function () {

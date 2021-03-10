@@ -1,19 +1,22 @@
 <template>
     <div class="fs-system">
+        <!-- Loading -->
         <q-inner-loading :showing="loading" style="z-index: 100">
             <q-spinner-gears size="50px" color="primary" />
         </q-inner-loading>
+        <!-- 文件系统 - 控制栏 -->
         <div class="fs-control flex">
-            <input class="pwd-input" type="text" v-model.trim="pwdInput" 
+            <input class="pwd-input" type="text" v-model.trim="pwdInput"
                    @keydown.enter="getFileList(null, pwdInput)">
             <q-space/>
-            <button type="button" class="btn-enter" @click="getFileList(null, pwdInput)">
+            <button type="button" v-ripple class="btn-enter" @click="getFileList(null, pwdInput)">
                 <q-icon name="chevron_right"/>
             </button>
-            <button type="button" class="btn-enter" @click="getFileList('.')">
+            <button type="button" v-ripple class="btn-enter" @click="getFileList('.')">
                 <q-icon name="refresh"/>
             </button>
         </div>
+        <!-- 文件系统 - 标题栏 -->
         <div class="fs-head">
             <div class="item select-all"></div>
             <div class="item name">文件名称</div>
@@ -22,69 +25,72 @@
             <div class="item owner">所有者</div>
             <div class="item group">群组</div>
         </div>
+        <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
             <q-scroll-area class="full-height">
-                <!-- File .. -->
-                <div v-show="pwd !== '/'"
-                     class="fs-item" tabindex="0" 
-                     @dblclick="getFileList('..')"
-                     @keydown.exact.enter="getFileList('..')">
-                    <div class="item icon">
-                        <img src="~/assets/sftp-icons/folder-other.svg" alt="">
+                <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
+                    <!-- File .. -->
+                    <div v-show="pwd !== '/'"
+                         class="fs-item" tabindex="0"
+                         @dblclick="getFileList('..')"
+                         @keydown.exact.enter="getFileList('..')">
+                        <div class="item icon">
+                            <img src="~/assets/sftp-icons/folder-other.svg" alt="">
+                        </div>
+                        <div class="item name">..</div>
                     </div>
-                    <div class="item name">..</div>
-                </div>
-                <!-- File List -->
-                <div v-for="(item, index) in list" 
-                     class="fs-item"
-                     tabindex="0"
-                     :ref="'file-item-' + index"
-                     :key="item.name" 
-                     :class="{ 
+                    <!-- File List -->
+                    <div v-for="(item, index) in list"
+                         class="fs-item"
+                         tabindex="0"
+                         :ref="'file-item-' + index"
+                         :key="item.name"
+                         :class="{
                          hidden: hideItem(item),
                          'focus-temp': openMenu === index || renameItem.name === item.name,
                      }"
-                     @click="fileFocus(index)"
-                     @dblclick="getFileList(item.name)"
-                     @keydown.enter="getFileList(item.name)"
-                     @keydown.exact.delete="removeFile(item)"
-                     @keydown.f2="renameOpen(item, index)"
-                     @keydown.prevent.up="moveFocus('up')"
-                     @keydown.prevent.down="moveFocus('down')">
-                    <div class="item icon">
-                        <img :src="getFileIcon(item)" alt="">
+                         @click="fileFocus(index)"
+                         @dblclick="getFileList(item.name)"
+                         @keydown.enter="getFileList(item.name)"
+                         @keydown.exact.delete="removeFile(item)"
+                         @keydown.f2="renameOpen(item, index)"
+                         @keydown.prevent.up="moveFocus('up')"
+                         @keydown.prevent.down="moveFocus('down')">
+                        <div class="item icon">
+                            <img :src="getFileIcon(item)" alt="">
+                        </div>
+                        <div class="item name">
+                            <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
+                            <input v-model="renameItem.newName"
+                                   v-show="renameItem.name === item.name"
+                                   type="text"
+                                   tabindex="0"
+                                   :ref="'rename-input-' + index"
+                                   class="rename-input no-outline no-border no-padding"
+                                   :placeholder="item.name"
+                                   @blur="renameClose(index)"
+                                   @click.stop=""
+                                   @dblclick.stop=""
+                                   @keydown.esc="renameCancel(index)"
+                                   @keydown.stop.delete=""
+                                   @keydown.stop.up=""
+                                   @keydown.stop.down=""
+                                   @keydown.stop.alt.r=""
+                                   @keydown.stop.enter="$refs[`rename-input-${index}`][0].blur()">
+                        </div>
+                        <div class="item size">{{ fileSize(item) }}</div>
+                        <div class="item date">{{ fileCreatedTime(item.date) }}</div>
+                        <div class="item owner">{{ item.owner }}</div>
+                        <div class="item group">{{ item.group }}</div>
+                        <!-- 右键菜单 -->
+                        <menu-list action="remote"
+                                   :listItem="item"
+                                   @click="openMenu = index"
+                                   @close="fileFocus(index)"
+                                   @download="download(item)"
+                                   @rename="renameOpen(item, index)"
+                                   @remove="removeFile(item)"/>
                     </div>
-                    <div class="item name">
-                        <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
-                        <input v-model="renameItem.newName"
-                               v-show="renameItem.name === item.name"
-                               type="text"
-                               tabindex="0"
-                               :ref="'rename-input-' + index"
-                               class="rename-input no-outline no-border no-padding"
-                               :placeholder="item.name"
-                               @blur="renameClose(index)"
-                               @click.stop=""
-                               @dblclick.stop=""
-                               @keydown.esc="renameCancel(index)"
-                               @keydown.stop.delete=""
-                               @keydown.stop.up=""
-                               @keydown.stop.down=""
-                               @keydown.stop.alt.r=""
-                               @keydown.stop.enter="$refs[`rename-input-${index}`][0].blur()">
-                    </div>
-                    <div class="item size">{{ fileSize(item) }}</div>
-                    <div class="item date">{{ fileCreatedTime(item.date) }}</div>
-                    <div class="item owner">{{ item.owner }}</div>
-                    <div class="item group">{{ item.group }}</div>
-                    <!-- 右键菜单 -->
-                    <menu-list action="remote"
-                               :listItem="item"
-                               @click="openMenu = index"
-                               @close="fileFocus(index)"
-                               @download="download(item)"
-                               @rename="renameOpen(item, index)"
-                               @remove="removeFile(item)"/>
                 </div>
             </q-scroll-area>
         </div>
@@ -93,12 +99,13 @@
 
 <script>
 /**
- * 继承自 Linux 思想，所有都是文件
+ * Linux 思想，一切皆文件
  */
-import { uid } from 'quasar'
+import { throttle, uid } from 'quasar'
 import fs from 'fs'
 import path from 'path'
-import menuList from '../menuList'
+import menuList from 'src/pages/sftp/menuList'
+import SFTP from 'src/core/sftp'
 
 const Client = require('ssh2').Client
 
@@ -114,9 +121,9 @@ export default {
             // 全选
             selectAll: false,
             // 当前所在目录
-            pwd: '',
+            pwd: '/',
             // pwd 输入框
-            pwdInput: '',
+            pwdInput: '/',
             list: [],
             loading: false,
             selected: null,
@@ -137,33 +144,6 @@ export default {
         fileSize() {
             // 只有文件类型才有文件大小概念
             return item => item.type === 'd' ? '-' : this.tools.formatFlow(item.size, 1024, 'B', 1024, 0)
-        },
-        listFormat() {
-            return list => {
-                const arr = []
-                list.forEach(item => {
-                    const { size, atime } = item.attrs
-                    const longnameArr = item.longname.split(' ').filter(tempItem => tempItem)
-                    const [ permission, childNum, owner, group ] = longnameArr
-                    arr.push({
-                        // 文件名称
-                        name: item.filename,
-                        // 文件类型
-                        type: permission.substring(0, 1),
-                        // 创建日期
-                        date: atime,
-                        // 文件数量
-                        childNum,
-                        // 所有者
-                        owner,
-                        // 所在群组
-                        group,
-                        // 文件大小
-                        size,
-                    })
-                })
-                return arr
-            }
         },
         getFileIcon() {
             return item => {
@@ -201,24 +181,34 @@ export default {
         },
     },
     methods: {
+        async sftpInit() {
+            this.loading = true
+            this.sessionInfo = this.$store.state.session.active.params
+            this.sftp = new SFTP()
+            await this.sftp.init(this.sessionInfo)
+            this.getFileList('/srun3/www/srun_loginweb/download')
+        },
         // 下载
         async download(item) {
-            this.transferId = uid()
-            // 初始化传输任务
-            this.$store.commit('transfer/TASK_INIT', {
-                id: this.transferId,
-                action: 'download',
-                tag: this.$store.state.session.active,
-            })
-            // 创建下载任务
-            await this.createDownloadTask({
-                id         : this.transferId,
-                remotePath : this.pwd, 
-                localPath  : path.join('/Users/xingrong/Downloads'), 
-                fileName   : item.name, 
-                fileSize   : item.size,
-                isDir      : item.type === 'd', 
-            })
+            this.$store.commit('transfer/TASK_INIT', this.$store.state.session.active.id)
+
+            await this.sftp.download(
+                path.join(this.pwd, item.name),
+                path.join('/Users/xingrong/Downloads', item.name),
+                this.downloadProgress,
+            )
+
+            this.$store.commit('transfer/TASK_CLOSE')
+        },
+        // 更新下载进度
+        downloadProgress(action, params) {
+            if (action === 'download') {
+                const { remotePath, saved, total } = params
+                this.$store.commit('transfer/TASK_UPDATE', { remotePath, saved, total })
+            }
+            if (action === 'finish') {
+                this.$store.commit('transfer/TASK_FINISH')
+            }
         },
         // 重命名开始
         renameOpen(item, index) {
@@ -249,7 +239,7 @@ export default {
             }
             // 重命名
             this.loading = true
-            this.sftpRename()
+            this.sftp.rename(path.join(this.pwd, this.renameItem.name), path.join(this.pwd, this.renameItem.newName))
                 .then(() => {
                     this.getFileList('.', null, this.renameItem.newName)
                 })
@@ -271,7 +261,7 @@ export default {
                 message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
                 confirm: () => {
                     this.loading = true
-                    this.sftpRm(item)
+                    this.sftp.rm(path.join(this.pwd, item.name))
                         .then(() => {
                             this.getFileList('.')
                         })
@@ -286,16 +276,16 @@ export default {
         // 读取目录下文件列表
         getFileList(dirName, pathName, focusFile) {
             this.loading = true
-            
-            const newPath = pathName || path.join(this.pwd, dirName)
 
-            this.sftpList(newPath)
+            const cwd = pathName || path.join(this.pwd, dirName)
+
+            this.sftp.list(cwd)
                 .then(list => {
-                    this.list = this.listFormat(list)
+                    this.list = list
                     // 更新最后访问目录
-                    this.pwd = newPath
+                    this.pwd = cwd
                     // 若指定聚焦文件
-                    if (typeof focusFile === 'string') {
+                    if (focusFile) {
                         this.list.forEach((item, index) => {
                             if (item.name === focusFile) this.selected = index
                         })
@@ -336,7 +326,7 @@ export default {
             if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
             this.fileFocus()
         },
-        // SFTP 文件列表
+        // SftpJs 文件列表
         async sftpList(cwd) {
             const conn = new Client()
             return new Promise((resolve, reject) => {
@@ -346,7 +336,6 @@ export default {
                             if (err) return reject(err)
                             sftp.readdir(cwd, (err, list) => {
                                 if (err) return reject(err)
-                                console.log(list);
                                 resolve(list)
                                 conn.end()
                             })
@@ -356,50 +345,7 @@ export default {
                     .connect(this.sessionInfo)
             })
         },
-        // SFTP 删除文件
-        async sftpRm(item) {
-            const conn = new Client()
-            const mode = item.type === 'd' ? 'rmdir' : 'unlink'
-            const file = path.join(this.pwd, item.name)
-            return new Promise((resolve, reject) => {
-                conn
-                    .on('ready', () => {
-                        conn.sftp((err, sftp) => {
-                            if (err) return reject(err)
-                            sftp[rmMode](file, err => {
-                                if (err) return reject(err)
-                                resolve()
-                                conn.end()
-                            })
-                        })
-                    })
-                    .on('error', () => reject())
-                    .connect(this.sessionInfo)
-            })
-        },
-        // SFTP 文件重命名
-        async sftpRename() {
-            const conn = new Client()
-            const file = path.join(this.pwd, this.renameItem.name)
-            const dist = path.join(this.pwd, this.renameItem.newName)
-
-            return new Promise((resolve, reject) => {
-                conn
-                    .on('ready', () => {
-                        conn.sftp((err, sftp) => {
-                            if (err) return reject(err)
-                            sftp.rename(file, dist, err => {
-                                if (err) return reject(err)
-                                resolve()
-                                conn.end()
-                            })
-                        })
-                    })
-                    .on('error', () => reject())
-                    .connect(this.sessionInfo)
-            })
-        },
-        // SFTP 文件下载
+        // SftpJs 文件下载
         async sftpDownload(params) {
             const { remote, local, isDir, progress } = params
 
@@ -434,9 +380,9 @@ export default {
             // find . -print 2>/dev/null|awk '!/\.$/ {for (i=1;i<NF;i++){d=length($i);if ( d < 50 && i != 1 )d=2;printf("%"d"s","|")}print "---"$NF}' FS='/'
             const {
                 id,
-                remotePath, 
-                localPath, 
-                fileName, 
+                remotePath,
+                localPath,
+                fileName,
                 fileSize,
                 isDir,
             } = params
@@ -479,9 +425,9 @@ export default {
                 for(const item of fileList) {
                     task.list.push(await this.createDownloadTask({
                         id,
-                        remotePath : fileRemotePath, 
-                        localPath  : fileLocalPath, 
-                        fileName   : item.filename, 
+                        remotePath : fileRemotePath,
+                        localPath  : fileLocalPath,
+                        fileName   : item.filename,
                         fileSize   : item.attrs.size,
                         isDir      : item.longname.substring(0, 1) === 'd',
                     }))
@@ -490,8 +436,9 @@ export default {
         },
     },
     created() {
-        this.sessionInfo = this.$store.state.session.active.params
-        this.getFileList('/')
+        // 下载进度事件 节流
+        // this.downloadProgress = throttle(this.downloadProgress, 100)
+        this.sftpInit()
     }
 }
 </script>
