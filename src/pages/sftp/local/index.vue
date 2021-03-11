@@ -1,22 +1,25 @@
 <template>
     <div class="fs-system">
+        <!-- Loading -->
         <q-inner-loading :showing="loading" style="z-index: 100">
             <q-spinner-gears size="50px" color="primary" />
         </q-inner-loading>
+        <!-- 文件系统 - 控制栏 -->
         <div class="fs-control">
-            <input class="pwd-input" type="text" v-model.trim="pwd"
+            <input class="pwd-input" type="text"
                    :spellcheck="false"
-                   @keydown.enter="la"
-                   @blur="pwd = lastPwd">
+                   v-model.trim="pwdInput"
+                   @keydown.enter="getFileList(null, pwdInput)">
             <div class="btn-group">
-                <button type="button" class="btn-enter" @click="la">
+                <button type="button" v-ripple class="btn-enter" @click="getFileList(null, pwdInput)">
                     <q-icon name="chevron_right"/>
                 </button>
-                <button type="button" class="btn-enter" @click="la">
+                <button type="button" v-ripple class="btn-enter" @click="getFileList('.')">
                     <q-icon name="refresh"/>
                 </button>
             </div>
         </div>
+        <!-- 文件系统 - 标题栏 -->
         <div class="fs-head">
             <div class="item select-all"></div>
             <div class="item name">文件名称</div>
@@ -25,38 +28,51 @@
             <div class="item owner">所有者</div>
             <div class="item group">群组</div>
         </div>
+        <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
             <q-scroll-area class="full-height">
                 <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
+                    <!-- File .. -->
+                    <div v-show="pwd !== '/'"
+                         class="fs-item" tabindex="0"
+                         @click="selected = null"
+                         @dblclick="getFileList('..')"
+                         @keydown.exact.enter="getFileList('..')">
+                        <div class="item icon">
+                            <img src="~/assets/sftp-icons/folder-other.svg" alt="">
+                        </div>
+                        <div class="item name">..</div>
+                    </div>
+                    <!-- File List -->
                     <div v-for="(item, index) in list"
                          class="fs-item"
                          tabindex="0"
-                         :ref="'file-' + index"
-                         :key="index"
+                         :ref="'file-item-' + index"
+                         :key="item.name"
                          :class="{
+                             selected: selected === index,
                              hidden: hideItem(item),
-                             'focus-temp': openMenu === index || renameItem.index === index,
+                             'focus-temp': openMenu === item.name || renameItem.index === index,
                          }"
-                         @click="selectFile(index)"
-                         @dblclick="dirEnter"
-                         @keydown.enter="dirEnter"
-                         @keydown.exact.backspace="dirBack"
+                         @click="fileFocus(index)"
+                         @dblclick="dirEnter(item)"
+                         @keydown.enter="dirEnter(item)"
+                         @keydown.exact.delete="removeFile(item)"
                          @keydown.f2="renameOpen(item, index)"
-                         @keydown.meta.delete="removeFile(item)"
                          @keydown.prevent.up="moveFocus('up')"
                          @keydown.prevent.down="moveFocus('down')">
                         <div class="item icon">
                             <img :src="getFileIcon(item)" alt="">
                         </div>
                         <div class="item name">
-                            <div v-show="renameItem.index !== index">{{ item.name }}</div>
-                            <input v-model="renameItem.name"
-                                   v-show="renameItem.index === index && item.name !== '..'"
+                            <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
+                            <input v-model="renameItem.newName"
+                                   v-show="renameItem.name === item.name"
                                    type="text"
                                    tabindex="0"
-                                   ref="rename-input"
+                                   :ref="'rename-input-' + index"
                                    class="rename-input no-outline no-border no-padding"
-                                   :placeholder="item.oldname"
+                                   :placeholder="item.name"
                                    @blur="renameClose(index)"
                                    @click.stop=""
                                    @dblclick.stop=""
@@ -65,21 +81,20 @@
                                    @keydown.stop.up=""
                                    @keydown.stop.down=""
                                    @keydown.stop.alt.r=""
-                                   @keydown.stop.enter="$refs['rename-input'][index].blur()">
+                                   @keydown.stop.enter="$refs[`rename-input-${index}`][0].blur()">
                         </div>
-                        <div v-if="item.name !== '..'" class="item size">{{ fileSize(item) }}</div>
-                        <div v-if="item.name !== '..'" class="item date">{{ fileCreatedTime(item.date) }}</div>
-                        <div v-if="item.name !== '..'" class="item owner">{{ item.owner }}</div>
-                        <div v-if="item.name !== '..'" class="item group">{{ item.group }}</div>
+                        <div class="item size">{{ fileSize(item) }}</div>
+                        <div class="item date">{{ fileCreatedTime(item.date) }}</div>
+                        <div class="item owner">{{ item.owner }}</div>
+                        <div class="item group">{{ item.group }}</div>
                         <!-- 右键菜单 -->
-                        <menu-list v-if="item.name !== '..'"
-                                   action="local"
+                        <menu-list action="local"
                                    :listItem="item"
-                                   @click="openMenu = index"
-                                   @close="selectFile(index)"
-                                   @download="download(item)"
-                                   @remove="removeFile(item)"
-                                   @rename="renameOpen(item, index)"/>
+                                   @show="selected = openMenu = item.name"
+                                   @close="fileFocus(index)"
+                                   @upload="upload(item)"
+                                   @rename="renameOpen(item, index)"
+                                   @remove="removeFile(item)"/>
                     </div>
                 </div>
             </q-scroll-area>
@@ -91,89 +106,55 @@
 /**
  * 本地文件系统
  */
-import fs from 'fs'
 import path from 'path'
-import { exec } from 'child_process'
-import menuList from '../menuList'
+import menuList from 'src/pages/sftp/menuList'
+import SFTP from 'src/core/sftp'
 
 export default {
-    name: 'SFTPRemote',
+    name: 'SFTPLocal',
     components: {
         'menu-list': menuList,
     },
     data() {
         return {
-            ssh: '',
             // 是否显示隐藏项目
-            showHideItem: false,
+            showHideFile: true,
             // 全选
             selectAll: false,
-            // pwd
+            // 当前所在目录
             pwd: '/',
-            // 最后一次有效 pwd
-            lastPwd: '',
+            // pwd 输入框
+            pwdInput: '/',
+            // 文件列表
             list: [],
+            // loading 状态
             loading: false,
-            selected: 0,
+            // 当前 Focus 文件
+            selected: null,
+            // 当前开启右键菜单的文件名称
             openMenu: null,
+            // 重命名项目
             renameItem: {},
         }
+    },
+    watch: {
+        pwd(newVal) {
+            this.pwdInput = newVal
+        },
     },
     computed: {
         hideItem() {
             // 文件名以 . 开头为隐藏文件
-            return item => item.name.startsWith('.') && item.name !== '..'
+            return item => item.name.startsWith('.') && !this.showHideFile
         },
         fileSize() {
             // 只有文件类型才有文件大小概念
             return item => item.type === 'd' ? '-' : this.tools.formatFlow(item.size, 1024, 'B', 1024, 0)
         },
-        listFormat() {
-            return stdout => {
-                const list = []
-                stdout.split('\n').forEach(item => {
-                    const itemArr = item.split(' ').filter(tempItem => tempItem)
-                    // 忽略 total
-                    if (itemArr.length < 3) return
-                    // 忽略 .
-                    if (itemArr[9] === '.') return
-                    // 月份补 0
-                    if (itemArr[5]) itemArr[5] = this.tools.add0(itemArr[5])
-                    // 日期补 0
-                    if (itemArr[6]) itemArr[6] = this.tools.add0(itemArr[6])
-                    // push 到 list 数组
-                    list.push({
-                        // 文件类型
-                        type    : itemArr[0].substring(0, 1),
-                        // 文件数量
-                        childNum: itemArr[1],
-                        // 所有者
-                        owner   : itemArr[2],
-                        // 所在群组
-                        group   : itemArr[3],
-                        // 文件大小
-                        size    : itemArr[4],
-                        // 创建日期
-                        date    : `${itemArr[8]}-${itemArr[5]}-${itemArr[6]} ${itemArr[7]}`,
-                        // 文件名称
-                        name    : itemArr[9],
-                        // 链接地址
-                        link    : itemArr[11] || ''
-                    })
-                })
-                // drwxr-xr-x  0 root  wheel   640  1  1 16:00:00 2020 ..
-                if (!list.length) list.push({
-                    name: '..',
-                })
-                return list
-            }
-        },
         getFileIcon() {
             return item => {
                 const { type, name } = item
                 const suffix = type === '-' ? name.split('.').pop() : ''
-                // ..
-                if (name === '..') return require('src/assets/sftp-icons/folder-other.svg')
                 // 目录
                 if (type === 'd')  return require('src/assets/sftp-icons/folder.svg')
                 // 链接
@@ -193,7 +174,7 @@ export default {
                 if (suffix === 'md')   return require('src/assets/sftp-icons/readme.svg')
                 if (suffix === 'sh')   return require('src/assets/sftp-icons/console.svg')
                 if (suffix === 'go')   return require('src/assets/sftp-icons/go.svg')
-                if (suffix === 'php')  return require('src/assets/sftp-icons/php.svg')
+                if (suffix === 'php')   return require('src/assets/sftp-icons/php.svg')
                 if (['png', 'jpg', 'jpeg', 'gif', 'tiff', 'ico', 'icns'].includes(suffix)) return require('src/assets/sftp-icons/image.svg')
                 if (['ini', 'conf'].includes(suffix)) return require('src/assets/sftp-icons/settings.svg')
                 if (['tar', 'gz', 'tgz', 'zip', 'rar', '7z'].includes(suffix)) return require('src/assets/sftp-icons/zip.svg')
@@ -202,66 +183,162 @@ export default {
             }
         },
         fileCreatedTime() {
-            return time => this.tools.formatDate(new Date(time).getTime(), 'MM-dd HH:mm')
+            return time => this.tools.formatDate(time, 'MM-dd HH:mm')
         },
     },
     methods: {
-        // 列出当前路径文件列表
-        la(focusFile) {
+        // SFTP 初始化
+        async sftpInit() {
             this.loading = true
-            exec('ls -laT', { cwd: this.pwd }, (error, stdout, stderr) => {
-                this.loading = false
-                if (stderr) {
-                    return this.tools.confirm(stderr)
-                }
-                this.list = this.listFormat(stdout)
-                this.lastPwd = this.pwd
-                this.selected = 0
-                // 若指定聚焦文件
-                if (typeof focusFile === 'string') {
-                    for (let index = 0; index < this.list.length; index += 1) {
-                        if (this.list[index].name === focusFile) {
-                            this.selected = index
-                            break
-                        }
-                    }
-                }
-                this.$nextTick(() => {
-                    this.fileFocus()
+            this.sessionInfo = this.$store.state.session.active.params
+            this.sftp = new SFTP('local')
+            await this.sftp.init(this.sessionInfo)
+            this.getFileList('/')
+        },
+        // 进入目录
+        dirEnter(item) {
+            if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
+        },
+        // 上传
+        upload(item) {
+            const remotePath = path.join('/root', item.name)
+
+            this.sftp.remoteStat(remotePath)
+                .then(() => {
+                    this.tools.confirm({
+                        message: `${item === '-' ? '文件' : '目录'} ${remotePath} 已存在，是否进行覆盖？`,
+                        confirm: () => {
+                            this.sftpUpload(item)
+                        },
+                        cancel: () => {
+                        },
+                    })
                 })
-            })
+                .catch(() => {
+                    this.sftpUpload(item)
+                })
         },
-        // 目录进入
-        dirEnter() {
-            const { name } = this.list[this.selected]
-            this.pwd = (() => {
-                const arr = this.pwd.split('/').filter(arrItem => arrItem)
-                name === '..' ? arr.pop() : arr.push(name)
-                return '/' + arr.join('/')
-            })()
-            this.la()
+        // SFTP 上传
+        async sftpUpload(item) {
+            this.$store.commit('transfer/TASK_INIT', 'upload')
+
+            await this.sftp.upload(
+                path.join('/Users/xingrong/Downloads/', item.name),
+                path.join(this.pwd, item.name),
+                this.progressStep,
+            )
+
+            this.notify.succeed(`${item.type === '-' ? '文件' : '目录'} ${item.name} 上传成功`)
+            this.$store.commit('transfer/TASK_CLOSE')
         },
-        // 目录返回
-        dirBack() {
-            this.pwd = (() => {
-                const arr = this.pwd.split('/').filter(arrItem => arrItem)
-                arr.pop()
-                return '/' + arr.join('/')
-            })()
-            this.la()
+        // 更新传输进度
+        progressStep(action, params) {
+            if (action === 'upload') {
+                const { localPath, saved, total } = params
+                this.$store.commit('transfer/TASK_UPDATE', { localPath, saved, total })
+            }
+            if (action === 'finish') {
+                this.$store.commit('transfer/TASK_FINISH')
+            }
         },
-        // 下载
-        download(item) {
+        // 重命名开始
+        renameOpen(item, index) {
+            this.renameItem = this.tools.clone(item)
+            this.renameItem.newName = this.renameItem.name
+            // TODO: nextTick 无效
+            setTimeout(() => this.$refs[`rename-input-${index}`][0].focus(), 100)
         },
-        // 选择文件
-        selectFile(index) {
-            this.openMenu = null
-            this.selected = index
+        // 重命名结束
+        renameClose(index) {
+            // 新名称与旧名称相同 或 新名称为空 相当于取消重命名
+            if (this.renameItem.name === this.renameItem.newName || !this.renameItem.newName) {
+                this.renameItem = {}
+                this.fileFocus()
+                return
+            }
+            // 新名称存在
+            if (this.list.filter(item => item.name === this.renameItem.newName).length === 1) {
+                // TODO: 由 keydown enter 触发的事件，会影响 confirm 组件
+                return setTimeout(() => {
+                    this.tools.confirm({
+                        message: `已存在文件 ${this.renameItem.newName}`,
+                        confirm: () => {
+                            setTimeout(() => this.$refs[`rename-input-${index}`][0].focus(), 100)
+                        }
+                    })
+                }, 500);
+            }
+            // 重命名
+            this.loading = true
+        },
+        // 重命名取消
+        renameCancel(index) {
+            this.renameItem = {}
+            this.$refs[`rename-input-${index}`][0].blur()
             this.fileFocus()
         },
-        // 文件聚焦
-        fileFocus() {
-            this.$refs[`file-${this.selected}`][0].focus()
+        // 删除文件
+        removeFile(item) {
+            // TODO: 弹出删除对话框时，文件 Focus 状态应使用 class 补充
+            this.tools.confirm({
+                message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
+                confirm: () => {
+                    this.loading = true
+                    this.sftp.rm(path.join(this.pwd, item.name))
+                        .then(() => {
+                            this.getFileList('.')
+                        })
+                        .catch(err => {
+                            this.tools.confirm(err)
+                            this.loading = false
+                        })
+                },
+                cancel: () => {},
+            })
+        },
+        // 读取目录下文件列表
+        getFileList(dirName, pathName, focusFile) {
+            this.loading = true
+
+            const cwd = pathName || path.join(this.pwd, dirName)
+
+            this.sftp.list(cwd)
+                .then(list => {
+                    this.list = list
+                    // 更新最后访问目录
+                    this.pwd = cwd
+                    // 若指定聚焦文件
+                    if (focusFile) {
+                        this.list.forEach((item, index) => {
+                            if (item.name === focusFile) this.selected = index
+                        })
+                    } else {
+                        // 默认不选择元素
+                        this.selected = null
+                        document.activeElement.blur()
+                    }
+                    // 清除重命名元素
+                    this.renameItem = {}
+                    this.fileFocus()
+                    this.loading = false
+                })
+                .catch(err => {
+                    this.loading = false
+                    this.pwdInput = this.pwd
+                    this.tools.confirm(err)
+                })
+        },
+        // 选择文件
+        fileFocus(index = this.selected) {
+            this.selected = index
+            this.openMenu = null
+            this.$nextTick(() => {
+                try {
+                    // TODO: 使用 this.$refs['file-item'][index] 的形式有 refs 数组索引错位的问题
+                    this.$refs[`file-item-${index}`][0].focus()
+                } catch (error) {
+                }
+            })
         },
         // 移动聚焦元素
         moveFocus(action) {
@@ -269,70 +346,12 @@ export default {
             if (action === 'down' && this.selected !== this.list.length - 1) this.selected += 1
             // 若不显示隐藏文件，判断当前 selected 元素是否为隐藏文件
             // 若为隐藏文件，则递归移动聚焦元素
-            if (!this.showHideItem && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
-            // 文件聚焦
+            if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
             this.fileFocus()
         },
-        // 重命名开始
-        renameOpen(item, index) {
-            this.renameItem = this.tools.clone(item)
-            this.renameItem.oldname = this.renameItem.name
-            this.renameItem.index = index
-            // FIXME: nextTick 无效
-            setTimeout(() => this.$refs['rename-input'][index].focus(), 100)
-        },
-        // 重命名结束
-        renameClose(index) {
-            // 新名称与旧名称相同
-            if (this.renameItem.name === this.renameItem.oldname) {
-                this.renameItem = {}
-                this.fileFocus()
-                return
-            }
-            // 新名称存在
-             if (this.list.filter(item => item.name === this.renameItem.name).length === 1) {
-                // FIXME: 由 keydown enter 触发的事件，会影响 confirm 组件
-                return setTimeout(() => {
-                    this.tools.confirm({
-                        message: `已存在文件 ${this.renameItem.name}`,
-                        confirm: () => {
-                            setTimeout(() => this.$refs['rename-input'][index].focus(), 100)
-                        }
-                    })
-                }, 100);
-            }
-            // 重命名
-            this.loading = true
-            fs.rename(path.join(this.pwd, this.renameItem.oldname), path.join(this.pwd, this.renameItem.name), err => {
-                this.loading = false
-                if (err) return this.tools.confirm(err)
-                this.la(this.renameItem.name)
-                this.renameItem = {}
-            });
-        },
-        // 重命名取消
-        renameCancel(index) {
-            this.renameItem.name = this.renameItem.oldname
-            this.$refs['rename-input'][index].blur()
-        },
-        // 删除文件
-        removeFile(item) {
-            this.tools.confirm({
-                message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
-                confirm: () => {
-                    this.loading = true
-                    fs.rmdir(path.join(this.pwd, item.name), { recursive: true }, err => {
-                        this.loading = false
-                        if (err) return this.tools.confirm(err)
-                        this.la()
-                    })
-                },
-                cancel: () => {},
-            })
-        }
     },
     created() {
-        this.la()
+        this.sftpInit()
     }
 }
 </script>

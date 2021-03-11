@@ -1,10 +1,11 @@
 import store from 'src/store'
 import { uid } from 'quasar'
 
-export function TASK_INIT(state) {
+export function TASK_INIT(state, action) {
     const { id } = store.state.session.active
 
     state.list[id] = {
+        action,
         saved: 0,
         total: 0,
         percent: 0,

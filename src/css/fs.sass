@@ -9,6 +9,13 @@
             background: rgba($dark, .1)
         .pwd-input:focus
             background: rgba($primary, .3)
+    .fs-item
+        &.selected
+            background: rgba($dark, .5)
+            color: #FFFFFF
+        &:focus,&.focus-temp
+            background: $primary
+            color: #FFFFFF
 
 
 .body--dark
@@ -19,6 +26,13 @@
         .btn-enter:hover
             background: rgba(#FFFFFF, .1)
         .pwd-input:focus
+            background: $primary
+            color: #FFFFFF
+    .fs-item
+        &.selected
+            background: rgba(#FFFFFF, .5)
+            color: #FFFFFF
+        &:focus,&.focus-temp
             background: $primary
             color: #FFFFFF
 
@@ -97,6 +111,3 @@
     outline: none
     &:hover
         background: rgba($primary, .1)
-    &:focus,&.focus-temp
-        background: $primary
-        color: #FFFFFF

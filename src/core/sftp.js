@@ -1,11 +1,12 @@
 import Session from 'src/core/session'
 
 const fs = require('fs')
-const { join, parse } = require('path')
+const { join } = require('path')
 
 class SFTP extends Session {
-    constructor() {
+    constructor(action) {
         super()
+        this.action = action
     }
 
     async init(sessionInfo) {
@@ -20,44 +21,27 @@ class SFTP extends Session {
     }
 
     async list(cwd) {
-        return new Promise((resolve, reject) => {
-            this.sftp.readdir(cwd, (err, list) => {
-                if (err) return reject(err)
-                resolve(this.listFormat(list))
-            })
-        })
+        if (this.action === 'remote') return await this.remoteList(cwd)
+        if (this.action === 'local')  return await this.localList(cwd)
     }
 
-    async rm(remotePath) {
-        return new Promise((resolve, reject) => {
-            const cmd = `rm -rf "${remotePath}"`
-            this.conn.exec(cmd, err => {
-                if (err) return reject(err)
-                resolve()
-            })
-        })
+    async rm(pathName) {
+        if (this.action === 'remote') return await this.remoteRm(pathName)
+        if (this.action === 'local')  return await this.localRm(pathName)
     }
 
-    async rename(remotePathOld, remotePathNew) {
-        return new Promise((resolve, reject) => {
-            this.sftp.rename(remotePathOld, remotePathNew, err => {
-                if (err) return reject(err)
-                resolve()
-            })
-        })
+    async rename(pathOld, pathNew) {
+        if (this.action === 'remote') return await this.remoteRename(pathOld, pathNew)
+        if (this.action === 'local')  return await this.localRename(pathOld, pathNew)
     }
 
-    async stat(remotePath) {
-        return new Promise((resolve, reject) => {
-            this.sftp.stat(remotePath, (err, stats) => {
-                if (err) return reject(err)
-                resolve(stats)
-            })
-        })
+    async stat(pathName) {
+        if (this.action === 'remote') return await this.remoteStat(pathName)
+        if (this.action === 'local')  return await this.localStat(pathName)
     }
 
     async download(remotePath, localPath, progress) {
-        const stats = await this.stat(remotePath)
+        const stats = await this.remoteStat(remotePath)
         const idDir = stats.isDirectory()
 
         if (!idDir) return this.downloadFile(remotePath, localPath, progress)
@@ -100,7 +84,86 @@ class SFTP extends Session {
         }
     }
 
-    listFormat(list) {
+    remoteList(cwd) {
+        return new Promise((resolve, reject) => {
+            this.sftp.readdir(cwd, (err, list) => {
+                if (err) return reject(err)
+                resolve(this.#listFormat(cwd, list))
+            })
+        })
+    }
+
+    remoteRm(pathName) {
+        return new Promise((resolve, reject) => {
+            const cmd = `rm -rf "${pathName}"`
+            this.conn.exec(cmd, err => {
+                if (err) return reject(err)
+                resolve()
+            })
+        })
+    }
+
+    remoteRename(pathOld, PathNew) {
+        return new Promise((resolve, reject) => {
+            this.sftp.rename(pathOld, PathNew, err => {
+                if (err) return reject(err)
+                resolve()
+            })
+        })
+    }
+
+    remoteStat(remotePath) {
+        return new Promise((resolve, reject) => {
+            this.sftp.stat(remotePath, (err, stats) => {
+                if (err) return reject(err)
+                resolve(stats)
+            })
+        })
+    }
+
+    localList(cwd) {
+        return new Promise((resolve, reject) => {
+            fs.readdir(cwd, (err, list) => {
+                if (err) return reject(err)
+                resolve(this.#listFormat(cwd, list))
+            })
+        })
+    }
+
+    localRm(pathName) {
+        return new Promise((resolve, reject) => {
+            fs.rmdir(pathName, { recursive: true }, err => {
+                if (err) return reject(err)
+                resolve()
+            })
+        })
+    }
+
+    localRename(pathOld, PathNew) {
+        return new Promise((resolve, reject) => {
+            fs.rename(pathOld, PathNew, err => {
+                if (err) return reject(err)
+                resolve()
+            })
+        })
+    }
+
+    localStat(pathName) {
+        return new Promise((resolve, reject) => {
+            fs.stat(pathName, (err, stats) => {
+                if (err) return reject(err)
+                resolve(stats)
+            })
+        })
+    }
+
+    #listFormat = (cwd, list) => {
+        if (this.action === 'remote') list = this.remoteListFormat(list)
+        if (this.action === 'local')  list = this.localListFormat(cwd, list)
+        return list
+    }
+
+    remoteListFormat(list) {
         const arr = []
         list.forEach(item => {
             const { size, atime } = item.attrs
@@ -113,7 +176,7 @@ class SFTP extends Session {
                 type: permission.substring(0, 1),
                 // 创建日期
                 date: atime,
-                // 文件数量
+                // 文件数量 包含 . 与 ..
                 fileNum,
                 // 所有者
                 owner,
@@ -124,6 +187,37 @@ class SFTP extends Session {
             })
         })
         return arr
+    }
+
+    localListFormat(cwd, fileList) {
+        const list = []
+
+        for (const filename of fileList) {
+            // FIXME: stat / lstat / fstat
+            const stats = fs.lstatSync(join(cwd, filename))
+
+            let type = ''
+
+            if (stats.isFile())            type = '-'
+            if (stats.isDirectory())       type = 'd'
+            if (stats.isSymbolicLink())    type = 'l'
+            if (stats.isFIFO())            type = 'p'
+            if (stats.isBlockDevice())     type = 'b'
+            if (stats.isCharacterDevice()) type = 'c'
+            if (stats.isSocket())          type = 's'
+
+            list.push({
+                name: filename,
+                type,
+                date: stats.mtime.getTime(),
+                fileNum: stats.nlink,
+                owner: stats.uid,
+                group: stats.gid,
+                size: stats.size,
+            })
+        }
+
+        return list
     }
 }
 

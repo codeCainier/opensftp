@@ -35,6 +35,7 @@
                     <!-- File .. -->
                     <div v-show="pwd !== '/'"
                          class="fs-item" tabindex="0"
+                         @click="selected = null"
                          @dblclick="getFileList('..')"
                          @keydown.exact.enter="getFileList('..')">
                         <div class="item icon">
@@ -49,12 +50,13 @@
                          :ref="'file-item-' + index"
                          :key="item.name"
                          :class="{
-                         hidden: hideItem(item),
-                         'focus-temp': openMenu === index || renameItem.name === item.name,
-                     }"
+                             selected: selected === index,
+                             hidden: hideItem(item),
+                             'focus-temp': openMenu === item.name || renameItem.name === item.name,
+                         }"
                          @click="fileFocus(index)"
-                         @dblclick="item.type === 'd' ? getFileList(item.name) : ''"
-                         @keydown.enter="item.type === 'd' ? getFileList(item.name) : ''"
+                         @dblclick="dirEnter(item)"
+                         @keydown.enter="dirEnter(item)"
                          @keydown.exact.delete="removeFile(item)"
                          @keydown.f2="renameOpen(item, index)"
                          @keydown.prevent.up="moveFocus('up')"
@@ -88,7 +90,7 @@
                         <!-- 右键菜单 -->
                         <menu-list action="remote"
                                    :listItem="item"
-                                   @click="openMenu = index"
+                                   @show="selected = openMenu = item.name"
                                    @close="fileFocus(index)"
                                    @download="download(item)"
                                    @rename="renameOpen(item, index)"
@@ -102,14 +104,11 @@
 
 <script>
 /**
- * Linux 思想，一切皆文件
+ * SFTP Remote / Linux 思想，一切皆文件
  */
-import fs from 'fs'
 import path from 'path'
 import menuList from 'src/pages/sftp/menuList'
 import SFTP from 'src/core/sftp'
-
-const Client = require('ssh2').Client
 
 export default {
     name: 'SFTPRemote',
@@ -119,17 +118,22 @@ export default {
     data() {
         return {
             // 是否显示隐藏项目
-            showHideFile: false,
+            showHideFile: true,
             // 全选
             selectAll: false,
             // 当前所在目录
             pwd: '/',
             // pwd 输入框
             pwdInput: '/',
+            // 文件列表
             list: [],
+            // loading 状态
             loading: false,
+            // 当前 Focus 文件
             selected: null,
+            // 当前开启右键菜单的文件名称
             openMenu: null,
+            // 重命名项目
             renameItem: {},
         }
     },
@@ -187,42 +191,48 @@ export default {
         async sftpInit() {
             this.loading = true
             this.sessionInfo = this.$store.state.session.active.params
-            this.sftp = new SFTP()
+            this.sftp = new SFTP('remote')
             await this.sftp.init(this.sessionInfo)
             this.getFileList('/')
+        },
+        // 进入目录
+        dirEnter(item) {
+            if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
         },
         // 下载
         download(item) {
             const localPath = path.join('/Users/xingrong/Downloads/', item.name)
 
-            try {
-                const stats = fs.statSync(localPath)
-                if (stats) this.tools.confirm({
-                    message: `${item === 'd' ? '目录' : '文件'} ${localPath} 已存在，是否进行覆盖？`,
-                    confirm: () => {
-                        this.sftpDownload(item)
-                    },
-                    cancel: () => {
-                    },
+            this.sftp.localStat(localPath)
+                .then(() => {
+                    this.tools.confirm({
+                        message: `${item === '-' ? '文件' : '目录'} ${localPath} 已存在，是否进行覆盖？`,
+                        confirm: () => {
+                            this.sftpDownload(item)
+                        },
+                        cancel: () => {
+                        },
+                    })
                 })
-            } catch (err) {
-                this.sftpDownload(item)
-            }
+                .catch(() => {
+                    this.sftpDownload(item)
+                })
         },
         // SFTP 下载
         async sftpDownload(item) {
-            this.$store.commit('transfer/TASK_INIT', this.$store.state.session.active.id)
+            this.$store.commit('transfer/TASK_INIT', 'download')
 
             await this.sftp.download(
                 path.join(this.pwd, item.name),
                 path.join('/Users/xingrong/Downloads/', item.name),
-                this.downloadProgress,
+                this.progressStep,
             )
 
+            this.notify.succeed(`${item.type === '-' ? '文件' : '目录'} ${item.name} 下载成功`)
             this.$store.commit('transfer/TASK_CLOSE')
         },
-        // 更新下载进度
-        downloadProgress(action, params) {
+        // 更新传输进度
+        progressStep(action, params) {
             if (action === 'download') {
                 const { remotePath, saved, total } = params
                 this.$store.commit('transfer/TASK_UPDATE', { remotePath, saved, total })
