@@ -10,7 +10,7 @@
                 <remote :key="keys.remote"/>
             </template>
         </q-splitter>
-        <!-- <ssh/> -->
+         <ssh/>
     </page>
 </template>
 
@@ -18,14 +18,14 @@
     import { uid } from 'quasar'
     import local   from './local'
     import remote  from './remote'
-    // import ssh     from 'src/components/ssh'
+    import ssh     from 'src/components/ssh'
 
     export default {
         name: 'SFTP',
         components: {
             local,
             remote,
-            // ssh,
+            ssh,
         },
         data() {
             return {

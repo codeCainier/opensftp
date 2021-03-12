@@ -32,6 +32,6 @@ export default {
         }
     },
     methods: {
-    }
+    },
 };
 </script>

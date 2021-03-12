@@ -1,6 +1,8 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 
+import sftp     from './module-sftp'
+import layout   from './module-layout'
 import setting  from './module-setting'
 import session  from './module-session'
 import transfer from './module-transfer'
@@ -18,6 +20,8 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     modules: {
+        sftp,
+        layout,
         setting,
         session,
         transfer,

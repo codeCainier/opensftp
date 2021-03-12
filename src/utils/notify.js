@@ -3,10 +3,8 @@ import { Notify } from 'quasar'
 export default {
     success(message) {
         Notify.create({
-            message: '成功',
+            message,
             progress: true,
-            caption: message,
-            position: 'top-right',
             color: 'positive',
             icon: 'ion-md-checkmark',
             classes: 'q-notify',
@@ -23,10 +21,8 @@ export default {
     },
     warning(message) {
         Notify.create({
-            message: '警告',
+            message,
             progress: true,
-            caption: message,
-            position: 'top-right',
             color: 'warning',
             icon: 'ion-md-warning',
             classes: 'q-notify',
@@ -43,10 +39,8 @@ export default {
     },
     error(message) {
         Notify.create({
-            message: '失败',
+            message,
             progress: true,
-            caption: message,
-            position: 'top-right',
             color: 'negative',
             icon: 'ion-md-close',
             classes: 'q-notify',
@@ -63,10 +57,8 @@ export default {
     },
     info(message) {
         Notify.create({
-            message: '提示',
+            message,
             progress: true,
-            caption: message,
-            position: 'top-right',
             color: 'danger',
             icon: 'announcement',
             classes: 'q-notify',

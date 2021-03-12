@@ -1,4 +1,4 @@
-import { LocalStorage, Dialog } from 'quasar'
+import { LocalStorage, Dialog, uid } from 'quasar'
 import tools from 'src/utils'
 
 // 会话池 新增会话
@@ -19,7 +19,7 @@ export function SESSION_ADD(state, obj) {
         },
         persistent: true
     }).onOk(name => setData(name))
-    
+
     function setData(name) {
         state.pool.set(sessionKey, {
             name: session ? session.name : name,
@@ -32,7 +32,7 @@ export function SESSION_ADD(state, obj) {
         // 写入 LocalStorage
         LocalStorage.set('sessionPool', [...state.pool])
         // 若存在回调函数则执行回调
-        if (callback) callback(sessionKey)   
+        if (callback) callback(sessionKey)
     }
 }
 
@@ -77,6 +77,6 @@ export function SET_ACTIVE(state, obj) {
 }
 
 // 新增 SSH 会话
-export function SSH_ADD(state, tagId = state.active) {
-    // state.sshMap.set(tagId, uid())
+export function SSH_ADD(state) {
+    state.sshMap.set(state.active.id, uid())
 }

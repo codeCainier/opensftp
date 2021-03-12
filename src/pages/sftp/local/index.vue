@@ -118,7 +118,7 @@ export default {
     data() {
         return {
             // 是否显示隐藏项目
-            showHideFile: true,
+            showHideFile: false,
             // 全选
             selectAll: false,
             // 当前所在目录
@@ -140,6 +140,10 @@ export default {
     watch: {
         pwd(newVal) {
             this.pwdInput = newVal
+            this.$store.commit('sftp/CHANGE_PWD_LOCAL', newVal)
+        },
+        '$store.state.sftp.refreshListenerLocal': function () {
+            this.getFileList('.')
         },
     },
     computed: {
@@ -193,42 +197,42 @@ export default {
             this.sessionInfo = this.$store.state.session.active.params
             this.sftp = new SFTP('local')
             await this.sftp.init(this.sessionInfo)
-            this.getFileList('/')
+            this.getFileList(this.$store.state.sftp.pwdLocal)
         },
         // 进入目录
         dirEnter(item) {
             if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
         },
         // 上传
-        upload(item) {
-            const remotePath = path.join('/root', item.name)
-
-            this.sftp.remoteStat(remotePath)
+        upload(item, remotePath = this.$store.state.sftp.pwdRemote) {
+            this.sftp.remoteStat(path.join(remotePath, item.name))
                 .then(() => {
                     this.tools.confirm({
-                        message: `${item === '-' ? '文件' : '目录'} ${remotePath} 已存在，是否进行覆盖？`,
+                        message: `${item === '-' ? '文件' : '目录'} ${item.name} 已存在，是否进行覆盖？`,
                         confirm: () => {
-                            this.sftpUpload(item)
+                            this.sftpUpload(item, remotePath)
                         },
                         cancel: () => {
                         },
                     })
                 })
                 .catch(() => {
-                    this.sftpUpload(item)
+                    this.sftpUpload(item, remotePath)
                 })
         },
         // SFTP 上传
-        async sftpUpload(item) {
+        async sftpUpload(item, remotePath) {
             this.$store.commit('transfer/TASK_INIT', 'upload')
 
             await this.sftp.upload(
-                path.join('/Users/xingrong/Downloads/', item.name),
                 path.join(this.pwd, item.name),
+                path.join(remotePath, item.name),
                 this.progressStep,
             )
 
-            this.notify.succeed(`${item.type === '-' ? '文件' : '目录'} ${item.name} 上传成功`)
+            if (remotePath === this.$store.state.sftp.pwdRemote) this.$store.commit('sftp/REFRESH_FS_REMOTE')
+
+            this.notify.success(`${item.type === '-' ? '文件' : '目录'} ${item.name} 上传成功`)
             this.$store.commit('transfer/TASK_CLOSE')
         },
         // 更新传输进度

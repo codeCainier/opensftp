@@ -1,6 +1,6 @@
 <template>
     <q-layout view="lHh Lpr lFf">
-        <q-header elevated class="header" :class="{ 'bg-dark': $q.dark.isActive }">
+        <q-header ref="header" elevated class="header" :class="{ 'bg-dark': $q.dark.isActive }">
             <header-bar-mac v-if="$q.platform.is.mac"/>
             <header-bar-win v-if="$q.platform.is.win"/>
         </q-header>
@@ -20,6 +20,17 @@ export default {
     components: {
         'header-bar-mac': headerBarMac,
         'header-bar-win': headerBarWin,
+    },
+    computed: {
+        containerSize() {
+            return () => this.$store.commit('layout/UPDATE_CONT_SIZE', this.$refs.header.$el)
+        }
+    },
+    mounted() {
+        this.containerSize()
+        window.addEventListener('resize', () => {
+            this.containerSize()
+        })
     },
 };
 </script>

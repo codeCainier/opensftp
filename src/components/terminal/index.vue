@@ -1,9 +1,8 @@
 <template>
-    <q-dialog v-model="show" maximized position="bottom">
-        <q-card class="terminal-container">
-            <div ref="terminal" class="full-height overflow-hidden q-pa-sm"></div>
-        </q-card>
-    </q-dialog>
+    <q-card class="terminal-container fixed-top-left full-height full-width"
+            :class="{ active: show }">
+        <div ref="terminal" id="terminal" class="full-height overflow-hidden q-pa-sm"></div>
+    </q-card>
 </template>
 
 <script>
@@ -15,16 +14,15 @@
     import { AttachAddon } from 'xterm-addon-attach'
     import { Unicode11Addon } from 'xterm-addon-unicode11'
     import 'xterm/css/xterm.css'
+    import Session from 'src/core/session'
 
     export default {
         name: 'Terminal',
-        components: {
-        },
         data() {
             return {
                 show: false,
                 term: '',
-                ipcRenderer: '',
+                session: '',
                 option: {
                     // 鼠标右键选择
                     rightClickSelectsWord: true,
@@ -61,46 +59,48 @@
             show(newVal) {
                 if (!newVal) this.termClose()
             },
-            '$store.state.session.active': function () {
-                this.checkTagTerm()
-            },
         },
         computed: {
             termSize() {
                 return () => ({
-                    // TODO: 确认 16 是否为 line-height 基数
-                    rows: parseInt((this.$refs.terminal.clientHeight - 16) / (16 * this.option.lineHeight), 0),
-                    // TODO: 确认 cols 计算方式
-                    cols: parseInt(100, 0),
+                    // 16 为 line-height 基数
+                    rows: Number(((this.$store.state.layout.contHeight - 16) / (16 * this.option.lineHeight)).toFixed(0)),
+                    // 0.6 为 font-size 基数
+                    cols: Number(((this.$store.state.layout.contWidth - 16) / (0.6 * this.option.fontSize)).toFixed(0))
                 })
             }
         },
         methods: {
-            // 检查当前 Tag 是否创建 SSH 会话
-            checkTagTerm() {
-                const activeTagId = this.$store.state.session.active.id
-                const { sshMap } = this.$store.state.session
-
-                let processId = sshMap.get(activeTagId)
-
-                // 若该 Tag 未创建 SSH 会话
-                if (!processId) {
-                    // 为该 Tag 创建 SSH 会话
-                    this.$store.commit('session/SSH_ADD')
-                    // 获取 SSH 会话的进程 ID
-                    processId = sshMap.get(activeTagId)
-                    // 根据会话 id 创建 Terminal 进程
-                    this.$q.electron.ipcRenderer.send('terminal-add', processId)
+            // SSH 初始化
+            async sshLogin() {
+                this.session = new Session()
+                await this.session.init(this.$store.state.session.active.params)
+                const sshWindow = {
+                    /** The number of rows (default: `24`). */
+                    rows: this.option.rows,
+                    /** The number of columns (default: `80`). */
+                    cols: this.option.cols,
+                    /** The height in pixels (default: `480`). */
+                    height: 480,
+                    /** The width in pixels (default: `640`). */
+                    width: 640,
+                    /** The value to use for $TERM (default: `'vt100'`) */
+                    term: this.term,
                 }
+                this.ssh = await this.session.shell(sshWindow)
 
-                this.processId = processId
+                this.ssh.on('data', data => this.term.write(data))
+                // 监听 Terminal 内容
+                this.term.onData(data => this.ssh.write(data))
             },
             // Terminal 初始化
-            termInit() {
+            init() {
                 // 计算 rows & cols
                 const { rows, cols }  = this.termSize()
+
                 this.option.rows = rows
-                // this.option.cols = cols
+                this.option.cols = cols
+
                 // Terminal 实例化
                 const term            = new Terminal(this.option)
                 // 为 xterm 提供终端的尺寸适合包含元素功能
@@ -109,8 +109,6 @@
                 const searchAddon     = new SearchAddon()
                 // 为 xterm 提供 Unicode 版本 11 规则
                 const unicode11Addon  = new Unicode11Addon()
-                // Electron 渲染进程
-                const { ipcRenderer } = this.$q.electron
 
                 term.loadAddon(unicode11Addon)
                 term.loadAddon(fitAddon)
@@ -120,7 +118,8 @@
                 term.unicode.activeVersion = '11'
 
                 // TODO: 参数 true 含义
-                term.open(this.$refs.terminal, true)
+                // term.open(this.$refs.terminal)
+                term.open(document.getElementById('terminal'))
                 // 监听 Terminal Focus
                 term.textarea.addEventListener('focus', this.listenerTermFocus)
                 // 监听 Terminal Blur
@@ -130,36 +129,25 @@
                 // 监听 Terminal Selection Change
                 term.onSelectionChange(this.listenerTermSelection)
 
-                // 监听 Terminal 内容
-                term.onData(data => ipcRenderer.send(this.processId, data))
-
                 // 监听 Window 窗口 Resize
                 window.addEventListener('resize', () => this.termResize())
 
-                // 监听主进程
-                ipcRenderer.on(this.processId, (event, args) => term.write(args))
-                // 传入 Enter 来初始化 Terminal
-                ipcRenderer.send(this.processId, 'clear\n')
-
-                // Terminal Focus
-                term.focus()
-
                 this.term = term
-                this.ipcRenderer = ipcRenderer
+                this.sshLogin()
             },
             // Terminal Focus 事件
             listenerTermFocus() {
-                console.log('Terminal Focus');                    
+                console.log('Terminal Focus');
             },
             // Terminal Blur 事件
             listenerTermBlur() {
                 console.log('Terminal Blur');
             },
-            // Termianl Change Title 事件
+            // Terminal Change Title 事件
             listenerTermTitle() {
 
             },
-            // Termianl Change Selection 事件
+            // Terminal Change Selection 事件
             listenerTermSelection() {
 
             },
@@ -172,15 +160,15 @@
             },
             // Terminal Close 事件
             termClose() {
-                // 关闭 Terminal
-                // this.ipcRenderer.send('terminalKill', this.uid)
                 // 移除 Window 窗口 Resize 监听
                 window.removeEventListener('resize', () => this.termResize())
             },
             // Terminal Dialog Open
             open() {
                 this.show = true
-                this.$nextTick(() => this.termInit())
+                setTimeout(() => {
+                    this.term.focus()
+                }, 300)
             },
         },
         beforeCreate() {
@@ -190,7 +178,7 @@
             this.termResize = debounce(this.termResize, 500)
         },
         mounted() {
-            this.checkTagTerm()
+            this.init()
         },
         beforeDestroy() {
         },
@@ -204,5 +192,14 @@
 .terminal-container
     background: transparent
     background: #000000
-    height: calc(100vh - 32px) !important
+    padding-top: 32px
+    visibility: hidden
+    opacity: 0
+    transform: translateY(100%)
+    z-index: 999
+    transition: all .3s
+    &.active
+        opacity: 1
+        transform: translateY(0)
+        visibility: visible
 </style>

@@ -1,3 +1,4 @@
+import { uid } from 'quasar'
 const { Client } = require('ssh2')
 
 class Session {
@@ -14,20 +15,13 @@ class Session {
         })
     }
 
-    shell() {
-        this.conn.shell((err, stream) => {
-            if (err) throw err
-
-            stream
-                .on('close', () => {
-                    console.log('Stream :: close')
-                })
-                .on('data', data => {
-                    console.log('OUTPUT: ' + data)
-                })
-
-            stream.end('top\nexit\n')
-        });
+    shell(window, options) {
+        return new Promise((resolve, reject) => {
+            this.conn.shell(window, options, (err, stream) => {
+                if (err) return reject(err)
+                resolve(stream)
+            })
+        })
     }
 }
 

@@ -118,7 +118,7 @@ export default {
     data() {
         return {
             // 是否显示隐藏项目
-            showHideFile: true,
+            showHideFile: false,
             // 全选
             selectAll: false,
             // 当前所在目录
@@ -140,6 +140,10 @@ export default {
     watch: {
         pwd(newVal) {
             this.pwdInput = newVal
+            this.$store.commit('sftp/CHANGE_PWD_REMOTE', newVal)
+        },
+        '$store.state.sftp.refreshListenerRemote': function () {
+            this.getFileList('.')
         },
     },
     computed: {
@@ -193,42 +197,42 @@ export default {
             this.sessionInfo = this.$store.state.session.active.params
             this.sftp = new SFTP('remote')
             await this.sftp.init(this.sessionInfo)
-            this.getFileList('/')
+            this.getFileList(this.$store.state.sftp.pwdRemote)
         },
         // 进入目录
         dirEnter(item) {
             if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
         },
         // 下载
-        download(item) {
-            const localPath = path.join('/Users/xingrong/Downloads/', item.name)
-
-            this.sftp.localStat(localPath)
+        download(item, localPath = this.$store.state.sftp.pwdLocal) {
+            this.sftp.localStat(path.join(localPath, item.name))
                 .then(() => {
                     this.tools.confirm({
-                        message: `${item === '-' ? '文件' : '目录'} ${localPath} 已存在，是否进行覆盖？`,
+                        message: `${item === '-' ? '文件' : '目录'} ${item.name} 已存在，是否进行覆盖？`,
                         confirm: () => {
-                            this.sftpDownload(item)
+                            this.sftpDownload(item, localPath)
                         },
                         cancel: () => {
                         },
                     })
                 })
                 .catch(() => {
-                    this.sftpDownload(item)
+                    this.sftpDownload(item, localPath)
                 })
         },
         // SFTP 下载
-        async sftpDownload(item) {
+        async sftpDownload(item, localPath) {
             this.$store.commit('transfer/TASK_INIT', 'download')
 
             await this.sftp.download(
                 path.join(this.pwd, item.name),
-                path.join('/Users/xingrong/Downloads/', item.name),
+                path.join(localPath, item.name),
                 this.progressStep,
             )
 
-            this.notify.succeed(`${item.type === '-' ? '文件' : '目录'} ${item.name} 下载成功`)
+            if (localPath === this.$store.state.sftp.pwdLocal) this.$store.commit('sftp/REFRESH_FS_LOCAL')
+
+            this.notify.success(`${item.type === '-' ? '文件' : '目录'} ${item.name} 下载成功`)
             this.$store.commit('transfer/TASK_CLOSE')
         },
         // 更新传输进度

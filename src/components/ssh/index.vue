@@ -2,8 +2,8 @@
     <div class="ssh row overflow-hidden">
         <q-btn icon="code" class="no-border-radius" flat size="sm" @click="openTerminal"/>
         <input v-model.trim="cmd"
-               type="text" 
-               class="ssh-input col no-margin no-border" 
+               type="text"
+               class="ssh-input col no-margin no-border"
                placeholder="SSH Terminal"
                @keydown.ctrl.u="cmd = ''">
         <q-space/>
@@ -17,6 +17,8 @@
         name: 'SSH',
         components: {
         },
+        watch: {
+        },
         data() {
             return {
                 cmd: '',
@@ -28,6 +30,8 @@
             },
         },
         beforeCreate() {
+        },
+        mounted() {
         },
     }
 </script>
