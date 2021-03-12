@@ -9,8 +9,10 @@
             <template v-slot:after>
                 <remote :key="keys.remote"/>
             </template>
+
         </q-splitter>
-         <ssh/>
+
+        <ssh/>
     </page>
 </template>
 

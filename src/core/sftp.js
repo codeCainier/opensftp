@@ -157,12 +157,6 @@ class SFTP extends Session {
         })
     }
 
-    #listFormat = (cwd, list) => {
-        if (this.action === 'remote') list = this.remoteListFormat(list)
-        if (this.action === 'local')  list = this.localListFormat(cwd, list)
-        return list
-    }
-
     remoteListFormat(list) {
         const arr = []
         list.forEach(item => {
@@ -217,6 +211,12 @@ class SFTP extends Session {
             })
         }
 
+        return list
+    }
+
+    #listFormat = (cwd, list) => {
+        if (this.action === 'remote') list = this.remoteListFormat(list)
+        if (this.action === 'local')  list = this.localListFormat(cwd, list)
         return list
     }
 }

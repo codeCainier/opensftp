@@ -1,4 +1,3 @@
-import { uid } from 'quasar'
 const { Client } = require('ssh2')
 
 class Session {
