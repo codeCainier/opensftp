@@ -30,7 +30,7 @@
         </div>
         <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
-            <q-scroll-area class="full-height">
+            <q-scroll-area ref="scrollArea" class="full-height">
                 <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
                     <!-- File .. -->
                     <div v-show="pwd !== '/'"
@@ -47,6 +47,7 @@
                     <div v-for="(item, index) in list"
                          class="fs-item"
                          tabindex="0"
+                         draggable="true"
                          :ref="'file-item-' + index"
                          :key="item.name"
                          :class="{
@@ -56,6 +57,9 @@
                          }"
                          @click="fileFocus(index)"
                          @dblclick="dirEnter(item)"
+                         @dragstart="dragStart($event, item)"
+                         @dragover="dragOver($event, item)"
+                         @drop="dropFile($event, item)"
                          @keydown.enter="dirEnter(item)"
                          @keydown.exact.delete="removeFile(item)"
                          @keydown.f2="renameOpen(item, index)"
@@ -106,9 +110,11 @@
 /**
  * SFTP Remote / Linux 思想，一切皆文件
  */
+import fs from 'fs'
 import path from 'path'
 import menuList from 'src/pages/sftp/menuList'
 import SFTP from 'src/core/sftp'
+import iconMatch from 'src/utils/iconMatch'
 
 export default {
     name: 'SFTPRemote',
@@ -156,35 +162,7 @@ export default {
             return item => item.type === 'd' ? '-' : this.tools.formatFlow(item.size, 1024, 'B', 1024, 0)
         },
         getFileIcon() {
-            return item => {
-                const { type, name } = item
-                const suffix = type === '-' ? name.split('.').pop() : ''
-                // 目录
-                if (type === 'd')  return require('src/assets/sftp-icons/folder.svg')
-                // 链接
-                if (type === 'l')  return require('src/assets/sftp-icons/folder-shared.svg')
-                // 管理文件
-                if (type === 'p')  return 'p'
-                // 设备文件
-                if (type === 'b')  return 'b'
-                // 字符设备文件
-                if (type === 'c')  return 'c'
-                // 套接字文件
-                if (type === 's')  return 's'
-                // 根据后缀匹配
-                if (suffix === 'html') return require('src/assets/sftp-icons/html.svg')
-                if (suffix === 'css')  return require('src/assets/sftp-icons/css.svg')
-                if (suffix === 'js')   return require('src/assets/sftp-icons/javascript.svg')
-                if (suffix === 'md')   return require('src/assets/sftp-icons/readme.svg')
-                if (suffix === 'sh')   return require('src/assets/sftp-icons/console.svg')
-                if (suffix === 'go')   return require('src/assets/sftp-icons/go.svg')
-                if (suffix === 'php')   return require('src/assets/sftp-icons/php.svg')
-                if (['png', 'jpg', 'jpeg', 'gif', 'tiff', 'ico', 'icns'].includes(suffix)) return require('src/assets/sftp-icons/image.svg')
-                if (['ini', 'conf'].includes(suffix)) return require('src/assets/sftp-icons/settings.svg')
-                if (['tar', 'gz', 'tgz', 'zip', 'rar', '7z'].includes(suffix)) return require('src/assets/sftp-icons/zip.svg')
-                // 普通文件
-                if (type === '-') return require('src/assets/sftp-icons/document.svg')
-            }
+            return item => iconMatch(item)
         },
         fileCreatedTime() {
             return time => this.tools.formatDate(time, 'MM-dd HH:mm')
@@ -332,6 +310,7 @@ export default {
                     // 清除重命名元素
                     this.renameItem = {}
                     this.fileFocus()
+                    this.$refs.scrollArea.setScrollPosition(0)
                     this.loading = false
                 })
                 .catch(err => {
@@ -361,9 +340,30 @@ export default {
             if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
             this.fileFocus()
         },
+        dragStart(event, item) {
+            const fileIcon = this.getFileIcon(item)
+
+            item.icon = this.getFileIcon(item)
+            event.preventDefault()
+
+            this.$q.electron.ipcRenderer.send('dragFile', JSON.stringify({
+                rm: true,
+                type: item.type,
+                name: item.name,
+                icon: fileIcon,
+            }))
+        },
+        dragOver(event, item) {
+            console.log('over')
+        },
+        // 拖动文件
+        dropFile(e, item) {
+            console.log('drop')
+        },
     },
     created() {
         this.sftpInit()
-    }
+        // console.log(process.cwd());
+    },
 }
 </script>
