@@ -30,6 +30,11 @@ class SFTP extends Session {
         if (this.action === 'local')  return await this.localRm(pathName)
     }
 
+    async mkdir(pathName) {
+        if (this.action === 'remote') return await this.remoteMkdir(pathName)
+        if (this.action === 'local')  return await this.localMkdir(pathName)
+    }
+
     async rename(pathOld, pathNew) {
         if (this.action === 'remote') return await this.remoteRename(pathOld, pathNew)
         if (this.action === 'local')  return await this.localRename(pathOld, pathNew)
@@ -64,9 +69,9 @@ class SFTP extends Session {
     }
 
     async downloadDir(remotePath, localPath, progress) {
-        const fileList = await this.list(remotePath, localPath)
+        const fileList = await this.remoteList(remotePath)
 
-        fs.mkdirSync(localPath, { recursive: true })
+        await this.localMkdir(localPath)
 
         for (const file of fileList) {
 
@@ -84,6 +89,50 @@ class SFTP extends Session {
         }
     }
 
+    async upload(localPath, remotePath, progress) {
+        const stats = await this.localStat(localPath)
+        const idDir = stats.isDirectory()
+
+        if (!idDir) return this.uploadFile(localPath, remotePath, progress)
+        if (idDir)  return this.uploadDir(localPath, remotePath, progress)
+    }
+
+    async uploadFile(localPath, remotePath, progress) {
+        const options = {
+            step: (saved, chunk, total) => {
+                progress('download', { localPath, saved, total })
+            },
+        }
+        return new Promise((resolve, reject) => {
+            this.sftp.fastPut(localPath, remotePath, options, err => {
+                if (err) return reject(err)
+                resolve()
+                progress('finish')
+            })
+        })
+    }
+
+    async uploadDir(localPath, remotePath, progress) {
+        const fileList = await this.localList(localPath)
+
+        await this.remoteMkdir(remotePath)
+
+        for (const file of fileList) {
+
+            if (file.type === 'd') {
+                let newSrc = join(localPath, file.name)
+                let newDst = join(remotePath, file.name)
+                await this.uploadDir(newSrc, newDst, progress)
+            }
+
+            if (file.type === '-') {
+                let src = join(localPath, file.name)
+                let dst = join(remotePath, file.name)
+                await this.uploadFile(src, dst, progress)
+            }
+        }
+    }
+
     remoteList(cwd) {
         return new Promise((resolve, reject) => {
             this.sftp.readdir(cwd, (err, list) => {
@@ -97,6 +146,15 @@ class SFTP extends Session {
         return new Promise((resolve, reject) => {
             const cmd = `rm -rf "${pathName}"`
             this.conn.exec(cmd, err => {
+                if (err) return reject(err)
+                resolve()
+            })
+        })
+    }
+
+    remoteMkdir(pathName) {
+        return new Promise((resolve, reject) => {
+            this.sftp.mkdir(pathName, { recursive: true }, err => {
                 if (err) return reject(err)
                 resolve()
             })
@@ -133,6 +191,15 @@ class SFTP extends Session {
     localRm(pathName) {
         return new Promise((resolve, reject) => {
             fs.rmdir(pathName, { recursive: true }, err => {
+                if (err) return reject(err)
+                resolve()
+            })
+        })
+    }
+
+    localMkdir(pathName) {
+        return new Promise((resolve, reject) => {
+            fs.mkdir(pathName, { recursive: true }, err => {
                 if (err) return reject(err)
                 resolve()
             })
