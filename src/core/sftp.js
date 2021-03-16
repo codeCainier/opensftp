@@ -45,6 +45,11 @@ class SFTP extends Session {
         if (this.action === 'local')  return await this.localStat(pathName)
     }
 
+    async writeFile(pathName) {
+        if (this.action === 'remote') return await this.remoteWriteFile(pathName)
+        if (this.action === 'local')  return await this.localWriteFile(pathName)
+    }
+
     async download(remotePath, localPath, progress) {
         const stats = await this.remoteStat(remotePath)
         const idDir = stats.isDirectory()
@@ -145,9 +150,13 @@ class SFTP extends Session {
     remoteRm(pathName) {
         return new Promise((resolve, reject) => {
             const cmd = `rm -rf "${pathName}"`
-            this.conn.exec(cmd, err => {
+            this.conn.exec(cmd, (err, stream) => {
                 if (err) return reject(err)
-                resolve()
+
+                stream
+                    .on('data', data => {})
+                    .on('end', () => resolve())
+                    .stderr.on('data', err => reject(err))
             })
         })
     }
@@ -170,11 +179,20 @@ class SFTP extends Session {
         })
     }
 
-    remoteStat(remotePath) {
+    remoteStat(pathName) {
         return new Promise((resolve, reject) => {
-            this.sftp.stat(remotePath, (err, stats) => {
+            this.sftp.stat(pathName, (err, stats) => {
                 if (err) return reject(err)
                 resolve(stats)
+            })
+        })
+    }
+
+    remoteWriteFile(pathName) {
+        return new Promise((resolve, reject) => {
+            this.sftp.writeFile(pathName, '', 'utf-8', err => {
+                if (err) return reject(err)
+                resolve()
             })
         })
     }
@@ -220,6 +238,15 @@ class SFTP extends Session {
             fs.stat(pathName, (err, stats) => {
                 if (err) return reject(err)
                 resolve(stats)
+            })
+        })
+    }
+
+    localWriteFile(pathName) {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(pathName, '', 'utf-8', err => {
+                if (err) return reject(err)
+                resolve()
             })
         })
     }

@@ -3,11 +3,13 @@
         <q-btn icon="code" class="no-border-radius" flat size="sm" @click="openTerminal"/>
         <input v-model.trim="cmd"
                type="text"
+               spellcheck="false"
                class="ssh-input col no-margin no-border"
                placeholder="SSH Terminal"
-               @keydown.ctrl.u="cmd = ''">
+               @keydown.ctrl.u="cmd = ''"
+               @keydown.enter="openTerminal(cmd)">
         <q-space/>
-        <q-btn icon="settings" class="no-border-radius" flat size="sm"/>
+        <!--<q-btn icon="settings" class="no-border-radius" flat size="sm"/>-->
         <terminal ref="terminal"/>
     </div>
 </template>
@@ -25,8 +27,9 @@
             }
         },
         methods: {
-            openTerminal() {
-                this.$refs.terminal.open()
+            openTerminal(cmd) {
+                this.$refs.terminal.open(typeof cmd === 'string' ? cmd : '')
+                this.cmd = ''
             },
         },
         beforeCreate() {

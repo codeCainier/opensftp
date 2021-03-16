@@ -9,6 +9,8 @@ const state = {
     refreshListenerRemote: '',
     // 本地 文件系统刷新监听器
     refreshListenerLocal: '',
+    // 关闭 Terminal 监听器
+    closeTermListener: '',
 }
 
 export default function () {

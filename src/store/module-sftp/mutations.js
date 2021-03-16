@@ -19,3 +19,8 @@ export function REFRESH_FS_REMOTE(state) {
 export function REFRESH_FS_LOCAL(state) {
     state.refreshListenerLocal  = uid()
 }
+
+// 刷新本地文件系统
+export function CLOSE_TERM(state) {
+    state.closeTermListener  = uid()
+}

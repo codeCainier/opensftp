@@ -7,14 +7,14 @@ export default item => {
     if (type === 'd') return require('src/assets/sftp-icons/folder.svg')
     // 链接
     if (type === 'l') return require('src/assets/sftp-icons/folder-shared.svg')
-    // 管理文件
-    if (type === 'p') return 'p'
-    // 设备文件
-    if (type === 'b') return 'b'
-    // 字符设备文件
-    if (type === 'c') return 'c'
-    // 套接字文件
-    if (type === 's') return 's'
+    // TODO 管理文件
+    if (type === 'p') return require('src/assets/sftp-icons/document.svg')
+    // TODO 设备文件
+    if (type === 'b') return require('src/assets/sftp-icons/document.svg')
+    // TODO 字符设备文件
+    if (type === 'c') return require('src/assets/sftp-icons/document.svg')
+    // TODO 套接字文件
+    if (type === 's') return require('src/assets/sftp-icons/document.svg')
     // 根据后缀匹配
     if (suffix === 'html')  return require('src/assets/sftp-icons/html.svg')
     // CSS

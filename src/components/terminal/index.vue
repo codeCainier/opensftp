@@ -59,6 +59,9 @@
             show(newVal) {
                 if (!newVal) this.termClose()
             },
+            '$store.state.sftp.closeTermListener': function () {
+                this.show = false
+            },
         },
         computed: {
             termSize() {
@@ -137,19 +140,15 @@
             },
             // Terminal Focus 事件
             listenerTermFocus() {
-                console.log('Terminal Focus');
             },
             // Terminal Blur 事件
             listenerTermBlur() {
-                console.log('Terminal Blur');
             },
             // Terminal Change Title 事件
             listenerTermTitle() {
-
             },
             // Terminal Change Selection 事件
             listenerTermSelection() {
-
             },
             // Terminal Resize 事件
             termResize() {
@@ -164,10 +163,13 @@
                 window.removeEventListener('resize', () => this.termResize())
             },
             // Terminal Dialog Open
-            open() {
+            open(cmd) {
                 this.show = true
                 setTimeout(() => {
                     this.term.focus()
+                    if (cmd) {
+                        this.ssh.write(cmd + '\n')
+                    }
                 }, 300)
             },
         },

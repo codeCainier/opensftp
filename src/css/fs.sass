@@ -60,7 +60,8 @@
         background: none
     .pwd-input
         width: 100%
-        padding: 0 5px
+        padding-left: 5px
+        padding-right: 65px
         transition: all .3s
     .btn-enter
         width: 30px
@@ -72,9 +73,13 @@
     display: flex
     height: 25px
     line-height: 25px
-    padding: 0 5px
+
+.fs-head
+    padding-left: 13px
+    padding-right: 21px
 
 .fs-item
+    padding: 0 5px
     border-radius: 4px
     margin-bottom: 2px
 
@@ -83,6 +88,8 @@
     white-space: nowrap
     overflow: hidden
     text-overflow: ellipsis
+    &:last-child
+        margin-right: 0
     &.select-all
         min-width: 25px
         margin-right: 5px
@@ -90,15 +97,15 @@
         min-width: 25px
         margin-right: 5px
     &.name
-        width: 200px
+        width: 100%
     &.size
-        width: 100px
+        min-width: 80px
     &.date
-        width: 150px
+        min-width: 80px
     &.owner
-        width: 100px
+        min-width: 80px
     &.group
-        width: 100px
+        min-width: 80px
 
 .fs-head
     position: sticky

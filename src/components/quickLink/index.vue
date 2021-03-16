@@ -41,10 +41,10 @@
             return {
                 loading: false,
                 showPwd: false,
-                host: '192.168.0.241',
-                port: '22',
-                username: 'root',
-                password: 'srunsoft@xian',
+                host: '',
+                port: '',
+                username: '',
+                password: '',
             };
         },
         methods: {

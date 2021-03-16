@@ -25,8 +25,8 @@
             <div class="item name">文件名称</div>
             <div class="item size">文件大小</div>
             <div class="item date">修改日期</div>
-            <div class="item owner">所有者</div>
-            <div class="item group">群组</div>
+<!--            <div class="item owner">所有者</div>-->
+<!--            <div class="item group">群组</div>-->
         </div>
         <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
@@ -89,19 +89,31 @@
                         </div>
                         <div class="item size">{{ fileSize(item) }}</div>
                         <div class="item date">{{ fileCreatedTime(item.date) }}</div>
-                        <div class="item owner">{{ item.owner }}</div>
-                        <div class="item group">{{ item.group }}</div>
+<!--                        <div class="item owner">{{ item.owner }}</div>-->
+<!--                        <div class="item group">{{ item.group }}</div>-->
                         <!-- 右键菜单 -->
                         <menu-list action="remote"
                                    :listItem="item"
+                                   :showHideFile="showHideFile"
                                    @show="selected = openMenu = item.name"
                                    @close="fileFocus(index)"
                                    @download="download(item)"
                                    @rename="renameOpen(item, index)"
-                                   @remove="removeFile(item)"/>
+                                   @remove="removeFile(item)"
+                                   @mkdir="mkdir"
+                                   @write-file="writeFile"
+                                   @refresh="getFileList('.')"
+                                   @show-hide="showHideFile = !showHideFile"/>
                     </div>
                 </div>
             </q-scroll-area>
+            <pwd-menu ref="pwdMenu" action="local"
+                      :showHideFile="showHideFile"
+                      @before-show="pwdMenuBeforeShow"
+                      @mkdir="mkdir"
+                      @write-file="writeFile"
+                      @refresh="getFileList('.')"
+                      @show-hide="showHideFile = !showHideFile"/>
         </div>
     </div>
 </template>
@@ -110,16 +122,17 @@
 /**
  * SFTP Remote / Linux 思想，一切皆文件
  */
-import fs from 'fs'
 import path from 'path'
 import menuList from 'src/pages/sftp/menuList'
 import SFTP from 'src/core/sftp'
 import iconMatch from 'src/utils/iconMatch'
+import pwdMenu from 'src/pages/sftp/pwdMenu'
 
 export default {
     name: 'SFTPRemote',
     components: {
         'menu-list': menuList,
+        'pwd-menu': pwdMenu,
     },
     data() {
         return {
@@ -359,6 +372,72 @@ export default {
         // 拖动文件
         dropFile(e, item) {
             console.log('drop')
+        },
+        // 当前目录菜单显示前
+        pwdMenuBeforeShow(event) {
+            if (event.target.parentElement !== this.$refs.scrollArea.$el) this.$refs.pwdMenu.$refs.menu.hide()
+        },
+        // 新建目录
+        mkdir(dirname = '未命名文件夹', num = 1) {
+            const name = num === 1 ? dirname : `${dirname} ${num}`
+            const same = this.list.filter(item => item.name === name).length !== 0
+
+            if (same) return this.mkdir(dirname, num + 1)
+
+            this.$q.dialog({
+                message: '请输入文件夹名称',
+                prompt: {
+                    model: '',
+                    type: 'text',
+                    attrs: {
+                        placeholder: name,
+                    },
+                },
+                cancel: true,
+                persistent: true
+            }).onOk(data => {
+                if (!data) data = name
+                if (this.list.filter(item => item.name === data).length !== 0) return this.tools.confirm({
+                    message: `文件夹 ${data} 已存在`,
+                    confirm: () => this.mkdir(),
+                })
+                this.sftp.mkdir(path.join(this.pwd, data))
+                    .then(() => {
+                        this.getFileList('.', null, data)
+                    })
+                    .catch(err => this.tools.confirm(err))
+            })
+        },
+        // 新建文件
+        writeFile(filename = '未命名文件', num = 1) {
+            const name = num === 1 ? filename : `${filename} ${num}`
+            const same = this.list.filter(item => item.name === name).length !== 0
+
+            if (same) return this.writeFile(filename, num + 1)
+
+            this.$q.dialog({
+                message: '请输入文件名称',
+                prompt: {
+                    model: '',
+                    type: 'text',
+                    attrs: {
+                        placeholder: name,
+                    },
+                },
+                cancel: true,
+                persistent: true
+            }).onOk(data => {
+                if (!data) data = name
+                if (this.list.filter(item => item.name === data).length !== 0) return this.tools.confirm({
+                    message: `文件 ${data} 已存在`,
+                    confirm: () => this.writeFile(),
+                })
+                this.sftp.writeFile(path.join(this.pwd, data))
+                    .then(() => {
+                        this.getFileList('.', null, data)
+                    })
+                    .catch(err => this.tools.confirm(err))
+            })
         },
     },
     created() {
