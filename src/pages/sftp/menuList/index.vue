@@ -31,7 +31,7 @@
             <q-item clickable>
                 <q-item-section>新建</q-item-section>
                 <q-item-section side>
-                    <q-icon name="keyboard_arrow_right"/>
+                    <q-icon name="keyboard_arrow_right" size="xs"/>
                 </q-item-section>
                 <q-menu anchor="top end" self="top start" :offset="[5, 0]">
                     <q-list style="width: 150px" dense>
@@ -56,6 +56,12 @@
 <!--            <q-item clickable v-close-popup>-->
 <!--                <q-item-section>粘贴</q-item-section>-->
 <!--            </q-item>-->
+            <q-item clickable v-close-popup @click="emitHandle('refresh')">
+                <q-item-section>刷新</q-item-section>
+                <q-item-section side>
+                    <q-item-label caption>R</q-item-label>
+                </q-item-section>
+            </q-item>
             <q-item clickable v-close-popup @click="emitHandle('remove')">
                 <q-item-section>删除</q-item-section>
                 <q-item-section side>

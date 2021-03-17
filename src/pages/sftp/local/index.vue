@@ -13,9 +13,11 @@
             <div class="btn-group">
                 <button type="button" v-ripple class="btn-enter" @click="getFileList(null, pwdInput)">
                     <q-icon name="chevron_right"/>
+                    <q-tooltip :offset="[0, 10]">转到</q-tooltip>
                 </button>
                 <button type="button" v-ripple class="btn-enter" @click="getFileList('.')">
                     <q-icon name="refresh"/>
+                    <q-tooltip :offset="[0, 10]">刷新</q-tooltip>
                 </button>
             </div>
         </div>
@@ -25,12 +27,12 @@
             <div class="item name">文件名称</div>
             <div class="item size">文件大小</div>
             <div class="item date">修改日期</div>
-<!--            <div class="item owner">所有者</div>-->
-<!--            <div class="item group">群组</div>-->
+            <!--<div class="item owner">所有者</div>-->
+            <!--<div class="item group">群组</div>-->
         </div>
         <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
-            <q-scroll-area ref="scrollArea" class="full-height">
+            <q-scroll-area ref="scrollArea" class="full-height" @click.native="selected = null">
                 <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
                     <!-- File .. -->
                     <div v-show="pwd !== '/'"
@@ -54,7 +56,7 @@
                              hidden: hideItem(item),
                              'focus-temp': openMenu === item.name || renameItem.name === item.name,
                          }"
-                         @click="fileFocus(index)"
+                         @click.stop="fileFocus(index)"
                          @dblclick="dirEnter(item)"
                          @keydown.enter="dirEnter(item)"
                          @keydown.exact.delete="removeFile(item)"

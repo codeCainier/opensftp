@@ -47,7 +47,7 @@ export default {
     },
     computed: {
         progressLabel() {
-            return () => `正在下载 ${this.progress.transferring.remotePath.split('/').pop()}`
+            return () => `正在${this.progress.action === 'download' ? '下载': '上传'} ${this.progress.transferring.remotePath.split('/').pop()}`
         },
         progressValue() {
             return () => this.progress.transferring.percent * 100

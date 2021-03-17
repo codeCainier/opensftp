@@ -30,7 +30,7 @@
         </div>
         <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
-            <q-scroll-area ref="scrollArea" class="full-height">
+            <q-scroll-area ref="scrollArea" class="full-height" @click.native="selected = null">
                 <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
                     <!-- File .. -->
                     <div v-show="pwd !== '/'"
@@ -55,7 +55,7 @@
                              hidden: hideItem(item),
                              'focus-temp': openMenu === item.name || renameItem.name === item.name,
                          }"
-                         @click="fileFocus(index)"
+                         @click.stop="fileFocus(index)"
                          @dblclick="dirEnter(item)"
                          @dragstart="dragStart($event, item)"
                          @dragover="dragOver($event, item)"
@@ -89,8 +89,8 @@
                         </div>
                         <div class="item size">{{ fileSize(item) }}</div>
                         <div class="item date">{{ fileCreatedTime(item.date) }}</div>
-<!--                        <div class="item owner">{{ item.owner }}</div>-->
-<!--                        <div class="item group">{{ item.group }}</div>-->
+                        <!--<div class="item owner">{{ item.owner }}</div>-->
+                        <!--<div class="item group">{{ item.group }}</div>-->
                         <!-- 右键菜单 -->
                         <menu-list action="remote"
                                    :listItem="item"
