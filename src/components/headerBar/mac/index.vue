@@ -47,7 +47,7 @@ export default {
     },
     computed: {
         progressLabel() {
-            return () => `正在${this.progress.action === 'download' ? '下载': '上传'} ${this.progress.transferring.remotePath.split('/').pop()}`
+            return () => `正在${this.progress.action === 'download' ? '下载': '上传'} ${this.progress.transferring.pathname.split('/').pop()}`
         },
         progressValue() {
             return () => this.progress.transferring.percent * 100
@@ -75,14 +75,3 @@ export default {
     }
 }
 </script>
-
-<style scoped lang="sass">
-.progress-bar
-    //transform: translateY(100%)
-</style>
-
-<style lang="sass">
-//.q-linear-progress__model--determinate,
-//.q-linear-progress__stripe
-//    border-radius: 10px
-</style>

@@ -64,13 +64,13 @@ app.on('activate', () => {
     }
 })
 
-// ipcMain.on('dragFile', (event, item) => {
-//     item = JSON.parse(item)
-//
-//     event.sender.startDrag({
-//         file: `${process.cwd()}/README.md`,
-//         icon: `${process.cwd()}/public/icons/favicon-128x128.png`,
-//     })
-//
-//     // if (item.rm) fs.rm(`${process.cwd()}/${item.name}`)
-// })
+ipcMain.on('dragFile', (event, item) => {
+    item = JSON.parse(item)
+
+    event.sender.startDrag({
+        file: `${process.cwd()}/README.md`,
+        icon: `${process.cwd()}/public/icons/favicon-128x128.png`,
+    })
+
+    // if (item.rm) fs.rm(`${process.cwd()}/${item.name}`)
+})

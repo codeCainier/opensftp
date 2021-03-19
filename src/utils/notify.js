@@ -1,76 +1,40 @@
 import { Notify } from 'quasar'
 
-export default {
-    success(message) {
-        Notify.create({
-            message,
-            progress: true,
-            color: 'positive',
-            icon: 'ion-md-checkmark',
-            classes: 'q-notify',
-            actions: [
-                {
-                    label: '关闭',
-                    color: 'white',
-                    handler: () => {
-                        /* ... */
-                    },
-                },
-            ],
-        });
-    },
-    warning(message) {
-        Notify.create({
-            message,
-            progress: true,
-            color: 'warning',
-            icon: 'ion-md-warning',
-            classes: 'q-notify',
-            actions: [
-                {
-                    label: '关闭',
-                    color: 'white',
-                    handler: () => {
-                        /* ... */
-                    },
-                },
-            ],
-        });
-    },
-    error(message) {
-        Notify.create({
-            message,
-            progress: true,
-            color: 'negative',
-            icon: 'ion-md-close',
-            classes: 'q-notify',
-            actions: [
-                {
-                    label: '关闭',
-                    color: 'white',
-                    handler: () => {
-                        /* ... */
-                    },
-                },
-            ],
-        });
-    },
-    info(message) {
-        Notify.create({
-            message,
-            progress: true,
-            color: 'danger',
-            icon: 'announcement',
-            classes: 'q-notify',
-            actions: [
-                {
-                    label: '关闭',
-                    color: 'white',
-                    handler: () => {
-                        /* ... */
-                    },
-                },
-            ],
-        });
-    },
+const notify = (props) => {
+    const title    = props.title || ''
+    const message  = typeof props === 'string' ? props : props.message
+    const callback = props.callback || function () {
+
+    }
+
+    const myNotification = new Notification(title, {
+        body: message
+    })
+
+    myNotification.onclick = () => callback()
 }
+
+notify.success = message => createQuasarNotify(message, 'positive')
+notify.error   = message => createQuasarNotify(message, 'negative')
+notify.warning = message => createQuasarNotify(message, 'warning')
+notify.info    = message => createQuasarNotify(message, 'danger')
+
+function createQuasarNotify(message, color) {
+    Notify.create({
+        color,
+        message,
+        progress: true,
+        classes: 'q-notify',
+        actions: [
+            {
+                label: '关闭',
+                color: 'white',
+                handler: () => {
+                    /* ... */
+                },
+            },
+        ],
+    });
+}
+
+export default notify

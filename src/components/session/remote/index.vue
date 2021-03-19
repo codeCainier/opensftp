@@ -25,12 +25,17 @@
             <div class="item name">文件名称</div>
             <div class="item size">文件大小</div>
             <div class="item date">修改日期</div>
-            <div class="item owner">所有者</div>
-            <div class="item group">群组</div>
+<!--            <div class="item owner">所有者</div>-->
+<!--            <div class="item group">群组</div>-->
         </div>
         <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
-            <q-scroll-area ref="scrollArea" class="full-height">
+            <q-scroll-area ref="scrollArea" class="full-height"
+                           @click.native="selected = null"
+                           @dragover.native.prevent="dragOver($event)"
+                           @dragenter.native=""
+                           @dragleave.native="dragLeave"
+                           @drop.native="dropFile($event)">
                 <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
                     <!-- File .. -->
                     <div v-show="pwd !== '/'"
@@ -47,15 +52,23 @@
                     <div v-for="(item, index) in list"
                          class="fs-item"
                          tabindex="0"
+                         draggable="true"
                          :ref="'file-item-' + index"
                          :key="item.name"
                          :class="{
                              selected: selected === index,
                              hidden: hideItem(item),
-                             'focus-temp': openMenu === item.name || renameItem.index === index,
+                             'drag-enter': dragEnterItem === item.name,
+                             'focus-temp': openMenu === item.name || renameItem.name === item.name,
                          }"
-                         @click="fileFocus(index)"
+                         @click.stop="fileFocus(index)"
                          @dblclick="dirEnter(item)"
+                         @dragstart="dragStart($event, item, index)"
+                         @dragover.prevent.stop="dragOver($event, item)"
+                         @dragenter.stop=""
+                         @dragleave.stop="dragLeave"
+                         @drop.stop="dropFile($event, item)"
+                         @dragend="dragEnd($event, item)"
                          @keydown.enter="dirEnter(item)"
                          @keydown.exact.delete="removeFile(item)"
                          @keydown.f2="renameOpen(item, index)"
@@ -85,55 +98,50 @@
                         </div>
                         <div class="item size">{{ fileSize(item) }}</div>
                         <div class="item date">{{ fileCreatedTime(item.date) }}</div>
-                        <div class="item owner">{{ item.owner }}</div>
-                        <div class="item group">{{ item.group }}</div>
+                        <!--<div class="item owner">{{ item.owner }}</div>-->
+                        <!--<div class="item group">{{ item.group }}</div>-->
                         <!-- 右键菜单 -->
-                        <menu-list action="local"
+                        <menu-list action="remote"
                                    :listItem="item"
+                                   :showHideFile="showHideFile"
                                    @show="selected = openMenu = item.name"
                                    @close="fileFocus(index)"
-                                   @upload="upload(item)"
+                                   @download="download(item)"
                                    @rename="renameOpen(item, index)"
-                                   @remove="removeFile(item)"/>
+                                   @remove="removeFile(item)"
+                                   @mkdir="mkdir"
+                                   @write-file="writeFile"
+                                   @refresh="getFileList('.')"
+                                   @show-hide="showHideFile = !showHideFile"/>
                     </div>
                 </div>
             </q-scroll-area>
-            <q-menu touch-position
-                    context-menu
-                    ref="menu"
-                    @before-show="menuBeforeShow">
-                <q-list dense style="min-width: 150px">
-                    <q-item clickable v-close-popup>
-                        <q-item-section>新建目录</q-item-section>
-                        <q-item-section side>
-                            <q-item-label caption>F</q-item-label>
-                        </q-item-section>
-                    </q-item>
-                    <q-item clickable v-close-popup>
-                        <q-item-section>新建文件</q-item-section>
-                        <q-item-section side>
-                            <q-item-label caption>D</q-item-label>
-                        </q-item-section>
-                    </q-item>
-                </q-list>
-            </q-menu>
+            <pwd-menu ref="pwdMenu" action="local"
+                      :showHideFile="showHideFile"
+                      @before-show="pwdMenuBeforeShow"
+                      @mkdir="mkdir"
+                      @write-file="writeFile"
+                      @refresh="getFileList('.')"
+                      @show-hide="showHideFile = !showHideFile"/>
         </div>
     </div>
 </template>
 
 <script>
 /**
- * 本地文件系统
+ * SFTP Remote / Linux 思想，一切皆文件
  */
-import path from 'path'
-import menuList from 'src/pages/sftp/menuList'
+import { join } from 'path'
+import menuList from 'src/components/session/menuList'
 import SFTP from 'src/core/sftp'
 import iconMatch from 'src/utils/iconMatch'
+import pwdMenu from 'src/components/session/pwdMenu'
 
 export default {
-    name: 'SFTPLocal',
+    name: 'SFTPRemote',
     components: {
         'menu-list': menuList,
+        'pwd-menu': pwdMenu,
     },
     data() {
         return {
@@ -155,14 +163,16 @@ export default {
             openMenu: null,
             // 重命名项目
             renameItem: {},
+            // 拖动进入元素
+            dragEnterItem: null,
         }
     },
     watch: {
         pwd(newVal) {
             this.pwdInput = newVal
-            this.$store.commit('sftp/CHANGE_PWD_LOCAL', newVal)
+            this.$store.commit('sftp/CHANGE_PWD_REMOTE', newVal)
         },
-        '$store.state.sftp.refreshListenerLocal': function () {
+        '$store.state.sftp.refreshListenerRemote': function () {
             this.getFileList('.')
         },
     },
@@ -187,51 +197,51 @@ export default {
         async sftpInit() {
             this.loading = true
             this.sessionInfo = this.$store.state.session.active.params
-            this.sftp = new SFTP('local')
+            this.sftp = new SFTP('remote')
             await this.sftp.init(this.sessionInfo)
-            this.getFileList(this.$store.state.sftp.pwdLocal)
+            this.getFileList(this.$store.state.sftp.pwdRemote)
         },
         // 进入目录
         dirEnter(item) {
             if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
         },
-        // 上传
-        upload(item, remotePath = this.$store.state.sftp.pwdRemote) {
-            this.sftp.remoteStat(path.join(remotePath, item.name))
+        // 下载
+        download(item, localPath = this.$store.state.sftp.pwdLocal) {
+            this.sftp.localStat(join(localPath, item.name))
                 .then(() => {
                     this.tools.confirm({
                         message: `${item === '-' ? '文件' : '目录'} ${item.name} 已存在，是否进行覆盖？`,
                         confirm: () => {
-                            this.sftpUpload(item, remotePath)
+                            this.sftpDownload(item, localPath)
                         },
                         cancel: () => {
                         },
                     })
                 })
                 .catch(() => {
-                    this.sftpUpload(item, remotePath)
+                    this.sftpDownload(item, localPath)
                 })
         },
-        // SFTP 上传
-        async sftpUpload(item, remotePath) {
-            this.$store.commit('transfer/TASK_INIT', 'upload')
+        // SFTP 下载
+        async sftpDownload(item, localPath) {
+            this.$store.commit('transfer/TASK_INIT', 'download')
 
-            await this.sftp.upload(
-                path.join(this.pwd, item.name),
-                path.join(remotePath, item.name),
+            await this.sftp.download(
+                join(this.pwd, item.name),
+                join(localPath, item.name),
                 this.progressStep,
             )
 
-            if (remotePath === this.$store.state.sftp.pwdRemote) this.$store.commit('sftp/REFRESH_FS_REMOTE')
+            if (localPath === this.$store.state.sftp.pwdLocal) this.$store.commit('sftp/REFRESH_FS_LOCAL')
 
-            this.notify.success(`${item.type === '-' ? '文件' : '目录'} ${item.name} 上传成功`)
+            this.notify(`${item.type === '-' ? '文件' : '目录'} ${item.name} 下载成功`)
             this.$store.commit('transfer/TASK_CLOSE')
         },
         // 更新传输进度
         progressStep(action, params) {
-            if (action === 'upload') {
-                const { localPath, saved, total } = params
-                this.$store.commit('transfer/TASK_UPDATE', { localPath, saved, total })
+            if (action === 'download') {
+                const { pathname, saved, total } = params
+                this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
             }
             if (action === 'finish') {
                 this.$store.commit('transfer/TASK_FINISH')
@@ -253,7 +263,7 @@ export default {
                 return
             }
             // 新名称存在
-            if (this.list.filter(item => item.name === this.renameItem.newName).length === 1) {
+             if (this.list.filter(item => item.name === this.renameItem.newName).length === 1) {
                 // TODO: 由 keydown enter 触发的事件，会影响 confirm 组件
                 return setTimeout(() => {
                     this.tools.confirm({
@@ -266,6 +276,14 @@ export default {
             }
             // 重命名
             this.loading = true
+            this.sftp.rename(join(this.pwd, this.renameItem.name), join(this.pwd, this.renameItem.newName))
+                .then(() => {
+                    this.getFileList('.', null, this.renameItem.newName)
+                })
+                .catch(err => {
+                    this.tools.confirm(err)
+                    this.loading = false
+                })
         },
         // 重命名取消
         renameCancel(index) {
@@ -280,7 +298,7 @@ export default {
                 message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
                 confirm: () => {
                     this.loading = true
-                    this.sftp.rm(path.join(this.pwd, item.name))
+                    this.sftp.rm(join(this.pwd, item.name))
                         .then(() => {
                             this.getFileList('.')
                         })
@@ -293,10 +311,10 @@ export default {
             })
         },
         // 读取目录下文件列表
-        getFileList(dirName, pathName, focusFile) {
+        getFileList(dirname, pathName, focusFile) {
             this.loading = true
 
-            const cwd = pathName || path.join(this.pwd, dirName)
+            const cwd = pathName || join(this.pwd, dirname)
 
             this.sftp.list(cwd)
                 .then(list => {
@@ -346,13 +364,121 @@ export default {
             if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
             this.fileFocus()
         },
-        menuBeforeShow(event) {
-            console.log(event.target)
-            // console.log(this.$refs.scrollArea.$el)
-        }
+        // 开始拖动
+        dragStart(event, item, index) {
+            this.selected = index
+            event.dataTransfer.setData('action', 'remote')
+            event.dataTransfer.setData('info', JSON.stringify(item))
+            event.dataTransfer.setData('oldPath', join(this.pwd, item.name))
+            event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
+        },
+        // 拖动进入
+        dragEnter(event, item) {
+            this.dragEnterItem = item ? item.name : null
+        },
+        // 拖动经过
+        dragOver(event, item) {
+            this.dragEnterItem = item ? item.name : null
+        },
+        // 拖动完成
+        dropFile(event, item) {
+            this.dragEnterItem = null
+
+            if (item && item.type === '-') return
+
+            const action  = event.dataTransfer.getData('action')
+            const info    = JSON.parse(event.dataTransfer.getData('info'))
+            const oldPath = event.dataTransfer.getData('oldPath')
+            const newPath = item ? join(this.pwd, item.name, info.name) : join(this.pwd, info.name)
+
+            console.log(oldPath)
+            console.log(newPath)
+
+            // 若文件来自 remote 视为移动操作
+            if (action === 'remote') {
+                if (oldPath === newPath) return
+            }
+            // 若文件来自 local，视为上传操作
+            if (action === 'local') {
+            }
+        },
+        // 拖动结束
+        dragEnd(event, item) {
+            this.dragEnterItem = null
+        },
+        // 拖动离开
+        dragLeave() {
+            this.dragEnterItem = null
+        },
+        // 当前目录菜单显示前
+        pwdMenuBeforeShow(event) {
+            if (event.target.parentElement !== this.$refs.scrollArea.$el) this.$refs.pwdMenu.$refs.menu.hide()
+        },
+        // 新建目录
+        mkdir(dirname = '未命名文件夹', num = 1) {
+            const name = num === 1 ? dirname : `${dirname} ${num}`
+            const same = this.list.filter(item => item.name === name).length !== 0
+
+            if (same) return this.mkdir(dirname, num + 1)
+
+            this.$q.dialog({
+                message: '请输入文件夹名称',
+                prompt: {
+                    model: '',
+                    type: 'text',
+                    attrs: {
+                        placeholder: name,
+                    },
+                },
+                cancel: true,
+                persistent: true
+            }).onOk(data => {
+                if (!data) data = name
+                if (this.list.filter(item => item.name === data).length !== 0) return this.tools.confirm({
+                    message: `文件夹 ${data} 已存在`,
+                    confirm: () => this.mkdir(),
+                })
+                this.sftp.mkdir(join(this.pwd, data))
+                    .then(() => {
+                        this.getFileList('.', null, data)
+                    })
+                    .catch(err => this.tools.confirm(err))
+            })
+        },
+        // 新建文件
+        writeFile(filename = '未命名文件', num = 1) {
+            const name = num === 1 ? filename : `${filename} ${num}`
+            const same = this.list.filter(item => item.name === name).length !== 0
+
+            if (same) return this.writeFile(filename, num + 1)
+
+            this.$q.dialog({
+                message: '请输入文件名称',
+                prompt: {
+                    model: '',
+                    type: 'text',
+                    attrs: {
+                        placeholder: name,
+                    },
+                },
+                cancel: true,
+                persistent: true
+            }).onOk(data => {
+                if (!data) data = name
+                if (this.list.filter(item => item.name === data).length !== 0) return this.tools.confirm({
+                    message: `文件 ${data} 已存在`,
+                    confirm: () => this.writeFile(),
+                })
+                this.sftp.writeFile(join(this.pwd, data))
+                    .then(() => {
+                        this.getFileList('.', null, data)
+                    })
+                    .catch(err => this.tools.confirm(err))
+            })
+        },
     },
     created() {
         this.sftpInit()
-    }
+    },
 }
 </script>

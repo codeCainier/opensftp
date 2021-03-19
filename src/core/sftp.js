@@ -61,7 +61,7 @@ class SFTP extends Session {
     async downloadFile(remotePath, localPath, progress) {
         const options = {
             step: (saved, chunk, total) => {
-                progress('download', { remotePath, saved, total })
+                progress('download', { pathname: remotePath, saved, total })
             },
         }
         return new Promise((resolve, reject) => {
@@ -105,7 +105,7 @@ class SFTP extends Session {
     async uploadFile(localPath, remotePath, progress) {
         const options = {
             step: (saved, chunk, total) => {
-                progress('download', { localPath, saved, total })
+                progress('upload', { pathname: localPath, saved, total })
             },
         }
         return new Promise((resolve, reject) => {

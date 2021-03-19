@@ -6,7 +6,13 @@
         </q-header>
 
         <q-page-container>
-            <router-view />
+            <q-page :style-fn="layoutTweak">
+                <!-- keep-alive 结合 vue-router 实现 session 路由缓存 -->
+                <keep-alive>
+                    <router-view v-if="$route.meta.keepAlive"/>
+                </keep-alive>
+                <router-view v-if="!$route.meta.keepAlive"/>
+            </q-page>
         </q-page-container>
     </q-layout>
 </template>
@@ -24,7 +30,10 @@ export default {
     computed: {
         containerSize() {
             return () => this.$store.commit('layout/UPDATE_CONT_SIZE', this.$refs.header.$el)
-        }
+        },
+        layoutTweak () {
+            return offset => ({ height: offset ? `calc(100vh - ${offset}px)` : '100vh' })
+        },
     },
     mounted() {
         this.containerSize()

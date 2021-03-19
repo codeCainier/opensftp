@@ -10,7 +10,7 @@ export function TASK_INIT(state, action) {
         total: 0,
         percent: 0,
         transferring: {
-            remotePath: '',
+            pathname: '',
             saved: 0,
             total: 0,
             percent: 0,
@@ -25,19 +25,19 @@ export function TASK_INIT(state, action) {
 
 export function TASK_UPDATE(state, params) {
     const { id } = store.state.session.active
-    const { remotePath, saved, total } = params
+    const { pathname, saved, total } = params
     const info = state.list[id]
 
-    if (info.transferring.remotePath === remotePath) {
+    if (info.transferring.pathname === pathname) {
         info.transferring.saved = saved
         info.transferring.percent = Number((saved / total).toFixed(2))
     }
 
-    if (info.transferring.remotePath !== remotePath) {
+    if (info.transferring.pathname !== pathname) {
         info.total += total
         info.percent = Number((info.saved / info.total).toFixed(2))
 
-        info.transferring.remotePath = remotePath
+        info.transferring.pathname = pathname
         info.transferring.saved = 0
         info.transferring.total = total
         info.transferring.percent = 0

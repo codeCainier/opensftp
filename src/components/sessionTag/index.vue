@@ -1,10 +1,10 @@
 <template>
     <div class="row full-height">
-        <q-btn v-show="tagList.length"
+        <q-btn v-show="$store.state.session.tags.length"
                icon="home" flat
                class="no-border-radius"
                @click="backHome"/>
-        <q-btn v-for="item in tagList"
+        <q-btn v-for="item in $store.state.session.tags"
                :key="item.id"
                :color="$store.state.session.active.id === item.id ? 'teal-7' : 'blue-10'"
                class="no-border-radius"
@@ -20,17 +20,11 @@
 </template>
 
 <script>
-    import { uid } from 'quasar'
     export default {
         name: 'SessionTag',
-        data() {
-            return {
-                tagList: [],
-            }
-        },
         watch: {
             '$store.state.session.tags': function (newVal) {
-                this.tagList = newVal
+                if (!newVal.length) this.backHome()
             }
         },
         methods: {
@@ -38,19 +32,15 @@
                 this.$store.commit('session/TAGS_DEL', id)
             },
             backHome() {
+                if (this.$route.path === '/home') return
                 this.$store.commit('session/SET_ACTIVE', {})
-                this.$router.push({ path: '/', query: { t: uid() } })
+                this.$router.push({ path: '/' })
             },
             changeTag(item) {
-                if (this.$store.state.session.active.id === item.id) return this.closeTerm()
+                if (this.$store.state.session.active.id === item.id) return this.$store.commit('sftp/CLOSE_TERM')
                 this.$store.commit('session/SET_ACTIVE', item)
-                this.$router.push({ path: '/sftp', query: { t: uid() } })
+                if (this.$route.path !== '/session') this.$router.push({ path: '/session' })
             },
-            closeTerm() {
-                this.$store.commit('sftp/CLOSE_TERM')
-            },
-        },
-        created() {
         },
     };
 </script>

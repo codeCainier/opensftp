@@ -57,7 +57,7 @@
                             id: uid(),
                             params: this.$store.state.session.pool.get(sessionKey)
                         })
-                        this.$router.push({ path: '/sftp' })
+                        this.$router.push({ path: '/session' })
                         this.loading = false
                     }
                 })

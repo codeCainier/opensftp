@@ -6,8 +6,11 @@ const routes = [{
         path: '/home',
         component: () => import('pages/home')
     }, {
-        path: '/sftp',
-        component: () => import('pages/sftp')
+        path: '/session',
+        component: () => import('pages/session'),
+        meta: {
+            keepAlive: true,
+        },
     }]
 },
 

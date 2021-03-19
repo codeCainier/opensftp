@@ -116,5 +116,9 @@
 
 .fs-item
     outline: none
+    transition: all .3s
+    &.drag-enter
+        transform: scale(1.05)
+        background: rgba($primary, .3)
     &:hover
         background: rgba($primary, .1)
