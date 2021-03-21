@@ -2,9 +2,11 @@
     <div class="full-height q-pa-md flex flex-center">
         <div class="container text-center">
             <svg-quickLink class="illustration"/>
-            <q-input label="地址" v-model.trim="host">
+            <q-input v-model.trim="host" label="地址" autofocus>
                 <template v-slot:after>
-                    <q-input style="width: 80px" v-model.trim="port" label="端口" type="number"/>
+                    <q-input v-model.trim="port" label="端口"
+                             style="width: 80px"
+                             type="number"/>
                 </template>
             </q-input>
             <q-input label="用户" v-model.trim="username"/>
@@ -42,8 +44,8 @@
                 loading: false,
                 showPwd: false,
                 host: '',
-                port: '',
-                username: '',
+                port: '22',
+                username: 'root',
                 password: '',
                 conn: null,
             };
@@ -51,16 +53,23 @@
         methods: {
             // 连接会话
             login() {
+                const { host, port, username, password } = this
+
+                if (!host)     return this.notify.info('地址不能为空')
+                if (!port)     return this.notify.info('端口不能为空')
+                if (!username) return this.notify.info('用户不能为空')
+                if (!password) return this.notify.info('密码不能为空')
+
                 this.loading = true
 
                 const id = uid()
 
                 this.$store.commit('session/CREATE', {
                     id,
-                    host     : this.host,
-                    port     : this.port,
-                    username : this.username,
-                    password : this.password,
+                    host,
+                    port,
+                    username,
+                    password,
                 })
 
                 this.$store.dispatch('session/LOGIN', id)
