@@ -3,15 +3,11 @@ import { LocalStorage } from 'quasar'
 const state = {
     // 保存的 session 会话 - 会话池
     pool: LocalStorage.getItem('sessionPool') || [],
-    // 开启的 session 会话 - 标签池
-    tags: [],
-    // 活跃的 session 会话 - 标签 uid
+    // 连接的 session 会话 - 连接池
+    conn: [],
+    // 当前的 session 会话 - 连接 id
     active: '',
-    // 开启的会话 Map
-    sshMap: new Map(),
 }
-
-state.pool = new Map(state.pool)
 
 export default function () {
     return state

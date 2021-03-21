@@ -14,18 +14,21 @@
                 <router-view v-if="!$route.meta.keepAlive"/>
             </q-page>
         </q-page-container>
+        <setting/>
     </q-layout>
 </template>
 
 <script>
 import headerBarMac from 'src/components/headerBar/mac'
 import headerBarWin from 'src/components/headerBar/win'
+import setting from 'src/components/setting'
 
 export default {
     name: 'MainLayout',
     components: {
         'header-bar-mac': headerBarMac,
         'header-bar-win': headerBarWin,
+        setting,
     },
     computed: {
         containerSize() {

@@ -25,8 +25,8 @@
             <div class="item name">文件名称</div>
             <div class="item size">文件大小</div>
             <div class="item date">修改日期</div>
-<!--            <div class="item owner">所有者</div>-->
-<!--            <div class="item group">群组</div>-->
+            <!--<div class="item owner">所有者</div>-->
+            <!--<div class="item group">群组</div>-->
         </div>
         <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
@@ -131,9 +131,8 @@
 /**
  * SFTP Remote / Linux 思想，一切皆文件
  */
-import { join } from 'path'
+import path from 'path'
 import menuList from 'src/components/session/menuList'
-import SFTP from 'src/core/sftp'
 import iconMatch from 'src/utils/iconMatch'
 import pwdMenu from 'src/components/session/pwdMenu'
 
@@ -143,6 +142,9 @@ export default {
         'menu-list': menuList,
         'pwd-menu': pwdMenu,
     },
+    props: {
+        connect: Object,
+    },
     data() {
         return {
             // 是否显示隐藏项目
@@ -150,9 +152,9 @@ export default {
             // 全选
             selectAll: false,
             // 当前所在目录
-            pwd: '/',
+            pwd: this.$store.state.sftp.pwdRemote,
             // pwd 输入框
-            pwdInput: '/',
+            pwdInput: this.$store.state.sftp.pwdRemote,
             // 文件列表
             list: [],
             // loading 状态
@@ -193,21 +195,13 @@ export default {
         },
     },
     methods: {
-        // SFTP 初始化
-        async sftpInit() {
-            this.loading = true
-            this.sessionInfo = this.$store.state.session.active.params
-            this.sftp = new SFTP('remote')
-            await this.sftp.init(this.sessionInfo)
-            this.getFileList(this.$store.state.sftp.pwdRemote)
-        },
         // 进入目录
         dirEnter(item) {
             if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
         },
         // 下载
         download(item, localPath = this.$store.state.sftp.pwdLocal) {
-            this.sftp.localStat(join(localPath, item.name))
+            this.connect.statLocal(path.join(localPath, item.name))
                 .then(() => {
                     this.tools.confirm({
                         message: `${item === '-' ? '文件' : '目录'} ${item.name} 已存在，是否进行覆盖？`,
@@ -226,9 +220,9 @@ export default {
         async sftpDownload(item, localPath) {
             this.$store.commit('transfer/TASK_INIT', 'download')
 
-            await this.sftp.download(
-                join(this.pwd, item.name),
-                join(localPath, item.name),
+            await this.connect.download(
+                path.posix.join(this.pwd, item.name),
+                path.join(localPath, item.name),
                 this.progressStep,
             )
 
@@ -276,7 +270,7 @@ export default {
             }
             // 重命名
             this.loading = true
-            this.sftp.rename(join(this.pwd, this.renameItem.name), join(this.pwd, this.renameItem.newName))
+            this.connect.renameRemote(path.posix.join(this.pwd, this.renameItem.name), path.posix.join(this.pwd, this.renameItem.newName))
                 .then(() => {
                     this.getFileList('.', null, this.renameItem.newName)
                 })
@@ -298,7 +292,7 @@ export default {
                 message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
                 confirm: () => {
                     this.loading = true
-                    this.sftp.rm(join(this.pwd, item.name))
+                    this.connect.rmRemote(path.posix.join(this.pwd, item.name))
                         .then(() => {
                             this.getFileList('.')
                         })
@@ -311,12 +305,12 @@ export default {
             })
         },
         // 读取目录下文件列表
-        getFileList(dirname, pathName, focusFile) {
+        getFileList(dirname = '.', pathName, focusFile) {
             this.loading = true
 
-            const cwd = pathName || join(this.pwd, dirname)
+            const cwd = pathName || path.posix.join(this.pwd, dirname)
 
-            this.sftp.list(cwd)
+            this.connect.listRemote(cwd)
                 .then(list => {
                     this.list = list
                     // 更新最后访问目录
@@ -369,7 +363,7 @@ export default {
             this.selected = index
             event.dataTransfer.setData('action', 'remote')
             event.dataTransfer.setData('info', JSON.stringify(item))
-            event.dataTransfer.setData('oldPath', join(this.pwd, item.name))
+            event.dataTransfer.setData('oldPath', path.posix.join(this.pwd, item.name))
             event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
         },
         // 拖动进入
@@ -389,7 +383,7 @@ export default {
             const action  = event.dataTransfer.getData('action')
             const info    = JSON.parse(event.dataTransfer.getData('info'))
             const oldPath = event.dataTransfer.getData('oldPath')
-            const newPath = item ? join(this.pwd, item.name, info.name) : join(this.pwd, info.name)
+            const newPath = item ? path.posix.join(this.pwd, item.name, info.name) : path.posix.join(this.pwd, info.name)
 
             console.log(oldPath)
             console.log(newPath)
@@ -438,7 +432,7 @@ export default {
                     message: `文件夹 ${data} 已存在`,
                     confirm: () => this.mkdir(),
                 })
-                this.sftp.mkdir(join(this.pwd, data))
+                this.connect.mkdirRemote(path.posix.join(this.pwd, data))
                     .then(() => {
                         this.getFileList('.', null, data)
                     })
@@ -469,7 +463,7 @@ export default {
                     message: `文件 ${data} 已存在`,
                     confirm: () => this.writeFile(),
                 })
-                this.sftp.writeFile(join(this.pwd, data))
+                this.connect.writeFileRemote(path.posix.join(this.pwd, data))
                     .then(() => {
                         this.getFileList('.', null, data)
                     })
@@ -478,7 +472,11 @@ export default {
         },
     },
     created() {
-        this.sftpInit()
+        this.getFileList()
     },
 }
 </script>
+
+<style lang="sass" scoped>
+    @import "/src/css/fs.sass"
+</style>

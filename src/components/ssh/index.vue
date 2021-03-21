@@ -10,21 +10,20 @@
                @keydown.enter="openTerminal(cmd)">
         <q-space/>
         <!--<q-btn icon="settings" class="no-border-radius" flat size="sm"/>-->
-        <terminal ref="terminal"/>
+        <terminal ref="terminal" :connect="connect"/>
     </div>
 </template>
 
 <script>
     export default {
         name: 'SSH',
-        components: {
-        },
-        watch: {
-        },
         data() {
             return {
                 cmd: '',
             }
+        },
+        props: {
+            connect: Object,
         },
         methods: {
             openTerminal(cmd) {
@@ -32,14 +31,10 @@
                 this.cmd = ''
             },
         },
-        beforeCreate() {
-        },
-        mounted() {
-        },
     }
 </script>
 
-<style lang="sass" scope>
+<style lang="sass" scoped>
 .body--light
     .ssh
         border-top: 1px solid rgba($dark, .1)

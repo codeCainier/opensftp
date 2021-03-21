@@ -1,23 +1,23 @@
 <template>
     <q-scroll-area class="full-height">
         <q-list dense>
-            <q-item v-for="(item, index) in list"
-                    :key="item.sessionKey"
+            <q-item v-for="(item, index) in $store.state.session.pool"
+                    :key="item.id"
                     :ref="'session-' + index"
-                    :class="{ 'focus-temp': renameItem.sessionKey === item.sessionKey || openMenu === index }"
+                    :class="{ 'focus-temp': renameItem.id === item.id || openMenu === index }"
                     class="list-item cursor-inherit"
                     clickable v-ripple
-                    @click="selectSession(index)"
-                    @dblclick="login(item)"
-                    @keydown.enter="login(item)"
-                    @keydown.f2="renameOpen(item, index)"
-                    @keydown.delete="removeItem(item)"
-                    @keydown.alt.r="showAttr(item)"
-                    @keydown.up="moveFocus('up')"
-                    @keydown.down="moveFocus('down')">
+                    @click          ="selectSession(index)"
+                    @dblclick       ="login(item.id)"
+                    @keydown.enter  ="login(item)"
+                    @keydown.f2     ="renameOpen(item, index)"
+                    @keydown.delete ="removeItem(item)"
+                    @keydown.alt.r  ="showAttr(item)"
+                    @keydown.up     ="moveFocus('up')"
+                    @keydown.down   ="moveFocus('down')">
                 <q-item-section avatar>
                     <q-avatar rounded size="md">
-                        <q-spinner-gears v-if="loading === item.sessionKey" class="session-icon" />
+                        <q-spinner-gears v-if="loading === item.id" class="session-icon" />
                         <q-btn v-else flat
                                class="session-icon"
                                :class="{ 'text-positive': $q.dark.isActive }"
@@ -25,11 +25,11 @@
                     </q-avatar>
                 </q-item-section>
                 <q-item-section>
-                    <q-item-section v-show="renameItem.sessionKey !== item.sessionKey">{{ itemName(item) }}</q-item-section>
+                    <q-item-section v-show="renameItem.id !== item.id">{{ itemName(item) }}</q-item-section>
                     <input v-model="renameItem.name"
-                           v-show="renameItem.sessionKey === item.sessionKey"
+                           v-show="renameItem.id === item.id"
                            type="text"
-                           ref="rename-input"
+                           :ref="'rename-input-' + index"
                            class="rename-input no-outline no-border no-padding"
                            :placeholder="item.host"
                            @blur="renameClose"
@@ -40,11 +40,11 @@
                            @keydown.stop.up=""
                            @keydown.stop.down=""
                            @keydown.stop.alt.r=""
-                           @keydown.stop.enter="$refs['rename-input'][index].blur()">
+                           @keydown.stop.enter="$refs['rename-input-' + index][0].blur()">
                 </q-item-section>
                 <q-item-section side>
                     <q-item-label style="width: 100px" caption class="site-label">
-                        {{ loading === item.sessionKey ? '正在连接...' : item.host }}
+                        {{ loading === item.id ? '正在连接...' : item.host }}
                     </q-item-label>
                 </q-item-section>
                 <menu-list @click="openMenu = index"
@@ -55,12 +55,11 @@
                            @showAttr="showAttr(item)"/>
             </q-item>
         </q-list>
-        <attr-panel ref="attr-panel" @update="getList"/>
+        <attr-panel ref="attr-panel"/>
     </q-scroll-area>
 </template>
 
 <script>
-import { uid } from 'quasar'
 import menuList from './menuList'
 import attrPanel from './attrPanel'
 
@@ -72,77 +71,60 @@ export default {
     },
     data() {
         return {
-            loading: null,
-            selected: null,
-            openMenu: null,
-            renameItem: {},
-            list: [],
+            loading    : null,
+            selected   : null,
+            openMenu   : null,
+            renameItem : {},
         }
     },
     computed: {
         itemName() {
             return item => item.name || item.host
-        }
-    },
-    watch: {
+        },
     },
     methods: {
-        getList() {
-            this.list = ((arr = []) => {
-                this.$store.state.session.pool.forEach((sessionInfo, sessionKey) => {
-                    arr.push({ sessionKey, ...sessionInfo })
-                })
-                return arr
-            })()
-        },
         // 连接会话
-        login(item) {
-            this.loading = item.sessionKey
-
-            const { host, port, username, password } = item
-
-            this.$store.commit('session/SESSION_ADD', { host, port, username, password,
-                callback: sessionKey => {
-                    this.$store.commit('session/TAGS_ADD', {
-                        id: uid(),
-                        params: this.$store.state.session.pool.get(sessionKey)
-                    })
+        login(id) {
+            this.loading = id
+            this.$store.dispatch('session/LOGIN', id)
+                .then(() => {
+                    this.loading = false
                     this.$router.push({ path: '/session' })
-                    this.loading = null
-                }
-            })
+                })
+                .catch(err => {
+                    this.loading = false
+                    this.confirm(err)
+                })
         },
         // 重命名开始
         renameOpen(item, index) {
             this.renameItem = this.tools.clone(item)
             this.renameItem.oldname = this.renameItem.name
-            // FIXME: nextTick 无效
-            setTimeout(() => this.$refs['rename-input'][index].focus(), 100)
+            // TODO: nextTick 无效
+            setTimeout(() => this.$refs[`rename-input-${index}`][0].focus(), 100)
         },
         // 重命名结束
         renameClose() {
-            this.$store.commit('session/SESSION_UPDATE', {
-                sessionKey: this.renameItem.sessionKey,
+            this.$store.commit('session/UPDATE', {
+                id: this.renameItem.id,
                 updateItem: {
                     name: this.renameItem.name,
                 },
             })
             this.renameItem = {}
-            this.getList()
             this.sessionFocus()
         },
         // 重命名取消
         renameCancel(index) {
             this.renameItem.name = this.renameItem.oldname
-            this.$refs['rename-input'][index].blur()
+            this.$refs[`rename-input-${index}`][0].blur()
         },
         // 删除项目
         removeItem(item) {
             this.tools.confirm({
                 message: `确定要删除会话 [${item.name}] 吗？`,
                 confirm: () => {
-                    this.$store.commit('session/SESSION_DEL', item.sessionKey)
-                    this.getList()
+                    this.$store.commit('session/DELETE', item.id)
                 },
                 cancel: () => {}
             })
@@ -167,9 +149,6 @@ export default {
             this.selected = index
             this.sessionFocus()
         },
-    },
-    created() {
-        this.getList()
     },
 };
 </script>

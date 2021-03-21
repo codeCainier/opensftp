@@ -1,6 +1,6 @@
-# Open SftpJs
+# Open SFTP v0.0.1
 
-> Open SftpJs Client 基于 Electron 与 Vue 的 SftpJs 跨平台客户端
+> 基于 Electron 与 Vue 开发的 SFTP / SSH 跨平台客户端
 
 ## Status
 
@@ -8,14 +8,15 @@
 
 ## Website
 
-opensftp.com (未上线)
+opensftp.com (正式版本发布后上线)
 
 ## Dependencies
 
-* Quasar
-* Electron
-* node-pty
+* quasar
+* electron
+* ssh2
 * xterm
+* node-pty
 
 ## Command
 

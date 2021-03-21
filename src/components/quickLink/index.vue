@@ -10,7 +10,7 @@
             <q-input label="用户" v-model.trim="username"/>
             <q-input label="密码" v-model.trim="password"
                      :type="showPwd ? 'text' : 'password'"
-                     @keydown.enter="sshLogin">
+                     @keydown.enter="login">
                 <template v-slot:append>
                     <q-btn v-show="password"
                            :icon="showPwd ? 'visibility' : 'visibility_off'"
@@ -23,7 +23,7 @@
                    :loading="loading"
                    label="快速连接"
                    class="q-mt-md full-width"
-                   @click="sshLogin"/>
+                   @click="login"/>
         </div>
     </div>
 </template>
@@ -33,7 +33,7 @@
     import svgQuickLink from 'src/components/svg/quickLink'
 
     export default {
-        name: "QuickLink",
+        name: 'QuickLink',
         components: {
             'svg-quickLink': svgQuickLink
         },
@@ -45,22 +45,33 @@
                 port: '',
                 username: '',
                 password: '',
+                conn: null,
             };
         },
         methods: {
-            sshLogin() {
+            // 连接会话
+            login() {
                 this.loading = true
-                const { host, port, username, password } = this
-                this.$store.commit('session/SESSION_ADD', { host, port, username, password,
-                    callback: sessionKey => {
-                        this.$store.commit('session/TAGS_ADD', {
-                            id: uid(),
-                            params: this.$store.state.session.pool.get(sessionKey)
-                        })
-                        this.$router.push({ path: '/session' })
-                        this.loading = false
-                    }
+
+                const id = uid()
+
+                this.$store.commit('session/CREATE', {
+                    id,
+                    host     : this.host,
+                    port     : this.port,
+                    username : this.username,
+                    password : this.password,
                 })
+
+                this.$store.dispatch('session/LOGIN', id)
+                    .then(() => {
+                        this.loading = false
+                        this.$router.push({ path: '/session' })
+                    })
+                    .catch(err => {
+                        this.loading = false
+                        this.confirm(err)
+                    })
             },
         },
     };

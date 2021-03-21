@@ -133,9 +133,8 @@
 /**
  * 本地文件系统
  */
-import { join } from 'path'
+import path from 'path'
 import menuList from 'src/components/session/menuList'
-import SFTP from 'src/core/sftp'
 import iconMatch from 'src/utils/iconMatch'
 import pwdMenu from 'src/components/session/pwdMenu'
 
@@ -145,6 +144,9 @@ export default {
         'menu-list': menuList,
         'pwd-menu': pwdMenu,
     },
+    props: {
+        connect: Object,
+    },
     data() {
         return {
             // 是否显示隐藏项目
@@ -152,9 +154,9 @@ export default {
             // 全选
             selectAll: false,
             // 当前所在目录
-            pwd: '/',
+            pwd: this.$store.state.sftp.pwdLocal,
             // pwd 输入框
-            pwdInput: '/',
+            pwdInput: this.$store.state.sftp.pwdLocal,
             // 文件列表
             list: [],
             // loading 状态
@@ -195,21 +197,13 @@ export default {
         },
     },
     methods: {
-        // SFTP 初始化
-        async sftpInit() {
-            this.loading = true
-            this.sessionInfo = this.$store.state.session.active.params
-            this.sftp = new SFTP('local')
-            await this.sftp.init(this.sessionInfo)
-            this.getFileList(this.$store.state.sftp.pwdLocal)
-        },
         // 进入目录
         dirEnter(item) {
             if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
         },
         // 上传
         upload(item, remotePath = this.$store.state.sftp.pwdRemote) {
-            this.sftp.remoteStat(join(remotePath, item.name))
+            this.connect.statRemote(path.posix.join(remotePath, item.name))
                 .then(() => {
                     this.tools.confirm({
                         message: `${item === '-' ? '文件' : '目录'} ${item.name} 已存在，是否进行覆盖？`,
@@ -228,9 +222,9 @@ export default {
         async sftpUpload(item, remotePath) {
             this.$store.commit('transfer/TASK_INIT', 'upload')
 
-            await this.sftp.upload(
-                join(this.pwd, item.name),
-                join(remotePath, item.name),
+            await this.connect.upload(
+                path.join(this.pwd, item.name),
+                path.posix.join(remotePath, item.name),
                 this.progressStep,
             )
 
@@ -278,7 +272,7 @@ export default {
             }
             // 重命名
             this.loading = true
-            this.sftp.rename(join(this.pwd, this.renameItem.name), join(this.pwd, this.renameItem.newName))
+            this.connect.renameLocal(path.join(this.pwd, this.renameItem.name), path.join(this.pwd, this.renameItem.newName))
                 .then(() => {
                     this.getFileList('.', null, this.renameItem.newName)
                 })
@@ -300,7 +294,7 @@ export default {
                 message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
                 confirm: () => {
                     this.loading = true
-                    this.sftp.rm(join(this.pwd, item.name))
+                    this.connect.rmLocal(path.join(this.pwd, item.name))
                         .then(() => {
                             this.getFileList('.')
                         })
@@ -316,9 +310,9 @@ export default {
         getFileList(dirname, pathName, focusFile) {
             this.loading = true
 
-            const cwd = pathName || join(this.pwd, dirname)
+            const cwd = pathName || path.join(this.pwd, dirname)
 
-            this.sftp.list(cwd)
+            this.connect.listLocal(cwd)
                 .then(list => {
                     this.list = list
                     // 更新最后访问目录
@@ -371,7 +365,7 @@ export default {
             this.selected = index
             event.dataTransfer.setData('action', 'local')
             event.dataTransfer.setData('info', JSON.stringify(item))
-            event.dataTransfer.setData('oldPath', join(this.pwd, item.name))
+            event.dataTransfer.setData('oldPath', path.join(this.pwd, item.name))
             event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
         },
         // 拖动进入
@@ -389,7 +383,7 @@ export default {
             const action  = event.dataTransfer.getData('action')
             const info    = JSON.parse(event.dataTransfer.getData('info'))
             const oldPath = event.dataTransfer.getData('oldPath')
-            const newPath = item ? join(this.pwd, item.name, info.name) : join(this.pwd, info.name)
+            const newPath = item ? path.join(this.pwd, item.name, info.name) : path.join(this.pwd, info.name)
 
             console.log(oldPath)
             console.log(newPath)
@@ -438,7 +432,7 @@ export default {
                     message: `文件夹 ${data} 已存在`,
                     confirm: () => this.mkdir(),
                 })
-                this.sftp.mkdir(join(this.pwd, data))
+                this.connect.mkdirLocal(path.join(this.pwd, data))
                     .then(() => {
                         this.getFileList('.', null, data)
                     })
@@ -469,7 +463,7 @@ export default {
                     message: `文件 ${data} 已存在`,
                     confirm: () => this.writeFile(),
                 })
-                this.sftp.writeFile(join(this.pwd, data))
+                this.connect.writeFileLocal(path.join(this.pwd, data))
                     .then(() => {
                         this.getFileList('.', null, data)
                     })
@@ -478,7 +472,11 @@ export default {
         },
     },
     created() {
-        this.sftpInit()
+        this.getFileList('.')
     }
 }
 </script>
+
+<style lang="sass" scoped>
+    @import "/src/css/fs.sass"
+</style>

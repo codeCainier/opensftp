@@ -1,7 +1,10 @@
 import { ipcMain } from 'electron'
 import os from 'os'
 
-// node-pty 只能在主进程内引入
+/**
+ * 该模块暂未使用
+ * node-pty 只能在主进程内引入
+ */
 const pty = require('node-pty')
 
 const shell = process.env[os.platform() === 'win32' ? 'COMSPEC' : 'SHELL']

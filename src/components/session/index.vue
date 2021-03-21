@@ -2,13 +2,13 @@
     <div class="session full-height">
         <q-splitter class="sftp full-height" v-model="splitterModel">
             <template v-slot:before>
-                <local/>
+                <local ref="local" :connect="connect"/>
             </template>
             <template v-slot:after>
-                <remote/>
+                <remote ref="remote" :connect="connect"/>
             </template>
         </q-splitter>
-        <ssh/>
+        <ssh :connect="connect"/>
     </div>
 </template>
 
@@ -24,6 +24,10 @@
             remote,
             ssh,
         },
+        props: {
+            id: String,
+            connect: Object,
+        },
         data() {
             return {
                 splitterModel: 50,
@@ -32,9 +36,7 @@
     }
 </script>
 
-<style lang="sass" scope>
-@import "/src/css/fs.sass"
-
+<style lang="sass" scoped>
 .session
     display: flex
     flex-direction: column

@@ -1,8 +1,10 @@
 <template>
     <div class="full-height">
-        <session v-for="item in $store.state.session.tags"
-                 v-show="item.id === $store.state.session.active.id"
-                 :key="item.id"/>
+        <session v-for="item in $store.state.session.conn"
+                 v-show="item.id === $store.state.session.active"
+                 :key="item.id"
+                 :id="item.id"
+                 :connect="item.connect"/>
     </div>
 </template>
 

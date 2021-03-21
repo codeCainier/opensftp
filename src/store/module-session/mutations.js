@@ -1,82 +1,103 @@
-import { LocalStorage, Dialog, uid } from 'quasar'
-import tools from 'src/utils'
+import { LocalStorage } from 'quasar'
 
-// 会话池 新增会话
-export function SESSION_ADD(state, obj) {
-    const { host, port, username, password, callback } = obj
-    // 使用 Base64 加密生成 Session Key
-    const sessionKey = tools.base64En(`${username}@${host}:${port}`)
-    // 判断会话是否已存在
-    const session = state.pool.get(sessionKey)
-    // 已存在则更新会话
-    if (session) return setData()
-    // 不存在则弹窗提示输入会话名称
-    Dialog.create({
-        message: '这是一个新的会话，请创建会话名称',
-        prompt: {
-            model: host,
-            type: 'text',
-        },
-        persistent: true
-    }).onOk(name => setData(name))
-
-    function setData(name) {
-        state.pool.set(sessionKey, {
-            name: session ? session.name : name,
-            host,
-            port,
-            username,
-            password,
-            addTime: session ? session.addTime : Date.now(),
-        })
-        // 写入 LocalStorage
-        LocalStorage.set('sessionPool', [...state.pool])
-        // 若存在回调函数则执行回调
-        if (callback) callback(sessionKey)
+/**
+ * 创建会话
+ * @param   {Object}    state
+ * @param   {Object}    props
+ * @param   {String}    props.id        会话信息 ID
+ * @param   {String}    props.name      会话名称
+ * @param   {String}    props.host      IP / 域名
+ * @param   {String}    props.port      端口
+ * @param   {String}    props.username  账号
+ * @param   {String}    props.password  密码
+ */
+export function CREATE(state, props) {
+    const sessionInfo = {
+        id         : props.id,
+        name       : props.name || props.host,
+        host       : props.host,
+        port       : props.port,
+        username   : props.username,
+        // TODO: 会话池会话信息，密码 AES 加密
+        // password   : tools.aesEn(props.password),
+        password   : props.password,
+        createTIme : Date.now(),
+        updateTIme : Date.now(),
     }
+
+    state.pool.push(sessionInfo)
+    LocalStorage.set('sessionPool', state.pool)
 }
 
-// 会话池 更新会话
-export function SESSION_UPDATE(state, obj) {
-    // 解构获取 sessionKey 与要更新的项目
-    const { sessionKey, updateItem } = obj
-    // 读取 session 信息
-    const sessionInfo = state.pool.get(sessionKey)
-    // 更新 session 信息
-    Object.keys(updateItem).forEach(key => sessionInfo[key] = updateItem[key])
-    state.pool.set(sessionKey, sessionInfo)
-    LocalStorage.set('sessionPool', [...state.pool])
-}
-
-// 会话池 删除会话
-export function SESSION_DEL(state, sessionKey) {
-    state.pool.delete(sessionKey)
-    LocalStorage.set('sessionPool', [...state.pool])
-}
-
-// 标签池 新增会话
-export function TAGS_ADD(state, obj) {
-    state.tags.push(obj)
-    SET_ACTIVE(state, obj)
-}
-
-// 标签池 删除会话
-export function TAGS_DEL(state, id) {
-    for (let i = 0; i < state.tags.length; i += 1 ) {
-        if (state.tags[i].id === id) {
-            state.tags.splice(i, 1)
-            break
+/**
+ * 更新会话
+ * @param   {Object}    state
+ * @param   {Object}    props
+ * @param   {String}    props.id                    会话信息 ID
+ * @param   {String}    props.updateItem.host       IP / 域名
+ * @param   {String}    props.updateItem.port       端口
+ * @param   {String}    props.updateItem.username   账号
+ * @param   {String}    props.updateItem.password   密码
+ */
+export function UPDATE(state, props) {
+    const { id, updateItem } = props
+    state.pool.find(item => {
+        if (item.id === id) {
+            Object.keys(updateItem).forEach(key => item[key] = updateItem[key])
+            item.updateItem = Date.now()
         }
-    }
-    SET_ACTIVE(state, state.tags[0])
+    })
+    LocalStorage.set('sessionPool', state.pool)
 }
 
-// 更换当前会话
-export function SET_ACTIVE(state, obj) {
-    state.active = obj
+/**
+ * 删除会话
+ * @param   {Object}    state
+ * @param   {String}    id      会话信息 ID
+ */
+export function DELETE(state, id) {
+    state.pool.forEach((item, index) => {
+        if (item.id === id) state.pool.splice(index, 1)
+    })
+    LocalStorage.set('sessionPool', state.pool)
 }
 
-// 新增 SSH 会话
-export function SSH_ADD(state) {
-    state.sshMap.set(state.active.id, uid())
+/**
+ * 连接会话
+ * @param   {Object}    state
+ * @param   {Object}    props
+ * @param   {String}    props.id            会话连接 ID
+ * @param   {Object}    props.connect       会话连接对象
+ * @param   {Object}    props.sessionInfo   会话信息
+ */
+export function CONNECT(state, props) {
+    state.conn.push({
+        id          : props.id,
+        connect     : props.connect,
+        sessionInfo : props.sessionInfo,
+    })
+}
+
+/**
+ * 终止会话
+ * @param   {Object}    state
+ * @param   {String}    id      会话连接 ID
+ */
+export function END(state, id) {
+    state.conn.forEach((item, index) => {
+        if (item.id === id) {
+            // TODO: 终止会话连接
+            // item.sessionConn.conn.end()
+            state.conn.splice(index, 1)
+        }
+    })
+}
+
+/**
+ * 更换当前会话
+ * @param   {Object}    state
+ * @param   {String}    id      会话连接 ID
+ */
+export function SET_ACTIVE(state, id) {
+    state.active = id
 }

@@ -1,7 +1,7 @@
 {
     "name": "opensftp",
     "version": "0.0.1",
-    "description": "Open SFTP Client 基于 Electron 与 Vue 的 SFTP 跨平台客户端",
+    "description": "基于 Electron 与 Vue 开发的 SFTP / SSH 跨平台客户端",
     "productName": "OpenSFTP",
     "author": "xingrong.dev@gmail.com",
     "private": true,

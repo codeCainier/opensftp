@@ -4,7 +4,8 @@ import {
     BrowserWindow,
     nativeTheme
 } from 'electron'
-import fs from "fs";
+
+const os = require('os');
 
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
@@ -31,7 +32,8 @@ function createWindow() {
         height: 600,
         useContentSize: true,
         frame: false,
-        transparent: true,
+        // win 设备不开启窗口透明
+        transparent: os.type() !== 'Windows_NT',
         webPreferences: {
             // Change from /quasar.conf.js > electron > nodeIntegration;
             // More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration

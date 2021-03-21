@@ -1,12 +1,12 @@
 <template>
     <q-card class="terminal-container fixed-top-left full-height full-width"
             :class="{ active: show }">
-        <div ref="terminal" id="terminal" class="full-height overflow-hidden q-pa-sm"></div>
+        <div ref="terminal" class="full-height overflow-hidden q-pa-sm"></div>
     </q-card>
 </template>
 
 <script>
-    import { debounce, uid } from 'quasar'
+    import { debounce } from 'quasar'
     import { Terminal } from 'xterm'
     import { WebLinksAddon } from 'xterm-addon-web-links'
     import { FitAddon } from 'xterm-addon-fit'
@@ -14,15 +14,16 @@
     import { AttachAddon } from 'xterm-addon-attach'
     import { Unicode11Addon } from 'xterm-addon-unicode11'
     import 'xterm/css/xterm.css'
-    import Session from 'src/core/session'
 
     export default {
         name: 'Terminal',
+        props: {
+            connect: Object,
+        },
         data() {
             return {
                 show: false,
                 term: '',
-                session: '',
                 option: {
                     // 鼠标右键选择
                     rightClickSelectsWord: true,
@@ -71,13 +72,11 @@
                     // 0.6 为 font-size 基数
                     cols: Number(((this.$store.state.layout.contWidth - 16) / (0.6 * this.option.fontSize)).toFixed(0))
                 })
-            }
+            },
         },
         methods: {
             // SSH 初始化
             async sshLogin() {
-                this.session = new Session()
-                await this.session.init(this.$store.state.session.active.params)
                 const sshWindow = {
                     /** The number of rows (default: `24`). */
                     rows: this.option.rows,
@@ -90,7 +89,7 @@
                     /** The value to use for $TERM (default: `'vt100'`) */
                     term: this.term,
                 }
-                this.ssh = await this.session.shell(sshWindow)
+                this.ssh = await this.connect.shell(sshWindow)
 
                 this.ssh.on('data', data => this.term.write(data))
                 // 监听 Terminal 内容
@@ -120,9 +119,7 @@
                 // 设置 Unicode 版本为 11
                 term.unicode.activeVersion = '11'
 
-                // TODO: 参数 true 含义
-                // term.open(this.$refs.terminal)
-                term.open(document.getElementById('terminal'))
+                term.open(this.$refs.terminal)
                 // 监听 Terminal Focus
                 term.textarea.addEventListener('focus', this.listenerTermFocus)
                 // 监听 Terminal Blur
@@ -190,9 +187,9 @@
     }
 </script>
 
-<style lang="sass" scope>
+<style lang="sass" scoped>
 .terminal-container
-    background: transparent
+    //background: transparent
     background: #000000
     padding-top: 32px
     visibility: hidden

@@ -1,3 +1,5 @@
+@import "src/css/quasar.variables"
+
 // app global css in Sass form
 @mixin disable-copy
     -webkit-touch-callout: none
@@ -13,20 +15,34 @@ input
 
 body
     @include disable-copy
+    background: transparent
     transition: all .3s
+
     &.body--light
-        background: rgba(#FFFFFF, .8)
+        #q-app
+            background: rgba(#FFFFFF, .8)
+            &.os-win
+                background: #FFFFFF
         .bg-aero
             background: rgba(#FFFFFF, .5)
             backdrop-filter: blur(10px) saturate(180%)
     &.body--dark
-        background: none
+        #q-app
+            background: rgba($dark, .8)
+            &.os-win
+                background: $dark
         .bg-aero
             background: rgba($dark, .5)
             backdrop-filter: blur(10px) saturate(180%)
 
+#q-app
+    transition: all .3s
+
 .q-dialog__backdrop
     backdrop-filter: blur(10px)
+
+.xterm-viewport
+    overflow: hidden !important
 
 .bg-aero
     background: rgba(#FFFFFF, .5)

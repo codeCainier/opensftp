@@ -1,57 +1,47 @@
-import Session from 'src/core/session'
-
-const fs = require('fs')
+const { Client } = require('ssh2')
 const { join } = require('path')
+const fs = require('fs')
 
-class SFTP extends Session {
-    constructor(action) {
-        super()
-        this.action = action
+class Connect {
+    constructor(sessionInfo) {
+        this.sessionInfo = sessionInfo
     }
 
-    async init(sessionInfo) {
-        await super.init(sessionInfo)
+    async init() {
+        this.conn = await this.initConn()
+        this.sftp = await this.initSFTP()
+    }
+
+    initConn() {
+        return new Promise((resolve, reject) => {
+            const conn = new Client()
+            conn
+                .on('ready', () => resolve(conn))
+                .on('error', err => reject(err))
+                .connect(this.sessionInfo)
+        })
+    }
+
+    initSFTP() {
         return new Promise((resolve, reject) => {
             this.conn.sftp((err, sftp) => {
                 if (err) return reject(err)
-                this.sftp = sftp
-                resolve()
+                resolve(sftp)
             })
         })
     }
 
-    async list(cwd) {
-        if (this.action === 'remote') return await this.remoteList(cwd)
-        if (this.action === 'local')  return await this.localList(cwd)
-    }
-
-    async rm(pathName) {
-        if (this.action === 'remote') return await this.remoteRm(pathName)
-        if (this.action === 'local')  return await this.localRm(pathName)
-    }
-
-    async mkdir(pathName) {
-        if (this.action === 'remote') return await this.remoteMkdir(pathName)
-        if (this.action === 'local')  return await this.localMkdir(pathName)
-    }
-
-    async rename(pathOld, pathNew) {
-        if (this.action === 'remote') return await this.remoteRename(pathOld, pathNew)
-        if (this.action === 'local')  return await this.localRename(pathOld, pathNew)
-    }
-
-    async stat(pathName) {
-        if (this.action === 'remote') return await this.remoteStat(pathName)
-        if (this.action === 'local')  return await this.localStat(pathName)
-    }
-
-    async writeFile(pathName) {
-        if (this.action === 'remote') return await this.remoteWriteFile(pathName)
-        if (this.action === 'local')  return await this.localWriteFile(pathName)
+    shell(window, options) {
+        return new Promise((resolve, reject) => {
+            this.conn.shell(window, options, (err, stream) => {
+                if (err) return reject(err)
+                resolve(stream)
+            })
+        })
     }
 
     async download(remotePath, localPath, progress) {
-        const stats = await this.remoteStat(remotePath)
+        const stats = await this.statRemote(remotePath)
         const idDir = stats.isDirectory()
 
         if (!idDir) return this.downloadFile(remotePath, localPath, progress)
@@ -74,9 +64,9 @@ class SFTP extends Session {
     }
 
     async downloadDir(remotePath, localPath, progress) {
-        const fileList = await this.remoteList(remotePath)
+        const fileList = await this.listRemote(remotePath)
 
-        await this.localMkdir(localPath)
+        await this.mkdirLocal(localPath)
 
         for (const file of fileList) {
 
@@ -95,7 +85,7 @@ class SFTP extends Session {
     }
 
     async upload(localPath, remotePath, progress) {
-        const stats = await this.localStat(localPath)
+        const stats = await this.statLocal(localPath)
         const idDir = stats.isDirectory()
 
         if (!idDir) return this.uploadFile(localPath, remotePath, progress)
@@ -118,9 +108,9 @@ class SFTP extends Session {
     }
 
     async uploadDir(localPath, remotePath, progress) {
-        const fileList = await this.localList(localPath)
+        const fileList = await this.listLocal(localPath)
 
-        await this.remoteMkdir(remotePath)
+        await this.mkdirRemote(remotePath)
 
         for (const file of fileList) {
 
@@ -138,16 +128,16 @@ class SFTP extends Session {
         }
     }
 
-    remoteList(cwd) {
+    listRemote(cwd) {
         return new Promise((resolve, reject) => {
             this.sftp.readdir(cwd, (err, list) => {
                 if (err) return reject(err)
-                resolve(this.#listFormat(cwd, list))
+                resolve(this.listFormatRemote(cwd, list))
             })
         })
     }
 
-    remoteRm(pathName) {
+    rmRemote(pathName) {
         return new Promise((resolve, reject) => {
             const cmd = `rm -rf "${pathName}"`
             this.conn.exec(cmd, (err, stream) => {
@@ -161,7 +151,7 @@ class SFTP extends Session {
         })
     }
 
-    remoteMkdir(pathName) {
+    mkdirRemote(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.mkdir(pathName, { recursive: true }, err => {
                 if (err) return reject(err)
@@ -170,7 +160,7 @@ class SFTP extends Session {
         })
     }
 
-    remoteRename(pathOld, PathNew) {
+    renameRemote(pathOld, PathNew) {
         return new Promise((resolve, reject) => {
             this.sftp.rename(pathOld, PathNew, err => {
                 if (err) return reject(err)
@@ -179,7 +169,7 @@ class SFTP extends Session {
         })
     }
 
-    remoteStat(pathName) {
+    statRemote(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.stat(pathName, (err, stats) => {
                 if (err) return reject(err)
@@ -188,7 +178,7 @@ class SFTP extends Session {
         })
     }
 
-    remoteWriteFile(pathName) {
+    writeFileRemote(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.writeFile(pathName, '', 'utf-8', err => {
                 if (err) return reject(err)
@@ -197,16 +187,16 @@ class SFTP extends Session {
         })
     }
 
-    localList(cwd) {
+    listLocal(cwd) {
         return new Promise((resolve, reject) => {
             fs.readdir(cwd, (err, list) => {
                 if (err) return reject(err)
-                resolve(this.#listFormat(cwd, list))
+                resolve(this.listFormatLocal(cwd, list))
             })
         })
     }
 
-    localRm(pathName) {
+    rmLocal(pathName) {
         return new Promise((resolve, reject) => {
             fs.rmdir(pathName, { recursive: true }, err => {
                 if (err) return reject(err)
@@ -215,7 +205,7 @@ class SFTP extends Session {
         })
     }
 
-    localMkdir(pathName) {
+    mkdirLocal(pathName) {
         return new Promise((resolve, reject) => {
             fs.mkdir(pathName, { recursive: true }, err => {
                 if (err) return reject(err)
@@ -224,7 +214,7 @@ class SFTP extends Session {
         })
     }
 
-    localRename(pathOld, PathNew) {
+    renameLocal(pathOld, PathNew) {
         return new Promise((resolve, reject) => {
             fs.rename(pathOld, PathNew, err => {
                 if (err) return reject(err)
@@ -233,7 +223,7 @@ class SFTP extends Session {
         })
     }
 
-    localStat(pathName) {
+    statLocal(pathName) {
         return new Promise((resolve, reject) => {
             fs.stat(pathName, (err, stats) => {
                 if (err) return reject(err)
@@ -242,7 +232,7 @@ class SFTP extends Session {
         })
     }
 
-    localWriteFile(pathName) {
+    writeFileLocal(pathName) {
         return new Promise((resolve, reject) => {
             fs.writeFile(pathName, '', 'utf-8', err => {
                 if (err) return reject(err)
@@ -251,7 +241,7 @@ class SFTP extends Session {
         })
     }
 
-    remoteListFormat(list) {
+    listFormatRemote(cwd, list) {
         const arr = []
         list.forEach(item => {
             const { size, atime } = item.attrs
@@ -277,7 +267,7 @@ class SFTP extends Session {
         return arr
     }
 
-    localListFormat(cwd, fileList) {
+    listFormatLocal(cwd, fileList) {
         const list = []
 
         for (const filename of fileList) {
@@ -307,12 +297,6 @@ class SFTP extends Session {
 
         return list
     }
-
-    #listFormat = (cwd, list) => {
-        if (this.action === 'remote') list = this.remoteListFormat(list)
-        if (this.action === 'local')  list = this.localListFormat(cwd, list)
-        return list
-    }
 }
 
-export default SFTP
+export default Connect

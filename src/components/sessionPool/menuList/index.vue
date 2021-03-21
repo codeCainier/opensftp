@@ -2,12 +2,12 @@
     <q-menu touch-position
             context-menu
             ref="menu"
-            @before-show="$emit('click')"
-            @before-hide="$emit('close')"
-            @keydown.enter="emitHandle('login')"
-            @keydown.delete="emitHandle('remove')"
-            @keydown.f2="emitHandle('rename')"
-            @keydown.alt.r="emitHandle('showAttr')">
+            @before-show    ="$emit('click')"
+            @before-hide    ="$emit('close')"
+            @keydown.enter  ="emitHandle('login')"
+            @keydown.delete ="emitHandle('remove')"
+            @keydown.f2     ="emitHandle('rename')"
+            @keydown.alt.r  ="emitHandle('showAttr')">
         <q-list dense style="min-width: 150px">
             <q-item clickable v-close-popup @click="emitHandle('login')">
                 <q-item-section>连接</q-item-section>
@@ -42,21 +42,11 @@
 <script>
 export default {
     name: 'SessionItemMenuList',
-    data() {
-        return {
-        }
-    },
-    watch: {
-    },
-    computed: {
-    },
     methods: {
         emitHandle(action) {
             this.$emit(action)
             this.$refs.menu.hide()
         },
     },
-    created() {
-    }
 }
 </script>
