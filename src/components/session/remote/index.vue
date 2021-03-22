@@ -380,6 +380,8 @@ export default {
         dropFile(event, item) {
             this.dragEnterItem = null
 
+            if (item && item.type === '-') return
+
             const action  = event.dataTransfer.getData('action')
             const info    = JSON.parse(event.dataTransfer.getData('info'))
             const oldPath = event.dataTransfer.getData('oldPath')
@@ -407,37 +409,6 @@ export default {
         // 当前目录菜单显示前
         pwdMenuBeforeShow(event) {
             if (event.target.parentElement !== this.$refs.scrollArea.$el) this.$refs.pwdMenu.$refs.menu.hide()
-        },
-        // 新建目录
-        mkdir(dirname = '未命名文件夹', num = 1) {
-            const name = num === 1 ? dirname : `${dirname} ${num}`
-            const same = this.list.filter(item => item.name === name).length !== 0
-
-            if (same) return this.mkdir(dirname, num + 1)
-
-            this.$q.dialog({
-                message: '请输入文件夹名称',
-                prompt: {
-                    model: '',
-                    type: 'text',
-                    attrs: {
-                        placeholder: name,
-                    },
-                },
-                cancel: true,
-                persistent: true
-            }).onOk(data => {
-                if (!data) data = name
-                if (this.list.filter(item => item.name === data).length !== 0) return this.tools.confirm({
-                    message: `文件夹 ${data} 已存在`,
-                    confirm: () => this.mkdir(),
-                })
-                this.connect.mkdirRemote(path.posix.join(this.pwd, data))
-                    .then(() => {
-                        this.getFileList('.', null, data)
-                    })
-                    .catch(err => this.tools.confirm(err))
-            })
         },
     },
     created() {
