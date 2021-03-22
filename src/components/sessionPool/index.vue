@@ -32,6 +32,7 @@
                            :ref="'rename-input-' + index"
                            class="rename-input no-outline no-border no-padding"
                            :placeholder="item.host"
+                           spellcheck="false"
                            @blur="renameClose"
                            @click.stop=""
                            @dblclick.stop=""

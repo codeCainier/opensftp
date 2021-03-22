@@ -86,8 +86,7 @@ export function CONNECT(state, props) {
 export function END(state, id) {
     state.conn.forEach((item, index) => {
         if (item.id === id) {
-            // TODO: 终止会话连接
-            // item.sessionConn.conn.end()
+            item.connect.end()
             state.conn.splice(index, 1)
         }
     })

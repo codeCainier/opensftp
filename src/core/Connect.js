@@ -1,6 +1,6 @@
 const { Client } = require('ssh2')
-const { join } = require('path')
-const fs = require('fs')
+const { join }   = require('path')
+const fs         = require('fs')
 
 class Connect {
     constructor(sessionInfo) {
@@ -8,15 +8,23 @@ class Connect {
     }
 
     async init() {
-        this.conn = await this.initConn()
-        this.sftp = await this.initSFTP()
+        await this.initConn()
+        await this.initSFTP()
+    }
+
+    exit() {
+        this.ssh.end()
+        this.conn.end()
     }
 
     initConn() {
         return new Promise((resolve, reject) => {
             const conn = new Client()
             conn
-                .on('ready', () => resolve(conn))
+                .on('ready', () => {
+                    this.conn = conn
+                    resolve(conn)
+                })
                 .on('error', err => reject(err))
                 .connect(this.sessionInfo)
         })
@@ -26,6 +34,7 @@ class Connect {
         return new Promise((resolve, reject) => {
             this.conn.sftp((err, sftp) => {
                 if (err) return reject(err)
+                this.sftp = sftp
                 resolve(sftp)
             })
         })
@@ -35,6 +44,7 @@ class Connect {
         return new Promise((resolve, reject) => {
             this.conn.shell(window, options, (err, stream) => {
                 if (err) return reject(err)
+                this.ssh = stream
                 resolve(stream)
             })
         })
@@ -128,6 +138,11 @@ class Connect {
         }
     }
 
+    /**
+     * 远程 列出目录下文件
+     * @method
+     * @param   {String}    cwd     远程目录地址
+     */
     listRemote(cwd) {
         return new Promise((resolve, reject) => {
             this.sftp.readdir(cwd, (err, list) => {
@@ -137,12 +152,16 @@ class Connect {
         })
     }
 
+    /**
+     * 远程 删除
+     * @method
+     * @param   {String}    pathName     要删除的文件地址
+     */
     rmRemote(pathName) {
         return new Promise((resolve, reject) => {
             const cmd = `rm -rf "${pathName}"`
             this.conn.exec(cmd, (err, stream) => {
                 if (err) return reject(err)
-
                 stream
                     .on('data', data => {})
                     .on('end', () => resolve())
@@ -151,6 +170,11 @@ class Connect {
         })
     }
 
+    /**
+     * 远程 创建目录
+     * @method
+     * @param   {String}    pathName     要创建的目录地址
+     */
     mkdirRemote(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.mkdir(pathName, { recursive: true }, err => {
@@ -160,15 +184,26 @@ class Connect {
         })
     }
 
-    renameRemote(pathOld, PathNew) {
+    /**
+     * 远程 重命名
+     * @method
+     * @param   {String}    pathOld      重命名前的文件地址
+     * @param   {String}    pathNew      重命名后的文件地址
+     */
+    renameRemote(pathOld, pathNew) {
         return new Promise((resolve, reject) => {
-            this.sftp.rename(pathOld, PathNew, err => {
+            this.sftp.rename(pathOld, pathNew, err => {
                 if (err) return reject(err)
                 resolve()
             })
         })
     }
 
+    /**
+     * 远程 文件状态
+     * @method
+     * @param   {String}    pathName     要查询状态的文件地址
+     */
     statRemote(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.stat(pathName, (err, stats) => {
@@ -178,6 +213,11 @@ class Connect {
         })
     }
 
+    /**
+     * 远程 创建文件
+     * @method
+     * @param   {String}    pathName     要创建的文件地址
+     */
     writeFileRemote(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.writeFile(pathName, '', 'utf-8', err => {

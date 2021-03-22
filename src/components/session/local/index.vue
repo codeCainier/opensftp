@@ -7,7 +7,7 @@
         <!-- 文件系统 - 控制栏 -->
         <div class="fs-control">
             <input class="pwd-input" type="text"
-                   :spellcheck="false"
+                   spellcheck="false"
                    v-model.trim="pwdInput"
                    @keydown.enter="getFileList(null, pwdInput)">
             <div class="btn-group">
@@ -88,6 +88,7 @@
                                    :ref="'rename-input-' + index"
                                    class="rename-input no-outline no-border no-padding"
                                    :placeholder="item.name"
+                                   spellcheck="false"
                                    @blur="renameClose(index)"
                                    @click.stop=""
                                    @dblclick.stop=""
@@ -137,6 +138,7 @@ import path from 'path'
 import menuList from 'src/components/session/menuList'
 import iconMatch from 'src/utils/iconMatch'
 import pwdMenu from 'src/components/session/pwdMenu'
+import Session from 'src/core/Session'
 
 export default {
     name: 'SFTPLocal',
@@ -149,6 +151,7 @@ export default {
     },
     data() {
         return {
+            session: null,
             // 是否显示隐藏项目
             showHideFile: false,
             // 全选
@@ -319,9 +322,7 @@ export default {
                     this.pwd = cwd
                     // 若指定聚焦文件
                     if (focusFile) {
-                        this.list.forEach((item, index) => {
-                            if (item.name === focusFile) this.selected = index
-                        })
+                        this.selected = this.list.findIndex(item => item.name === focusFile)
                     } else {
                         // 默认不选择元素
                         this.selected = null
@@ -391,6 +392,7 @@ export default {
             // 若文件来自 local 视为移动操作
             if (action === 'local') {
                 if (oldPath === newPath) return
+                this.session.mvFile('local', oldPath, newPath)
             }
             // 若文件来自 remote，视为下载操作
             if (action === 'remote') {
@@ -472,6 +474,7 @@ export default {
         },
     },
     created() {
+        this.session = Session(this)
         this.getFileList('.')
     }
 }

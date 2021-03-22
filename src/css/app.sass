@@ -15,12 +15,12 @@ input
 
 body
     @include disable-copy
-    background: transparent
+    background: transparent !important
     transition: all .3s
 
     &.body--light
         #q-app
-            background: rgba(#FFFFFF, .8)
+            background: rgba(#FFFFFF, .7)
             &.os-win
                 background: #FFFFFF
         .bg-aero
@@ -28,7 +28,7 @@ body
             backdrop-filter: blur(10px) saturate(180%)
     &.body--dark
         #q-app
-            background: rgba($dark, .8)
+            background: rgba($dark, .3)
             &.os-win
                 background: $dark
         .bg-aero
