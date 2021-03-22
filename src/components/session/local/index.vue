@@ -38,7 +38,7 @@
                            @dragenter.native=""
                            @dragleave.native="dragLeave"
                            @drop.native="dropFile($event)">
-                <div class="q-pl-sm q-pt-sm q-pb-xs q-pr-md">
+                <div class="q-pl-sm q-pt-sm q-pb-xl q-pr-md">
                     <!-- File .. -->
                     <div v-show="pwd !== '/'"
                          class="fs-item" tabindex="0"
@@ -410,7 +410,10 @@ export default {
         },
         // 当前目录菜单显示前
         pwdMenuBeforeShow(event) {
-            if (event.target.parentElement !== this.$refs.scrollArea.$el) this.$refs.pwdMenu.$refs.menu.hide()
+            const a = event.target.parentElement
+            const b = event.target.parentElement.parentElement.parentElement
+            const scrollArea = this.$refs.scrollArea.$el
+            if (a !== scrollArea && b !== scrollArea) this.$refs.pwdMenu.$refs.menu.hide()
         },
     },
     created() {
