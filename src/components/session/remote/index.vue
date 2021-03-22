@@ -110,8 +110,8 @@
                                    @download="download(item)"
                                    @rename="renameOpen(item, index)"
                                    @remove="removeFile(item)"
-                                   @mkdir="mkdir"
-                                   @write-file="writeFile"
+                                   @mkdir="mkdirRemote"
+                                   @write-file="writeFileRemote"
                                    @refresh="getFileList('.')"
                                    @show-hide="showHideFile = !showHideFile"/>
                     </div>
@@ -120,8 +120,8 @@
             <pwd-menu ref="pwdMenu" action="local"
                       :showHideFile="showHideFile"
                       @before-show="pwdMenuBeforeShow"
-                      @mkdir="mkdir"
-                      @write-file="writeFile"
+                      @mkdir="mkdirRemote"
+                      @write-file="writeFileRemote"
                       @refresh="getFileList('.')"
                       @show-hide="showHideFile = !showHideFile"/>
         </div>
@@ -136,7 +136,7 @@ import path      from 'path'
 import menuList  from 'src/components/session/menuList'
 import iconMatch from 'src/utils/iconMatch'
 import pwdMenu   from 'src/components/session/pwdMenu'
-import Session   from 'src/core/Session'
+import session   from 'src/core/Session'
 
 export default {
     name: 'SFTPRemote',
@@ -198,6 +198,7 @@ export default {
         },
     },
     methods: {
+        ...session,
         // 进入目录
         dirEnter(item) {
             if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
@@ -379,20 +380,17 @@ export default {
         dropFile(event, item) {
             this.dragEnterItem = null
 
-            if (item && item.type === '-') return
-
             const action  = event.dataTransfer.getData('action')
             const info    = JSON.parse(event.dataTransfer.getData('info'))
             const oldPath = event.dataTransfer.getData('oldPath')
-            const newPath = item ? path.posix.join(this.pwd, item.name, info.name) : path.posix.join(this.pwd, info.name)
+            const newPath = path.posix.join(this.pwd, item ? item.name : '', info.name)
 
             console.log(oldPath)
             console.log(newPath)
 
             // 若文件来自 remote 视为移动操作
             if (action === 'remote') {
-                if (oldPath === newPath) return
-                this.session.mvFile('remote', oldPath, newPath)
+                this.mvFile('remote', oldPath, newPath)
             }
             // 若文件来自 local，视为上传操作
             if (action === 'local') {
@@ -441,40 +439,9 @@ export default {
                     .catch(err => this.tools.confirm(err))
             })
         },
-        // 新建文件
-        writeFile(filename = '未命名文件', num = 1) {
-            const name = num === 1 ? filename : `${filename} ${num}`
-            const same = this.list.filter(item => item.name === name).length !== 0
-
-            if (same) return this.writeFile(filename, num + 1)
-
-            this.$q.dialog({
-                message: '请输入文件名称',
-                prompt: {
-                    model: '',
-                    type: 'text',
-                    attrs: {
-                        placeholder: name,
-                    },
-                },
-                cancel: true,
-                persistent: true
-            }).onOk(data => {
-                if (!data) data = name
-                if (this.list.filter(item => item.name === data).length !== 0) return this.tools.confirm({
-                    message: `文件 ${data} 已存在`,
-                    confirm: () => this.writeFile(),
-                })
-                this.connect.writeFileRemote(path.posix.join(this.pwd, data))
-                    .then(() => {
-                        this.getFileList('.', null, data)
-                    })
-                    .catch(err => this.tools.confirm(err))
-            })
-        },
     },
     created() {
-        this.session = Session(this)
+        // this.session = Session(this)
         this.getFileList()
     },
 }
