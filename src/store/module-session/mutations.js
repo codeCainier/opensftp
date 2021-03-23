@@ -86,7 +86,9 @@ export function CONNECT(state, props) {
 export function END(state, id) {
     state.conn.forEach((item, index) => {
         if (item.id === id) {
-            item.connect.end()
+            item.connect.sftp.end()
+            item.connect.ssh.end()
+            item.connect.conn.end()
             state.conn.splice(index, 1)
         }
     })

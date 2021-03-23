@@ -243,14 +243,20 @@ export default {
             })
             .catch(() => {})
     },
-    // 更新传输进度
-    progressStep(action, params) {
+    /**
+     * 更新传输进度
+     * @method
+     * @param   {String}    action          行为    download || upload || finish
+     * @param   {Object}    props
+     * @param   {String}    props.pathname  名称
+     * @param   {String}    props.saved     完成（单位 B）
+     * @param   {String}    props.total     总量（单位 B）
+     */
+    progressStep(action, { pathname, saved, total }) {
         if (action === 'upload') {
-            const { pathname, saved, total } = params
             this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
         }
         if (action === 'download') {
-            const { pathname, saved, total } = params
             this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
         }
         if (action === 'finish') {

@@ -275,7 +275,7 @@ export default {
             })
         },
         // 读取目录下文件列表
-        getFileList(dirname = '.', pathName, focusFile) {
+        getFileList(dirname, pathName, focusFile) {
             this.loading = true
 
             const cwd = pathName || path.posix.join(this.pwd, dirname)
@@ -380,7 +380,7 @@ export default {
     },
     created() {
         this.pwd = '/'
-        this.getFileList()
+        this.getFileList('.')
     },
 }
 </script>
