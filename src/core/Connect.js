@@ -175,12 +175,15 @@ class Connect {
      * @method
      * @param   {String}    pathName     要创建的目录地址
      */
-    mkdirRemote(pathName) {
+    async mkdirRemote(pathName) {
         return new Promise((resolve, reject) => {
-            this.sftp.mkdir(pathName, { recursive: true }, err => {
-                if (err) return reject(err)
-                resolve()
-            })
+            // 若目录已存在，则跳过创建
+            this.statRemote(pathName)
+                .then(() => resolve())
+                .catch(() => this.sftp.mkdir(pathName, err => {
+                    if (err) reject(err)
+                    resolve()
+                }))
         })
     }
 

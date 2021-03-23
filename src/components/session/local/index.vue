@@ -109,7 +109,7 @@
                                    :showHideFile="showHideFile"
                                    @show="selected = openMenu = item.name"
                                    @close="fileFocus(index)"
-                                   @upload="upload(item)"
+                                   @upload="uploadByMenu(item)"
                                    @rename="renameOpen(item, index)"
                                    @remove="removeFile(item)"
                                    @mkdir="mkdirLocal"
@@ -132,21 +132,24 @@
 
 <script>
 /**
- * 本地文件系统
+ * SFTP Local 本地文件系统
+ * Linux 思想，一切皆文件
  */
-import path from 'path'
-import menuList from 'src/components/session/menuList'
+import path      from 'path'
+import menuList  from 'src/components/session/menuList'
 import iconMatch from 'src/utils/iconMatch'
-import pwdMenu from 'src/components/session/pwdMenu'
-import session from 'src/core/Session'
+import pwdMenu   from 'src/components/session/pwdMenu'
+import session   from 'src/core/Session'
+import electron from "electron";
 
 export default {
     name: 'SFTPLocal',
     components: {
         'menu-list': menuList,
-        'pwd-menu': pwdMenu,
+        'pwd-menu' : pwdMenu,
     },
     props: {
+        pwdRemote: String,
         connect: Object,
     },
     data() {
@@ -157,9 +160,9 @@ export default {
             // 全选
             selectAll: false,
             // 当前所在目录
-            pwd: this.$store.state.sftp.pwdLocal,
+            pwd: '',
             // pwd 输入框
-            pwdInput: this.$store.state.sftp.pwdLocal,
+            pwdInput: '',
             // 文件列表
             list: [],
             // loading 状态
@@ -177,10 +180,7 @@ export default {
     watch: {
         pwd(newVal) {
             this.pwdInput = newVal
-            this.$store.commit('sftp/CHANGE_PWD_LOCAL', newVal)
-        },
-        '$store.state.sftp.refreshListenerLocal': function () {
-            this.getFileList('.')
+            this.$emit('update-pwd', newVal)
         },
     },
     computed: {
@@ -205,47 +205,14 @@ export default {
         dirEnter(item) {
             if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
         },
-        // 上传
-        upload(item, remotePath = this.$store.state.sftp.pwdRemote) {
-            this.connect.statRemote(path.posix.join(remotePath, item.name))
-                .then(() => {
-                    this.tools.confirm({
-                        message: `${item === '-' ? '文件' : '目录'} ${item.name} 已存在，是否进行覆盖？`,
-                        confirm: () => {
-                            this.sftpUpload(item, remotePath)
-                        },
-                        cancel: () => {
-                        },
-                    })
-                })
-                .catch(() => {
-                    this.sftpUpload(item, remotePath)
-                })
-        },
-        // SFTP 上传
-        async sftpUpload(item, remotePath) {
-            this.$store.commit('transfer/TASK_INIT', 'upload')
-
-            await this.connect.upload(
-                path.join(this.pwd, item.name),
-                path.posix.join(remotePath, item.name),
-                this.progressStep,
-            )
-
-            if (remotePath === this.$store.state.sftp.pwdRemote) this.$store.commit('sftp/REFRESH_FS_REMOTE')
-
-            this.notify(`${item.type === '-' ? '文件' : '目录'} ${item.name} 上传成功`)
-            this.$store.commit('transfer/TASK_CLOSE')
-        },
-        // 更新传输进度
-        progressStep(action, params) {
-            if (action === 'upload') {
-                const { pathname, saved, total } = params
-                this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
-            }
-            if (action === 'finish') {
-                this.$store.commit('transfer/TASK_FINISH')
-            }
+        // 右键上传
+        uploadByMenu(item) {
+            // 要上传的本地路径
+            const localPath  = path.join(this.pwd, item.name)
+            // 要保存的远程路径
+            const remotePath = path.posix.join(this.pwdRemote, item.name)
+            // 调用上传函数
+            this.upload(localPath, remotePath)
         },
         // 重命名开始
         renameOpen(item, index) {
@@ -397,8 +364,7 @@ export default {
                 this.mvFile('local', oldPath, newPath)
             }
             // 若文件来自 remote，视为下载操作
-            if (action === 'remote') {
-            }
+            if (action === 'remote') this.download(oldPath, newPath)
         },
         // 拖动结束
         dragEnd(event, item) {
@@ -417,7 +383,7 @@ export default {
         },
     },
     created() {
-        // this.session = Session(this)
+        this.pwd = this.$q.electron.remote.app.getPath('home')
         this.getFileList('.')
     }
 }

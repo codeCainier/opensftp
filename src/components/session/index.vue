@@ -2,10 +2,18 @@
     <div class="session full-height">
         <q-splitter class="sftp full-height" v-model="splitterModel">
             <template v-slot:before>
-                <local ref="local" :connect="connect"/>
+                <local ref="local"
+                       :connect="connect"
+                       :pwdRemote="state.pwdRemote"
+                       @update-pwd="pwd => state.pwdLocal = pwd"
+                       @refresh-remote="$refs.remote.getFileList('.')"/>
             </template>
             <template v-slot:after>
-                <remote ref="remote" :connect="connect"/>
+                <remote ref="remote"
+                        :connect="connect"
+                        :pwdLocal="state.pwdLocal"
+                        @update-pwd="pwd => state.pwdRemote = pwd"
+                        @refresh-local="$refs.local.getFileList('.')"/>
             </template>
         </q-splitter>
         <ssh :connect="connect"/>
@@ -31,7 +39,13 @@
         data() {
             return {
                 splitterModel: 50,
+                state: {
+                    pwdLocal: '',
+                    pwdRemote: '',
+                },
             }
+        },
+        methods: {
         },
     }
 </script>

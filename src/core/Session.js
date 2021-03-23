@@ -9,9 +9,13 @@ export default {
      * @param   {String}    newPath      文件移动后地址
      */
     mvFile(action, oldPath, newPath) {
-        // 新地址不能在旧地址内
-        // FIXME: 文件名称包含 Bug
-        if (newPath.startsWith(oldPath)) return
+        let sep
+
+        if (action === 'local')  sep = path.sep
+        if (action === 'remote') sep = '/'
+
+        // 新地址不能在旧地址内 (地址末尾需要拼接分隔符，防止出现名称相似问题)
+        if ((newPath + sep).startsWith(oldPath + sep)) return
 
         this.loading = true
 
@@ -41,19 +45,49 @@ export default {
     checkOverwrite(action, pathname) {
         this.loading = true
 
-        let mode
+        let statMode
+        let rmMode
 
-        if (action === 'local')  mode = 'statLocal'
-        if (action === 'remote') mode = 'statRemote'
+        if (action === 'local')  {
+            statMode = 'statLocal'
+            rmMode   = 'rmLocal'
+        }
+        if (action === 'remote') {
+            statMode = 'statRemote'
+            rmMode   = 'rmRemote'
+        }
 
         return new Promise((resolve, reject) => {
-            this.connect[mode](pathname)
-                .then(() => {
-                    this.confirm({
-                        message: `${pathname} 已存在，是否覆盖？`,
+            this.connect[statMode](pathname)
+                .then(stats => {
+                    const isDir = stats.isDirectory()
+
+                    if (!isDir) this.confirm({
+                        message: '文件已存在，是否进行覆盖？',
                         confirm: () => resolve(),
-                        cancel: () => reject(),
+                        cancel : () => reject(),
                     })
+
+                    if (isDir) this.$q.dialog({
+                        message: '目录已存在，请选择覆盖模式',
+                        options: {
+                            type: 'radio',
+                            model: 'ad',
+                            items: [
+                                { label: '增量模式：只覆盖重复文件', value: 'ad', color: 'primary' },
+                                { label: '重建模式：删除旧目录并重新创建', value: 'rm', color: 'negative' },
+                            ]
+                        },
+                        cancel: true,
+                        persistent: true
+                    }).onOk(data => {
+                        if (data === 'rm') {
+                            this.connect[rmMode](pathname)
+                                .then(() => resolve())
+                                .catch(() => reject())
+                        }
+                        if (data === 'ad') resolve()
+                    }).onCancel(() => reject())
                 })
                 .catch(() => resolve())
                 .finally(() => this.loading = false)
@@ -162,5 +196,65 @@ export default {
     findItemFromList({ name }) {
         // 若传入参数为文件名称
         if (name) return this.list.find(item => item.name === name)
-    }
+    },
+    /**
+     * 下载
+     * @method
+     * @param   {String}    remotePath      远程路径
+     * @param   {String}    localPath       本地路径
+     */
+    download(remotePath, localPath) {
+        // 检查本地是否已存在
+        this.checkOverwrite('local', localPath)
+            .then(async () => {
+                // 创建下载任务
+                this.$store.commit('transfer/TASK_INIT', 'download')
+                // 开始下载
+                await this.connect.download(remotePath, localPath, this.progressStep)
+                // TODO: 刷新自己 下载成功，刷新本地文件系统
+                this.$emit('refresh-local')
+                // 通知提示
+                this.notify('下载成功')
+                // 关闭下载任务
+                this.$store.commit('transfer/TASK_CLOSE')
+            })
+            .catch(() => {})
+    },
+    /**
+     * 上传
+     * @method
+     * @param   {String}    localPath       本地路径
+     * @param   {String}    remotePath      远程路径
+     */
+    upload(localPath, remotePath) {
+        // 检查远程是否已存在
+        this.checkOverwrite('remote', remotePath)
+            .then(async () => {
+                // 创建上传任务
+                this.$store.commit('transfer/TASK_INIT', 'upload')
+                // 开始上传
+                await this.connect.upload(localPath, remotePath, this.progressStep)
+                // TODO: 刷新自己 上传成功，刷新本地文件系统
+                this.$emit('refresh-remote')
+                // 通知提示
+                this.notify('上传成功')
+                // 关闭上传任务
+                this.$store.commit('transfer/TASK_CLOSE')
+            })
+            .catch(() => {})
+    },
+    // 更新传输进度
+    progressStep(action, params) {
+        if (action === 'upload') {
+            const { pathname, saved, total } = params
+            this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
+        }
+        if (action === 'download') {
+            const { pathname, saved, total } = params
+            this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
+        }
+        if (action === 'finish') {
+            this.$store.commit('transfer/TASK_FINISH')
+        }
+    },
 }
