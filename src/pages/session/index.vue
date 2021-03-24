@@ -3,7 +3,7 @@
         <session v-for="item in $store.state.session.conn"
                  v-show="item.id === $store.state.session.active"
                  :key="item.id"
-                 :id="item.id"
+                 :connectId="item.id"
                  :connect="item.connect"/>
     </div>
 </template>

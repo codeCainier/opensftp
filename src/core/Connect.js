@@ -50,6 +50,12 @@ class Connect {
         })
     }
 
+    /**
+     * SFTP 下载
+     * @param   {String}    remotePath      远程路径
+     * @param   {String}    localPath       本地路径
+     * @param   {Function}  progress        完成 size
+     */
     async download(remotePath, localPath, progress) {
         const stats = await this.statRemote(remotePath)
         const idDir = stats.isDirectory()
@@ -61,14 +67,13 @@ class Connect {
     async downloadFile(remotePath, localPath, progress) {
         const options = {
             step: (saved, chunk, total) => {
-                progress('download', { pathname: remotePath, saved, total })
+                progress(remotePath, saved, total)
             },
         }
         return new Promise((resolve, reject) => {
             this.sftp.fastGet(remotePath, localPath, options, err => {
                 if (err) return reject(err)
                 resolve()
-                progress('finish')
             })
         })
     }
@@ -105,14 +110,13 @@ class Connect {
     async uploadFile(localPath, remotePath, progress) {
         const options = {
             step: (saved, chunk, total) => {
-                progress('upload', { pathname: localPath, saved, total })
+                progress(localPath, saved, total)
             },
         }
         return new Promise((resolve, reject) => {
             this.sftp.fastPut(localPath, remotePath, options, err => {
                 if (err) return reject(err)
                 resolve()
-                progress('finish')
             })
         })
     }

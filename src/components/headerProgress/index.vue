@@ -27,7 +27,7 @@ export default {
     watch: {
         '$store.state.transfer.listener': function () {
             this.progress = this.$store.state.transfer.list[this.$store.state.session.active.id]
-        }
+        },
     },
     computed: {
         progressLabel() {

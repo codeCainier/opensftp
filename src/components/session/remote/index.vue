@@ -147,6 +147,7 @@ export default {
     },
     props: {
         pwdLocal: String,
+        connectId: String,
         connect: Object,
     },
     data() {
@@ -353,10 +354,6 @@ export default {
             const oldPath = event.dataTransfer.getData('oldPath')
             const newPath = path.posix.join(this.pwd, item ? item.name : '', info.name)
 
-            console.log(action)
-            console.log(oldPath)
-            console.log(newPath)
-
             // 若文件来自 remote 视为移动操作
             if (action === 'remote') this.mvFile('remote', oldPath, newPath)
             // 若文件来自 local，视为上传操作
@@ -379,7 +376,7 @@ export default {
         },
     },
     created() {
-        this.pwd = '/'
+        this.pwd = '/root'
         this.getFileList('.')
     },
 }

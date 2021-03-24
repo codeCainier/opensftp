@@ -1,3 +1,4 @@
+import { uid } from 'quasar'
 import path from 'path'
 
 export default {
@@ -207,12 +208,20 @@ export default {
         // 检查本地是否已存在
         this.checkOverwrite('local', localPath)
             .then(async () => {
+                const id     = uid()
+                const connId = this.connectId
+                const name   = path.basename(remotePath)
+                const action = 'download'
                 // 创建下载任务
-                this.$store.commit('transfer/TASK_INIT', 'download')
+                this.$store.commit('transfer/TASK_INIT', { id, connId, name, action })
                 // 开始下载
-                await this.connect.download(remotePath, localPath, this.progressStep)
+                await this.connect.download(remotePath, localPath, (pathname, saved, total) => {
+                    this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
+                })
+                // 完成下载
+                this.$store.commit('transfer/TASK_FINISH', id)
                 // TODO: 刷新自己 下载成功，刷新本地文件系统
-                this.$emit('refresh-local')
+                // this.$emit('refresh-local')
                 // 通知提示
                 this.notify('下载成功')
                 // 关闭下载任务
@@ -230,37 +239,25 @@ export default {
         // 检查远程是否已存在
         this.checkOverwrite('remote', remotePath)
             .then(async () => {
+                const id     = uid()
+                const connId = this.connectId
+                const name   = path.basename(localPath)
+                const action = 'upload'
                 // 创建上传任务
-                this.$store.commit('transfer/TASK_INIT', 'upload')
+                this.$store.commit('transfer/TASK_INIT', { id, connId, name, action })
                 // 开始上传
-                await this.connect.upload(localPath, remotePath, this.progressStep)
+                await this.connect.upload(localPath, remotePath, (pathname, saved, total) => {
+                    this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
+                })
+                // 完成上传
+                this.$store.commit('transfer/TASK_FINISH', id)
                 // TODO: 刷新自己 上传成功，刷新本地文件系统
-                this.$emit('refresh-remote')
+                // this.$emit('refresh-remote')
                 // 通知提示
                 this.notify('上传成功')
                 // 关闭上传任务
                 this.$store.commit('transfer/TASK_CLOSE')
             })
             .catch(() => {})
-    },
-    /**
-     * 更新传输进度
-     * @method
-     * @param   {String}    action          行为    download || upload || finish
-     * @param   {Object}    props
-     * @param   {String}    props.pathname  名称
-     * @param   {String}    props.saved     完成（单位 B）
-     * @param   {String}    props.total     总量（单位 B）
-     */
-    progressStep(action, { pathname, saved, total }) {
-        if (action === 'upload') {
-            this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
-        }
-        if (action === 'download') {
-            this.$store.commit('transfer/TASK_UPDATE', { pathname, saved, total })
-        }
-        if (action === 'finish') {
-            this.$store.commit('transfer/TASK_FINISH')
-        }
     },
 }

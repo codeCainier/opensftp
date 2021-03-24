@@ -3,6 +3,7 @@
         <q-splitter class="sftp full-height" v-model="splitterModel">
             <template v-slot:before>
                 <local ref="local"
+                       :connectId="connectId"
                        :connect="connect"
                        :pwdRemote="state.pwdRemote"
                        @update-pwd="pwd => state.pwdLocal = pwd"
@@ -10,6 +11,7 @@
             </template>
             <template v-slot:after>
                 <remote ref="remote"
+                        :connectId="connectId"
                         :connect="connect"
                         :pwdLocal="state.pwdLocal"
                         @update-pwd="pwd => state.pwdRemote = pwd"
@@ -33,7 +35,7 @@
             ssh,
         },
         props: {
-            id: String,
+            connectId: String,
             connect: Object,
         },
         data() {

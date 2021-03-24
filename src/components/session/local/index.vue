@@ -150,6 +150,7 @@ export default {
     },
     props: {
         pwdRemote: String,
+        connectId: String,
         connect: Object,
     },
     data() {
@@ -355,9 +356,6 @@ export default {
             const info    = JSON.parse(event.dataTransfer.getData('info'))
             const oldPath = event.dataTransfer.getData('oldPath')
             const newPath = path.join(this.pwd, item ? item.name : '', info.name)
-
-            console.log(oldPath)
-            console.log(newPath)
 
             // 若文件来自 local 视为移动操作
             if (action === 'local') {
