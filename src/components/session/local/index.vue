@@ -32,9 +32,11 @@
         </div>
         <!-- 文件系统 - 文件列表 -->
         <div class="fs-body full-height">
-            <q-scroll-area ref="scrollArea" class="full-height"
+            <q-scroll-area ref="scrollArea"
+                           class="fs-scroll-area full-height"
+                           :class="{ 'drag-enter': dragEnterItem === '.' }"
                            @click.native="selected = null"
-                           @dragover.native.prevent="dragOver($event)"
+                           @dragover.native.prevent="dragOver($event, { name: '.' })"
                            @dragenter.native=""
                            @dragleave.native="dragLeave"
                            @drop.native="dropFile($event)">
@@ -337,10 +339,6 @@ export default {
             event.dataTransfer.setData('info', JSON.stringify(item))
             event.dataTransfer.setData('oldPath', path.join(this.pwd, item.name))
             event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
-        },
-        // 拖动进入
-        dragEnter(event, item) {
-            this.dragEnterItem = item ? item.name : null
         },
         // 拖动经过
         dragOver(event, item) {
