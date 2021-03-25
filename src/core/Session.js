@@ -2,6 +2,62 @@ import { uid } from 'quasar'
 import path from 'path'
 
 export default {
+    fileFocus(index = this.selected) {
+        this.selected = index
+        this.openMenu = null
+        this.$nextTick(() => {
+            try {
+                // TODO: 使用 this.$refs['file-item'][index] 的形式有 refs 数组索引错位的问题
+                this.$refs[`file-item-${index}`][0].focus()
+            } catch (error) {
+            }
+        })
+    },
+    // 拖动结束
+    dragEnd() {
+        this.dragEnterItem = null
+    },
+    // 拖动离开
+    dragLeave() {
+        this.dragEnterItem = null
+    },
+    // 当前目录菜单显示前
+    pwdMenuBeforeShow(event) {
+        const a = event.target.parentElement
+        const b = event.target.parentElement.parentElement.parentElement
+        const scrollArea = this.$refs.scrollArea.$el
+        if (a !== scrollArea && b !== scrollArea) this.$refs.pwdMenu.$refs.menu.hide()
+    },
+    // 进入目录
+    dirEnter(item) {
+        if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
+    },
+    // 重命名开始
+    renameOpen(item, index) {
+        this.renameItem = this.tools.clone(item)
+        this.renameItem.newName = this.renameItem.name
+        // TODO: nextTick 无效
+        setTimeout(() => this.$refs[`rename-input-${index}`][0].focus(), 100)
+    },
+    // 重命名取消
+    renameCancel(index) {
+        this.renameItem = {}
+        this.$refs[`rename-input-${index}`][0].blur()
+        this.fileFocus()
+    },
+    // 移动聚焦元素
+    moveFocus(action) {
+        if (action === 'up' && this.selected !== 0) this.selected -= 1
+        if (action === 'down' && this.selected !== this.list.length - 1) this.selected += 1
+        // 若不显示隐藏文件，判断当前 selected 元素是否为隐藏文件
+        // 若为隐藏文件，则递归移动聚焦元素
+        if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
+        this.fileFocus()
+    },
+    // 拖动经过
+    dragOver(event, item) {
+        this.dragEnterItem = item ? item.name : null
+    },
     /**
      * 移动文件
      * @method
@@ -199,64 +255,31 @@ export default {
         if (name) return this.list.find(item => item.name === name)
     },
     /**
-     * 下载
+     * 文件传输
      * @method
-     * @param   {String}    remotePath      远程路径
-     * @param   {String}    localPath       本地路径
+     * @param   {String}    action          传输模式    download || upload
+     * @param   {String}    fromPath        起始路径
+     * @param   {String}    distPath        目标路径
      */
-    download(remotePath, localPath) {
-        // 检查本地是否已存在
-        this.checkOverwrite('local', localPath)
+    transmit(action, fromPath, distPath) {
+        // 检查文件是否已存在
+        this.checkOverwrite(action === 'download' ? 'local' : 'remote', distPath)
             .then(async () => {
                 const id     = uid()
                 const connId = this.connectId
-                const name   = path.basename(remotePath)
-                const action = 'download'
-                // 创建下载任务
-                this.$store.commit('transfer/TASK_INIT', { id, connId, name, action })
-                // 开始下载
-                await this.connect.download(remotePath, localPath, (pathname, saved, total) => {
+                const dir    = path.parse(distPath).dir
+                const name   = path.basename(fromPath)
+                // 创建任务
+                this.$store.commit('transfer/TASK_INIT', { id, connId, dir, name, action })
+                // 开始传输
+                await this.connect[action](fromPath, distPath, (pathname, saved, total) => {
+                    // 更新任务
                     this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
                 })
-                // 完成下载
+                // 完成传输
                 this.$store.commit('transfer/TASK_FINISH', id)
-                // TODO: 刷新自己 下载成功，刷新本地文件系统
-                // this.$emit('refresh-local')
                 // 通知提示
-                this.notify('下载成功')
-                // 关闭下载任务
-                this.$store.commit('transfer/TASK_CLOSE')
-            })
-            .catch(() => {})
-    },
-    /**
-     * 上传
-     * @method
-     * @param   {String}    localPath       本地路径
-     * @param   {String}    remotePath      远程路径
-     */
-    upload(localPath, remotePath) {
-        // 检查远程是否已存在
-        this.checkOverwrite('remote', remotePath)
-            .then(async () => {
-                const id     = uid()
-                const connId = this.connectId
-                const name   = path.basename(localPath)
-                const action = 'upload'
-                // 创建上传任务
-                this.$store.commit('transfer/TASK_INIT', { id, connId, name, action })
-                // 开始上传
-                await this.connect.upload(localPath, remotePath, (pathname, saved, total) => {
-                    this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
-                })
-                // 完成上传
-                this.$store.commit('transfer/TASK_FINISH', id)
-                // TODO: 刷新自己 上传成功，刷新本地文件系统
-                // this.$emit('refresh-remote')
-                // 通知提示
-                this.notify('上传成功')
-                // 关闭上传任务
-                this.$store.commit('transfer/TASK_CLOSE')
+                this.notify(this.$store.getters['transfer/TRANSMIT_INFO'](id))
             })
             .catch(() => {})
     },

@@ -4,18 +4,21 @@
  * @param   {Object}    props
  * @param   {String}    props.id        传输任务 ID
  * @param   {String}    props.connId    会话连接 ID
+ * @param   {String}    props.dir       目标目录
  * @param   {String}    props.name      任务名称
  * @param   {String}    props.icon      任务图标    TODO: 暂未加入
  * @param   {String}    props.action    传输模式    download || upload
  */
 export function TASK_INIT(state, props) {
-    const { id, connId, name, icon, action } = props
+    const { id, connId, dir, name, icon, action } = props
     state.list.push({
         id,                     // 传输任务 ID
         connId,                 // 会话连接 ID
+        dir,                    // 目标目录
         name,                   // 任务名称
         icon,                   // 任务图标
         action,                 // 传输模式
+        status: 'working',      // 任务状态
         taskFinish: [],         // 已完成任务
         startTime: Date.now(),  // 任务开始时间
         endTime: 0,             // 任务结束时间
@@ -44,6 +47,7 @@ export function TASK_UPDATE(state, props) {
     const { id, pathname, saved, total } = props
     const index = state.list.findIndex(item => item.id === id)
     const task  = state.list[index]
+    // const task = state.list.find(item => item.id === id)
     // 传输时间（秒）
     const timeS = (Date.now() - task.transferring.startTime) / 1000
 
@@ -74,10 +78,8 @@ export function TASK_UPDATE(state, props) {
  * @param   {String}    id      传输任务 ID
  */
 export function TASK_FINISH(state, id) {
-    const index = state.list.findIndex(item => item.id === id)
-    state.list.splice(index, 1)
-}
-
-export function TASK_CLOSE(state) {
+    const task = state.list.find(item => item.id === id)
+    task.status = 'finish'
+    state.finishListener = id
 }
 

@@ -47,7 +47,23 @@
                 },
             }
         },
+        watch: {
+            // 监听 vuex 中传输任务完成事件
+            '$store.state.transfer.finishListener': function (newVal) {
+                this.refreshList(newVal)
+            },
+        },
         methods: {
+            // 刷新文件系统
+            refreshList(id) {
+                const task = this.$store.state.transfer.list.find(item => item.id === id)
+                const { action, dir, name }   = task
+                const { pwdLocal, pwdRemote } = this.state
+                // 当传输模式为下载，且当前本地目录为目标目录时，刷新本地文件系统，并使下载文件获得焦点
+                if (action === 'download' && dir === pwdLocal)  this.$refs.local.getFileList('.', null, name)
+                // 当传输模式为上传，且当前远程目录为目标目录时，刷新远程文件系统，并使上传文件获得焦点
+                if (action === 'upload'   && dir === pwdRemote) this.$refs.remote.getFileList('.', null, name)
+            },
         },
     }
 </script>

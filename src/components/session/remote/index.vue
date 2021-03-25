@@ -42,9 +42,13 @@
                     <!-- File .. -->
                     <div v-show="pwd !== '/'"
                          class="fs-item" tabindex="0"
+                         :class="{ 'drag-enter': dragEnterItem === '..' }"
                          @click="selected = null"
                          @dblclick="getFileList('..')"
-                         @keydown.exact.enter="getFileList('..')">
+                         @keydown.exact.enter="getFileList('..')"
+                         @dragover.prevent.stop="dragOver($event, { name: '..' })"
+                         @dragenter.stop=""
+                         @dragleave.stop="dragLeave">
                         <div class="item icon">
                             <img src="~/assets/sftp-icons/folder-other.svg" alt="">
                         </div>
@@ -70,7 +74,7 @@
                          @dragenter.stop=""
                          @dragleave.stop="dragLeave"
                          @drop.stop="dropFile($event, item)"
-                         @dragend="dragEnd($event, item)"
+                         @dragend="dragEnd"
                          @keydown.enter="dirEnter(item)"
                          @keydown.exact.delete="removeFile(item)"
                          @keydown.f2="renameOpen(item, index)"
@@ -175,12 +179,22 @@ export default {
             renameItem: {},
             // 拖动进入元素
             dragEnterItem: null,
+            // 拖动进入计时器
+            dragIntoTimer: null,
         }
     },
     watch: {
         pwd(newVal) {
             this.pwdInput = newVal
             this.$emit('update-pwd', newVal)
+        },
+        dragEnterItem(newVal) {
+            clearTimeout(this.dragIntoTimer)
+            if (newVal === null || newVal === '.') return
+
+            this.dragIntoTimer = setTimeout(() => {
+                this.getFileList(newVal)
+            }, 1000)
         },
     },
     computed: {
@@ -201,10 +215,6 @@ export default {
     },
     methods: {
         ...session,
-        // 进入目录
-        dirEnter(item) {
-            if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
-        },
         // 右键下载
         downloadByMenu(item) {
             // 要下载的远程路径
@@ -212,14 +222,7 @@ export default {
             // 要保存的本地路径
             const localPath  = path.join(this.pwdLocal, item.name)
             // 调用下载函数
-            this.download(remotePath, localPath)
-        },
-        // 重命名开始
-        renameOpen(item, index) {
-            this.renameItem = this.tools.clone(item)
-            this.renameItem.newName = this.renameItem.name
-            // TODO: nextTick 无效
-            setTimeout(() => this.$refs[`rename-input-${index}`][0].focus(), 100)
+            this.transmit('download', remotePath, localPath)
         },
         // 重命名结束
         renameClose(index) {
@@ -251,12 +254,6 @@ export default {
                     this.tools.confirm(err)
                     this.loading = false
                 })
-        },
-        // 重命名取消
-        renameCancel(index) {
-            this.renameItem = {}
-            this.$refs[`rename-input-${index}`][0].blur()
-            this.fileFocus()
         },
         // 删除文件
         removeFile(item) {
@@ -308,27 +305,6 @@ export default {
                     this.tools.confirm(err)
                 })
         },
-        // 选择文件
-        fileFocus(index = this.selected) {
-            this.selected = index
-            this.openMenu = null
-            this.$nextTick(() => {
-                try {
-                    // TODO: 使用 this.$refs['file-item'][index] 的形式有 refs 数组索引错位的问题
-                    this.$refs[`file-item-${index}`][0].focus()
-                } catch (error) {
-                }
-            })
-        },
-        // 移动聚焦元素
-        moveFocus(action) {
-            if (action === 'up' && this.selected !== 0) this.selected -= 1
-            if (action === 'down' && this.selected !== this.list.length - 1) this.selected += 1
-            // 若不显示隐藏文件，判断当前 selected 元素是否为隐藏文件
-            // 若为隐藏文件，则递归移动聚焦元素
-            if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
-            this.fileFocus()
-        },
         // 开始拖动
         dragStart(event, item, index) {
             this.selected = index
@@ -336,10 +312,6 @@ export default {
             event.dataTransfer.setData('info', JSON.stringify(item))
             event.dataTransfer.setData('oldPath', path.posix.join(this.pwd, item.name))
             event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
-        },
-        // 拖动经过
-        dragOver(event, item) {
-            this.dragEnterItem = item ? item.name : null
         },
         // 拖动完成
         dropFile(event, item) {
@@ -355,22 +327,7 @@ export default {
             // 若文件来自 remote 视为移动操作
             if (action === 'remote') this.mvFile('remote', oldPath, newPath)
             // 若文件来自 local，视为上传操作
-            if (action === 'local') this.upload(oldPath, newPath)
-        },
-        // 拖动结束
-        dragEnd(event, item) {
-            this.dragEnterItem = null
-        },
-        // 拖动离开
-        dragLeave() {
-            this.dragEnterItem = null
-        },
-        // 当前目录菜单显示前
-        pwdMenuBeforeShow(event) {
-            const a = event.target.parentElement
-            const b = event.target.parentElement.parentElement.parentElement
-            const scrollArea = this.$refs.scrollArea.$el
-            if (a !== scrollArea && b !== scrollArea) this.$refs.pwdMenu.$refs.menu.hide()
+            if (action === 'local')  this.transmit('upload', oldPath, newPath)
         },
     },
     created() {

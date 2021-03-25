@@ -15,6 +15,7 @@
                      @keydown.enter="login">
                 <template v-slot:append>
                     <q-btn v-show="password"
+                           size="sm"
                            :icon="showPwd ? 'visibility' : 'visibility_off'"
                            flat round
                            @click="showPwd = !showPwd"/>
