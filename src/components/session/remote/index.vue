@@ -6,10 +6,12 @@
         </q-inner-loading>
         <!-- 文件系统 - 控制栏 -->
         <div class="fs-control">
-            <input class="pwd-input" type="text"
-                   spellcheck="false"
-                   v-model.trim="pwdInput"
-                   @keydown.enter="getFileList(null, pwdInput)">
+            <label>
+                <input class="pwd-input" type="text"
+                       spellcheck="false"
+                       v-model.trim="pwdInput"
+                       @keydown.enter="getFileList(null, pwdInput)">
+            </label>
             <div class="btn-group">
                 <button type="button" v-ripple class="btn-enter" @click="getFileList(null, pwdInput)">
                     <q-icon name="chevron_right"/>
@@ -34,7 +36,7 @@
                            class="fs-scroll-area full-height"
                            :class="{ 'drag-enter': dragEnterItem === '.' }"
                            @click.native="selected = null"
-                           @dragover.native.prevent="dragOver($event, { name: '.' })"
+                           @dragover.native.prevent="dragOver({ name: '.' })"
                            @dragenter.native=""
                            @dragleave.native="dragLeave"
                            @drop.native="dropFile($event)">
@@ -46,7 +48,7 @@
                          @click="selected = null"
                          @dblclick="getFileList('..')"
                          @keydown.exact.enter="getFileList('..')"
-                         @dragover.prevent.stop="dragOver($event, { name: '..' })"
+                         @dragover.prevent.stop="dragOver({ name: '..' })"
                          @dragenter.stop=""
                          @dragleave.stop="dragLeave">
                         <div class="item icon">
@@ -69,14 +71,14 @@
                          }"
                          @click.stop="fileFocus(index)"
                          @dblclick="dirEnter(item)"
-                         @dragstart="dragStart($event, item, index)"
-                         @dragover.prevent.stop="dragOver($event, item)"
+                         @dragstart="dragStart($event, item, index, 'remote')"
+                         @dragover.prevent.stop="dragOver(item)"
                          @dragenter.stop=""
                          @dragleave.stop="dragLeave"
                          @drop.stop="dropFile($event, item)"
                          @dragend="dragEnd"
                          @keydown.enter="dirEnter(item)"
-                         @keydown.exact.delete="removeFile(item)"
+                         @keydown.exact.delete="removeFile('remote', item)"
                          @keydown.f2="renameOpen(item, index)"
                          @keydown.prevent.up="moveFocus('up')"
                          @keydown.prevent.down="moveFocus('down')">
@@ -85,23 +87,25 @@
                         </div>
                         <div class="item name">
                             <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
-                            <input v-model="renameItem.newName"
-                                   v-show="renameItem.name === item.name"
-                                   type="text"
-                                   tabindex="0"
-                                   :ref="'rename-input-' + index"
-                                   class="rename-input no-outline no-border no-padding"
-                                   :placeholder="item.name"
-                                   spellcheck="false"
-                                   @blur="renameClose(index)"
-                                   @click.stop=""
-                                   @dblclick.stop=""
-                                   @keydown.esc="renameCancel(index)"
-                                   @keydown.stop.delete=""
-                                   @keydown.stop.up=""
-                                   @keydown.stop.down=""
-                                   @keydown.stop.alt.r=""
-                                   @keydown.stop.enter="$refs[`rename-input-${index}`][0].blur()">
+                            <label>
+                                <input v-model="renameItem.newName"
+                                       v-show="renameItem.name === item.name"
+                                       type="text"
+                                       tabindex="0"
+                                       :ref="'rename-input-' + index"
+                                       class="rename-input no-outline no-border no-padding"
+                                       :placeholder="item.name"
+                                       spellcheck="false"
+                                       @blur="renameClose(index)"
+                                       @click.stop=""
+                                       @dblclick.stop=""
+                                       @keydown.esc="renameCancel(index)"
+                                       @keydown.stop.delete=""
+                                       @keydown.stop.up=""
+                                       @keydown.stop.down=""
+                                       @keydown.stop.alt.r=""
+                                       @keydown.stop.enter="$refs[`rename-input-${index}`][0].blur()">
+                            </label>
                         </div>
                         <div class="item size">{{ fileSize(item) }}</div>
                         <div class="item date">{{ fileCreatedTime(item.date) }}</div>
@@ -115,7 +119,7 @@
                                    @close="fileFocus(index)"
                                    @download="downloadByMenu(item)"
                                    @rename="renameOpen(item, index)"
-                                   @remove="removeFile(item)"
+                                   @remove="removeFile('remote', item)"
                                    @mkdir="mkdirRemote"
                                    @write-file="writeFileRemote"
                                    @refresh="getFileList('.')"
@@ -255,25 +259,6 @@ export default {
                     this.loading = false
                 })
         },
-        // 删除文件
-        removeFile(item) {
-            // TODO: 弹出删除对话框时，文件 Focus 状态应使用 class 补充
-            this.tools.confirm({
-                message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
-                confirm: () => {
-                    this.loading = true
-                    this.connect.rmRemote(path.posix.join(this.pwd, item.name))
-                        .then(() => {
-                            this.getFileList('.')
-                        })
-                        .catch(err => {
-                            this.tools.confirm(err)
-                            this.loading = false
-                        })
-                },
-                cancel: () => {},
-            })
-        },
         // 读取目录下文件列表
         getFileList(dirname, pathName, focusFile) {
             this.loading = true
@@ -304,14 +289,6 @@ export default {
                     this.pwdInput = this.pwd
                     this.tools.confirm(err)
                 })
-        },
-        // 开始拖动
-        dragStart(event, item, index) {
-            this.selected = index
-            event.dataTransfer.setData('action', 'remote')
-            event.dataTransfer.setData('info', JSON.stringify(item))
-            event.dataTransfer.setData('oldPath', path.posix.join(this.pwd, item.name))
-            event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
         },
         // 拖动完成
         dropFile(event, item) {

@@ -16,7 +16,7 @@
             <!-- 会话图标 -->
             <q-icon name="dns"/>
             <!-- 会话名称 -->
-            <div class="label q-mx-sm" style="font-size: .85rem">{{ item.sessionInfo.name }}</div>
+            <div class="label q-mx-sm ellipsis" style="width: 100px; font-size: .85rem">{{ item.sessionInfo.name }}</div>
             <q-space/>
             <!-- 关闭按钮 -->
             <q-btn flat round size="xs" icon="close" @click="closeTag(item.id)"/>

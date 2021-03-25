@@ -2,6 +2,34 @@ import { uid } from 'quasar'
 import path from 'path'
 
 export default {
+    /**
+     * 删除文件
+     * @method
+     * @param   {String}    action  行为       remote || location
+     * @param   {Object}    item    文件对象
+     */
+    removeFile(action, item) {
+        const mode = action === 'remote' ? 'rmRemote' : 'rmLocal'
+        // TODO: 弹出删除对话框时，文件 Focus 状态应使用 class 补充
+        this.tools.confirm({
+            message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
+            confirm: () => {
+                this.loading = true
+                this.connect[mode](action === 'remote'
+                    ? path.posix.join(this.pwd, item.name)
+                    : path.join(this.pwd, item.name))
+                    .then(() => this.getFileList('.'))
+                    .catch(err => this.tools.confirm(err))
+                    .finally(() => this.loading = false)
+            },
+            cancel: () => {},
+        })
+    },
+    /**
+     * 文件获取焦点
+     * @method
+     * @param   {Number}    index   文件索引    默认为当前 selected 元素
+     */
     fileFocus(index = this.selected) {
         this.selected = index
         this.openMenu = null
@@ -13,39 +41,83 @@ export default {
             }
         })
     },
-    // 拖动结束
+    /**
+     * 开始拖动
+     * @method
+     * @param   {Object}    event   拖动事件
+     * @param   {Object}    item    文件对象
+     * @param   {Number}    index   文件索引
+     * @param   {String}    action  行为       remote || local
+     */
+    dragStart(event, item, index, action) {
+        this.selected = index
+        event.dataTransfer.setData('action', action)
+        event.dataTransfer.setData('info', JSON.stringify(item))
+        event.dataTransfer.setData('oldPath', action === 'remote'
+            ? path.posix.join(this.pwd, item.name)
+            : path.join(this.pwd, item.name))
+        event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
+    },
+    /**
+     * 拖动结束
+     * @method
+     */
     dragEnd() {
         this.dragEnterItem = null
     },
-    // 拖动离开
+    /**
+     * 拖动离开
+     * @method
+     */
     dragLeave() {
         this.dragEnterItem = null
     },
-    // 当前目录菜单显示前
+    /**
+     * 右键菜单显示判断
+     * @method
+     * @param   {Object}    event        事件对象
+     */
     pwdMenuBeforeShow(event) {
         const a = event.target.parentElement
         const b = event.target.parentElement.parentElement.parentElement
         const scrollArea = this.$refs.scrollArea.$el
         if (a !== scrollArea && b !== scrollArea) this.$refs.pwdMenu.$refs.menu.hide()
     },
-    // 进入目录
+    /**
+     * 进入目录
+     * @method
+     * @param   {Object}    item         目标目录对象
+     */
     dirEnter(item) {
         if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
     },
-    // 重命名开始
+    /**
+     * 开始重命名
+     * @method
+     * @param   {Object}    item         重命名文件对象
+     * @param   {Number}    index        重命名文件索引
+     */
     renameOpen(item, index) {
         this.renameItem = this.tools.clone(item)
         this.renameItem.newName = this.renameItem.name
         // TODO: nextTick 无效
         setTimeout(() => this.$refs[`rename-input-${index}`][0].focus(), 100)
     },
-    // 重命名取消
+    /**
+     * 取消重命名
+     * @method
+     * @param   {Number}    index        重命名文件索引
+     */
     renameCancel(index) {
         this.renameItem = {}
         this.$refs[`rename-input-${index}`][0].blur()
         this.fileFocus()
     },
-    // 移动聚焦元素
+    /**
+     * 移动聚焦元素
+     * @method
+     * @param   {String}    action       移动行为   up || down
+     */
     moveFocus(action) {
         if (action === 'up' && this.selected !== 0) this.selected -= 1
         if (action === 'down' && this.selected !== this.list.length - 1) this.selected += 1
@@ -54,8 +126,12 @@ export default {
         if (!this.showHideFile && this.hideItem(this.list[this.selected])) return this.moveFocus(action)
         this.fileFocus()
     },
-    // 拖动经过
-    dragOver(event, item) {
+    /**
+     * 拖动经过
+     * @method
+     * @param   {Object}    item         移动文件对象
+     */
+    dragOver(item) {
         this.dragEnterItem = item ? item.name : null
     },
     /**
