@@ -24,9 +24,30 @@
         <!-- 文件系统 - 标题栏 -->
         <div class="fs-head">
             <div class="item select-all"></div>
-            <div class="item name">文件名称</div>
-            <div class="item size">文件大小</div>
-            <div class="item date">修改日期</div>
+            <div class="row item name" v-ripple @click="sortSet('name')">
+                <div>文件名称</div>
+                <q-space/>
+                <q-icon v-show="sortBy === 'name'"
+                        class="icon q-mr-sm"
+                        :class="{ desc : sortMode === 'desc' }"
+                        name="ion-ios-arrow-up"/>
+            </div>
+            <div class="row item size" v-ripple @click="sortSet('size')">
+                <div>文件大小</div>
+                <q-space/>
+                <q-icon v-show="sortBy === 'size'"
+                        class="icon q-mr-sm"
+                        :class="{ desc : sortMode === 'desc' }"
+                        name="ion-ios-arrow-up"/>
+            </div>
+            <div class="row item date" v-ripple @click="sortSet('date')">
+                <div>修改日期</div>
+                <q-space/>
+                <q-icon v-show="sortBy === 'date'"
+                        class="icon q-mr-sm"
+                        :class="{ desc : sortMode === 'desc' }"
+                        name="ion-ios-arrow-up"/>
+            </div>
             <!--<div class="item owner">所有者</div>-->
             <!--<div class="item group">群组</div>-->
         </div>
@@ -185,6 +206,10 @@ export default {
             dragEnterItem: null,
             // 拖动进入计时器
             dragIntoTimer: null,
+            // 排序字段
+            sortBy: 'name',
+            // 排序方式
+            sortMode: 'asc',
         }
     },
     watch: {
@@ -267,7 +292,7 @@ export default {
 
             this.connect.listRemote(cwd)
                 .then(list => {
-                    this.list = list
+                    this.list = this.sort(list)
                     // 更新最后访问目录
                     this.pwd = cwd
                     // 若指定聚焦文件

@@ -74,16 +74,13 @@
     height: 25px
     line-height: 25px
 
-.fs-head
-    padding-left: 13px
-    padding-right: 21px
-
 .fs-item
     padding: 0 5px
     border-radius: 4px
     margin-bottom: 2px
 
 .item
+    position: relative
     margin-right: 5px
     white-space: nowrap
     overflow: hidden
@@ -91,9 +88,6 @@
     &:last-child
         margin-right: 0
     &.select-all
-        min-width: 25px
-        margin-right: 5px
-    &.icon
         min-width: 25px
         margin-right: 5px
     &.name
@@ -111,8 +105,23 @@
     position: sticky
     top: 25px
     z-index: 99
+    padding-left: 13px
+    padding-right: 21px
     border-top: 1px solid rgba($dark, .1)
     border-bottom: 1px solid rgba($dark, .1)
+    .item
+        .icon
+            height: 23px
+            font-size: .8em
+            transition: all .3s
+            &.desc
+                transform: rotate(180deg)
+
+.fs-body
+    .item
+        &.icon
+            min-width: 25px
+            margin-right: 5px
 
 .fs-item
     outline: none
@@ -126,4 +135,4 @@
 .fs-scroll-area
     transition: all .3s
     &.drag-enter
-        background: rgba($primary, .1)
+        background: rgba($primary, .3)

@@ -47,7 +47,6 @@ export function TASK_UPDATE(state, props) {
     const { id, pathname, saved, total } = props
     const index = state.list.findIndex(item => item.id === id)
     const task  = state.list[index]
-    // const task = state.list.find(item => item.id === id)
     // 传输时间（秒）
     const timeS = (Date.now() - task.transferring.startTime) / 1000
 

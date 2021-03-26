@@ -359,4 +359,39 @@ export default {
             })
             .catch(() => {})
     },
+    /**
+     * 目录排序
+     * @method
+     * @param   {Array}     arr     目录列表
+     */
+    sort(arr) {
+        const { sortBy, sortMode } = this
+        arr.sort((a, b) => {
+            if (sortBy === 'name') {
+                const nameA = a.name.toLowerCase()
+                const nameB = b.name.toLowerCase()
+                if (nameA < nameB) return sortMode === 'asc' ? -1 : 1
+                if (nameA > nameB) return sortMode === 'asc' ? 1 : -1
+                return 0
+            }
+            return sortMode === 'asc' ? a[sortBy] - b[sortBy] : b[sortBy] - a[sortBy]
+        })
+        return arr
+    },
+    /**
+     * 设置排序方式
+     * @method
+     * @param   {String}    sortBy      排序方式
+     */
+    sortSet(sortBy) {
+        // 若与当前排序方式相同，则更改排序模式
+        if (this.sortBy === sortBy) this.sortMode = this.sortMode === 'asc' ? 'desc' : 'asc'
+        // 若与当前排序方式不同，则更改排序方式，并将排序模式初始化为正序
+        if (this.sortBy !== sortBy) {
+            this.sortBy = sortBy
+            this.sortMode = 'asc'
+        }
+        // 目录排序
+        this.sort(this.list)
+    },
 }
