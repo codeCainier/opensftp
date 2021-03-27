@@ -170,6 +170,9 @@ import iconMatch from 'src/utils/iconMatch'
 import pwdMenu   from 'src/components/session/pwdMenu'
 import session   from 'src/core/Session'
 
+const fs = require('fs');
+const { exec } = require('child_process')
+
 export default {
     name: 'SFTPRemote',
     components: {
@@ -335,6 +338,43 @@ export default {
     created() {
         this.pwd = '/'
         this.getFileList('.')
+
+
+        const remotePath = '/home/xingrong/Desktop/temp.js'
+        const localPath = 'C:\\Users\\xingrong\\Desktop\\temp.js'
+
+        this.connect.download(remotePath, localPath, () => {})
+
+        const homePath = this.$q.electron.remote.app.getPath('home')
+
+        const editorPath = {
+            vscode: {
+                win: path.join(homePath, 'AppData', 'Local', 'Programs', '"Microsoft VS Code"', 'bin', 'code'),
+                mac: '',
+            },
+            webstorm: {
+                win: '',
+                mac: '',
+            },
+        }
+
+        const cmd = `${editorPath.vscode.win} ${localPath}`
+
+        exec(cmd, (error, stdout, stderr) => {
+                if (error) return console.log(error)
+                const watcher = fs.watch(localPath)
+                watcher.on('change', (eventType, filename) => {
+                    console.log(filename)
+                })
+                watcher.on('close', (a, b) => {
+                    console.log(a)
+                    console.log(b)
+                })
+                watcher.on('error', (a, b) => {
+                    console.log(a)
+                    console.log(b)
+                })
+            })
     },
 }
 </script>
