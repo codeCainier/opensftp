@@ -1,6 +1,9 @@
+import path     from 'path'
+import fs       from 'fs'
+import { exec } from'child_process'
+import { uid, debounce }  from 'quasar'
+
 const { Client } = require('ssh2')
-const { join }   = require('path')
-const fs         = require('fs')
 
 class Connect {
     constructor(sessionInfo) {
@@ -56,7 +59,7 @@ class Connect {
      * @param   {String}    localPath       本地路径
      * @param   {Function}  progress        完成 size
      */
-    async download(remotePath, localPath, progress) {
+    async download(remotePath, localPath, progress = () => {}) {
         const stats = await this.statRemote(remotePath)
         const idDir = stats.isDirectory()
 
@@ -86,20 +89,20 @@ class Connect {
         for (const file of fileList) {
 
             if (file.type === 'd') {
-                let newSrc = join(remotePath, file.name)
-                let newDst = join(localPath, file.name)
+                let newSrc = path.join(remotePath, file.name)
+                let newDst = path.join(localPath, file.name)
                 await this.downloadDir(newSrc, newDst, progress)
             }
 
             if (file.type === '-') {
-                let src = join(remotePath, file.name)
-                let dst = join(localPath, file.name)
+                let src = path.join(remotePath, file.name)
+                let dst = path.join(localPath, file.name)
                 await this.downloadFile(src, dst, progress)
             }
         }
     }
 
-    async upload(localPath, remotePath, progress) {
+    async upload(localPath, remotePath, progress = () => {}) {
         const stats = await this.statLocal(localPath)
         const idDir = stats.isDirectory()
 
@@ -129,14 +132,14 @@ class Connect {
         for (const file of fileList) {
 
             if (file.type === 'd') {
-                let newSrc = join(localPath, file.name)
-                let newDst = join(remotePath, file.name)
+                let newSrc = path.join(localPath, file.name)
+                let newDst = path.join(remotePath, file.name)
                 await this.uploadDir(newSrc, newDst, progress)
             }
 
             if (file.type === '-') {
-                let src = join(localPath, file.name)
-                let dst = join(remotePath, file.name)
+                let src = path.join(localPath, file.name)
+                let dst = path.join(remotePath, file.name)
                 await this.uploadFile(src, dst, progress)
             }
         }
@@ -319,7 +322,7 @@ class Connect {
 
         for (const filename of fileList) {
             // FIXME: stat / lstat / fstat
-            const stats = fs.lstatSync(join(cwd, filename))
+            const stats = fs.lstatSync(path.join(cwd, filename))
 
             let type = ''
 
@@ -343,6 +346,27 @@ class Connect {
         }
 
         return list
+    }
+
+    async editRemoteFile(remotePath, editorPath, callback = () => {}) {
+        const filename  = path.basename(remotePath)
+        const cacheDir  = path.join(__dirname, '../../cache', uid())
+        const localPath = path.join(cacheDir, filename)
+        const cmd       = `${editorPath.replace(/ /g, '\\ ')} ${localPath}`
+        await this.mkdirLocal(cacheDir)
+        await this.download(remotePath, localPath)
+        return new Promise((resolve, reject) => {
+            exec(cmd, (error, stdout, stderr) => {
+                if (error) return reject(error)
+                const watcher = fs.watch(localPath)
+                const changeCallback = async (eventType, filename) => {
+                    await this.upload(localPath, remotePath)
+                    callback()
+                }
+                // 1000ms 防抖
+                watcher.on('change', debounce(changeCallback, 1000))
+            })
+        })
     }
 }
 

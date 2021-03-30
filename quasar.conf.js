@@ -182,7 +182,7 @@ module.exports = function ( /* ctx */ ) {
                 // https://www.electron.build/configuration/configuration
 
                 appId: 'opensftp',
-                asar: false,
+                asar: true,
             },
 
             // More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration

@@ -144,6 +144,7 @@
                                    @rename="renameOpen(item, index)"
                                    @remove="removeFile('local', item)"
                                    @mkdir="mkdirLocal"
+                                   @edit="editFile('local', item, $event)"
                                    @write-file="writeFileLocal"
                                    @refresh="getFileList('.')"
                                    @show-hide="showHideFile = !showHideFile"/>

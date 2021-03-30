@@ -394,4 +394,12 @@ export default {
         // 目录排序
         this.sort(this.list)
     },
+    async editFile(action, item, editor) {
+        const remotePath = path.posix.join(this.pwd, item.name)
+        await this.connect.editRemoteFile(remotePath, editor.path, () => {
+            this.notify(`文件 ${item.name} 的修改已生效`)
+        })
+    },
+    editFileRemote() {
+    }
 }

@@ -142,12 +142,14 @@
                                    @rename="renameOpen(item, index)"
                                    @remove="removeFile('remote', item)"
                                    @mkdir="mkdirRemote"
+                                   @edit="editFile('remote', item, $event)"
                                    @write-file="writeFileRemote"
                                    @refresh="getFileList('.')"
                                    @show-hide="showHideFile = !showHideFile"/>
                     </div>
                 </div>
             </q-scroll-area>
+            <!-- 空白处右键菜单 -->
             <pwd-menu ref="pwdMenu" action="local"
                       :showHideFile="showHideFile"
                       @before-show="pwdMenuBeforeShow"
@@ -340,41 +342,45 @@ export default {
         this.getFileList('.')
 
 
-        const remotePath = '/home/xingrong/Desktop/temp.js'
-        const localPath = 'C:\\Users\\xingrong\\Desktop\\temp.js'
+        // const remotePath = '/home/xingrong/Desktop/temp.js'
+        // const localPath = 'C:\\Users\\xingrong\\Desktop\\temp.js'
 
-        this.connect.download(remotePath, localPath, () => {})
-
-        const homePath = this.$q.electron.remote.app.getPath('home')
-
-        const editorPath = {
-            vscode: {
-                win: path.join(homePath, 'AppData', 'Local', 'Programs', '"Microsoft VS Code"', 'bin', 'code'),
-                mac: '',
-            },
-            webstorm: {
-                win: '',
-                mac: '',
-            },
-        }
-
-        const cmd = `${editorPath.vscode.win} ${localPath}`
-
-        exec(cmd, (error, stdout, stderr) => {
-                if (error) return console.log(error)
-                const watcher = fs.watch(localPath)
-                watcher.on('change', (eventType, filename) => {
-                    console.log(filename)
-                })
-                watcher.on('close', (a, b) => {
-                    console.log(a)
-                    console.log(b)
-                })
-                watcher.on('error', (a, b) => {
-                    console.log(a)
-                    console.log(b)
-                })
-            })
+        // const remotePath = '/temp.js'
+        // const localPath = '/Users/xingrong/Desktop/temp.js'
+        //
+        // this.connect.download(remotePath, localPath, () => {})
+        //
+        // const homePath = this.$q.electron.remote.app.getPath('home')
+        //
+        // const editorPath = {
+        //     vscode: {
+        //         win: path.join(homePath, 'AppData', 'Local', 'Programs', '"Microsoft VS Code"', 'bin', 'code'),
+        //         mac: path.join('/Applications/"Visual Studio Code.app"/Contents/Resources/app/bin/code'),
+        //     },
+        //     webstorm: {
+        //         win: '',
+        //         mac: path.join('/Applications/WebStorm.app/Contents/MacOS/webstorm'),
+        //     },
+        // }
+        //
+        // // const cmd = `${editorPath.vscode.mac} ${localPath}`
+        // const cmd = `${editorPath.webstorm.mac} ${localPath}`
+        //
+        // exec(cmd, (error, stdout, stderr) => {
+        //         if (error) return console.log(error)
+        //         const watcher = fs.watch(localPath)
+        //         watcher.on('change', (eventType, filename) => {
+        //             console.log(filename)
+        //         })
+        //         watcher.on('close', (a, b) => {
+        //             console.log(a)
+        //             console.log(b)
+        //         })
+        //         watcher.on('error', (a, b) => {
+        //             console.log(a)
+        //             console.log(b)
+        //         })
+        //     })
     },
 }
 </script>

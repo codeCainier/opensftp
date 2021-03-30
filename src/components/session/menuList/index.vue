@@ -14,19 +14,22 @@
                     @click="emitHandle(action === 'local' ? 'upload' : 'download')">
                 <q-item-section>{{ action === 'local' ? '上传' : '下载' }}</q-item-section>
             </q-item>
-            <!--<q-item clickable v-show="listItem.type === '-'">-->
-            <!--    <q-item-section>选择打开方式</q-item-section>-->
-            <!--    <q-item-section side>-->
-            <!--        <q-icon name="keyboard_arrow_right"/>-->
-            <!--    </q-item-section>-->
-            <!--    <q-menu anchor="top end" self="top start">-->
-            <!--        <q-list style="width: 120px">-->
-            <!--            <q-item dense clickable v-for="item in editorList" :key="item.name">-->
-            <!--                <q-item-section>{{ item.name }}</q-item-section>-->
-            <!--            </q-item>-->
-            <!--        </q-list>-->
-            <!--    </q-menu>-->
-            <!--</q-item>-->
+            <q-item clickable v-show="listItem.type === '-'">
+                <q-item-section>选择编辑方式</q-item-section>
+                <q-item-section side>
+                    <q-icon name="keyboard_arrow_right" size="1em"/>
+                </q-item-section>
+                <q-menu anchor="top end" self="top start" :offset="[5, 0]">
+                    <q-list style="width: 150px" dense>
+                        <q-item clickable v-close-popup
+                                v-for="item in $store.getters['editor/EDITOR_LIST']()"
+                                :key="item.name"
+                                @click="emitHandle('edit', item)">
+                            <q-item-section>{{ item.name }}</q-item-section>
+                        </q-item>
+                    </q-list>
+                </q-menu>
+            </q-item>
             <q-separator />
             <q-item clickable>
                 <q-item-section>新建</q-item-section>
@@ -102,21 +105,9 @@
             },
             showHideFile: Boolean,
         },
-        data() {
-            return {
-                editorList: [
-                    { name: 'VSCode' },
-                    { name: 'Sublime' },
-                    { name: 'Atom' },
-                    { name: 'WebStorm' },
-                    { name: 'PHPStorm' },
-                    { name: 'GoLand' },
-                ],
-            }
-        },
         methods: {
-            emitHandle(action) {
-                this.$emit(action)
+            emitHandle(action, props) {
+                this.$emit(action, props)
                 this.$refs.menu.hide()
             },
         },
