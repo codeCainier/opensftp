@@ -51,6 +51,7 @@ export default {
      */
     dragStart(event, item, index, action) {
         this.selected = index
+        this.dragFileName = item.name
         event.dataTransfer.setData('action', action)
         event.dataTransfer.setData('info', JSON.stringify(item))
         event.dataTransfer.setData('oldPath', action === 'remote'
@@ -64,6 +65,7 @@ export default {
      */
     dragEnd() {
         this.dragEnterItem = null
+        this.dragFileName  = null
     },
     /**
      * 拖动离开
@@ -394,12 +396,96 @@ export default {
         // 目录排序
         this.sort(this.list)
     },
+    /**
+     * 编辑文件
+     * @method
+     * @param   {String}    action      remote || local
+     * @param   {Object}    item        编辑文件对象
+     * @param   {Object}    editor      编辑器对象
+     */
     async editFile(action, item, editor) {
         const remotePath = path.posix.join(this.pwd, item.name)
         await this.connect.editRemoteFile(remotePath, editor.path, () => {
             this.notify(`文件 ${item.name} 的修改已生效`)
         })
     },
-    editFileRemote() {
-    }
+    /**
+     * 刷新目录
+     * @method
+     */
+    refresh() {
+        this.getFileList('.')
+    },
+    // 创建文件右键菜单
+    createFileMenu(action) {
+        const { remote } = this.$q.electron
+        const fileMenu = new remote.Menu()
+
+        fileMenu.append(new remote.MenuItem({
+            label: '刷新',
+            click: this.refresh,
+        }))
+
+        fileMenu.append(new remote.MenuItem({ type: 'separator' }))
+
+        fileMenu.append(new remote.MenuItem({
+            label: action === 'local' ? '上传' : '下载',
+            click: () => {
+                // 起始路径
+                const fromPath = action === 'local'
+                    ? path.join(this.pwd, this.fileMenuItem.name)
+                    : path.posix.join(this.pwd, this.fileMenuItem.name)
+                // 目标路径
+                const distPath = action === 'local'
+                    ? path.posix.join(this.pwdRemote, this.fileMenuItem.name)
+                    : path.join(this.pwdRemote, this.fileMenuItem.name)
+                // 调用传输
+                this.transmit(action === 'local' ? 'upload' : 'download', fromPath, distPath)
+            },
+        }))
+
+        fileMenu.append(new remote.MenuItem({ type: 'separator' }))
+
+        fileMenu.append(new remote.MenuItem({
+            label: '新建',
+            submenu: [
+                {
+                    label: '新建文件',
+                    click: action === 'local' ? this.writeFileLocal : this.writeFileRemote,
+                }, {
+                    label: '新建文件夹',
+                    click: action === 'local' ? this.mkdirLocal : this.mkdirRemote,
+                },
+            ],
+        }))
+
+        fileMenu.append(new remote.MenuItem({
+            label: '删除',
+            click: () => this.removeFile(action, this.fileMenuItem),
+        }))
+
+        fileMenu.append(new remote.MenuItem({
+            label: '重命名',
+            click: () => this.renameOpen(this.fileMenuItem, this.fileMenuIndex),
+        }))
+
+        fileMenu.append(new remote.MenuItem({ type: 'separator' }))
+
+        fileMenu.append(new remote.MenuItem({
+            label: '显示隐藏文件',
+            type: 'checkbox',
+            checked: this.showHideFile,
+            click: () => this.showHideFile = !this.showHideFile,
+        }))
+
+        this.fileMenu = fileMenu
+    },
+    // 显示文件右键菜单
+    showFileMenu(item, index) {
+        this.selected      = item.name
+        this.openMenu      = item.name
+        this.fileMenuItem  = item
+        this.fileMenuIndex = index
+        this.fileMenu.popup()
+    },
 }

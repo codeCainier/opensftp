@@ -58,7 +58,7 @@
                         <q-tab-panel class="full-height" name="ssh">
                         </q-tab-panel>
 
-                        <q-tab-panel class="full-height" name="update">
+                        <q-tab-panel class="full-height" name="other">
                         </q-tab-panel>
                     </q-tab-panels>
 
@@ -82,7 +82,7 @@ export default {
                 { name: 'ui',     label: '界面',  icon: 'ion-md-shirt' },
                 { name: 'sftp',   label: 'SFTP', icon: 'ion-md-folder' },
                 { name: 'ssh',    label: 'SSH',  icon: 'ion-md-text' },
-                { name: 'update', label: '更新',  icon: 'ion-md-cube' },
+                { name: 'other',  label: '其他',  icon: 'ion-md-cube' },
             ]
         };
     },

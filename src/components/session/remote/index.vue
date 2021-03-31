@@ -91,6 +91,7 @@
                              'focus-temp': openMenu === item.name || renameItem.name === item.name,
                          }"
                          @click.stop="fileFocus(index)"
+                         @click.right="showFileMenu(item, index)"
                          @dblclick="dirEnter(item)"
                          @dragstart="dragStart($event, item, index, 'remote')"
                          @dragover.prevent.stop="dragOver(item)"
@@ -132,23 +133,16 @@
                         <div class="item date">{{ fileCreatedTime(item.date) }}</div>
                         <!--<div class="item owner">{{ item.owner }}</div>-->
                         <!--<div class="item group">{{ item.group }}</div>-->
-                        <!-- 右键菜单 -->
-                        <menu-list action="remote"
-                                   :listItem="item"
-                                   :showHideFile="showHideFile"
-                                   @show="selected = openMenu = item.name"
-                                   @close="fileFocus(index)"
-                                   @download="downloadByMenu(item)"
-                                   @rename="renameOpen(item, index)"
-                                   @remove="removeFile('remote', item)"
-                                   @mkdir="mkdirRemote"
-                                   @edit="editFile('remote', item, $event)"
-                                   @write-file="writeFileRemote"
-                                   @refresh="getFileList('.')"
-                                   @show-hide="showHideFile = !showHideFile"/>
                     </div>
                 </div>
             </q-scroll-area>
+            <!-- 拖动安全区域 -->
+            <div class="drag-safe-area"
+                 :class="{ active: dragEnterItem !== null }"
+                 @dragover.prevent="dragOver({ name: '.' })"
+                 @dragleave="dragLeave"
+                 @drop="dropFile($event)">
+            </div>
             <!-- 空白处右键菜单 -->
             <pwd-menu ref="pwdMenu" action="local"
                       :showHideFile="showHideFile"
@@ -207,6 +201,8 @@ export default {
             openMenu: null,
             // 重命名项目
             renameItem: {},
+            // 被拖动文件名称
+            dragFileName: null,
             // 拖动进入元素
             dragEnterItem: null,
             // 拖动进入计时器
@@ -215,6 +211,9 @@ export default {
             sortBy: 'name',
             // 排序方式
             sortMode: 'asc',
+            fileMenu: null,
+            fileMenuItem: null,
+            fileMenuIndex: null,
         }
     },
     watch: {
@@ -224,7 +223,9 @@ export default {
         },
         dragEnterItem(newVal) {
             clearTimeout(this.dragIntoTimer)
-            if (newVal === null || newVal === '.') return
+            if (newVal === null) return
+            if (newVal === '.')  return
+            if (newVal === this.dragFileName) return
 
             this.dragIntoTimer = setTimeout(() => {
                 this.getFileList(newVal)
@@ -249,15 +250,6 @@ export default {
     },
     methods: {
         ...session,
-        // 右键下载
-        downloadByMenu(item) {
-            // 要下载的远程路径
-            const remotePath = path.posix.join(this.pwd, item.name)
-            // 要保存的本地路径
-            const localPath  = path.join(this.pwdLocal, item.name)
-            // 调用下载函数
-            this.transmit('download', remotePath, localPath)
-        },
         // 重命名结束
         renameClose(index) {
             // 新名称与旧名称相同 或 新名称为空 相当于取消重命名
@@ -338,49 +330,9 @@ export default {
         },
     },
     created() {
+        this.createFileMenu('remote')
         this.pwd = '/'
         this.getFileList('.')
-
-
-        // const remotePath = '/home/xingrong/Desktop/temp.js'
-        // const localPath = 'C:\\Users\\xingrong\\Desktop\\temp.js'
-
-        // const remotePath = '/temp.js'
-        // const localPath = '/Users/xingrong/Desktop/temp.js'
-        //
-        // this.connect.download(remotePath, localPath, () => {})
-        //
-        // const homePath = this.$q.electron.remote.app.getPath('home')
-        //
-        // const editorPath = {
-        //     vscode: {
-        //         win: path.join(homePath, 'AppData', 'Local', 'Programs', '"Microsoft VS Code"', 'bin', 'code'),
-        //         mac: path.join('/Applications/"Visual Studio Code.app"/Contents/Resources/app/bin/code'),
-        //     },
-        //     webstorm: {
-        //         win: '',
-        //         mac: path.join('/Applications/WebStorm.app/Contents/MacOS/webstorm'),
-        //     },
-        // }
-        //
-        // // const cmd = `${editorPath.vscode.mac} ${localPath}`
-        // const cmd = `${editorPath.webstorm.mac} ${localPath}`
-        //
-        // exec(cmd, (error, stdout, stderr) => {
-        //         if (error) return console.log(error)
-        //         const watcher = fs.watch(localPath)
-        //         watcher.on('change', (eventType, filename) => {
-        //             console.log(filename)
-        //         })
-        //         watcher.on('close', (a, b) => {
-        //             console.log(a)
-        //             console.log(b)
-        //         })
-        //         watcher.on('error', (a, b) => {
-        //             console.log(a)
-        //             console.log(b)
-        //         })
-        //     })
     },
 }
 </script>

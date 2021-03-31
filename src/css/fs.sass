@@ -17,7 +17,6 @@
             background: $primary
             color: #FFFFFF
 
-
 .body--dark
     .fs-control, .fs-head
         background: rgba($dark, .5)
@@ -118,6 +117,7 @@
                 transform: rotate(180deg)
 
 .fs-body
+    position: relative
     .item
         &.icon
             min-width: 25px
@@ -125,7 +125,7 @@
 
 .fs-item
     outline: none
-    transition: all .3s
+    transition: transform .3s
     &.drag-enter
         transform: scale(1.05)
         background: rgba($primary, .3)
@@ -136,3 +136,15 @@
     transition: all .3s
     &.drag-enter
         background: rgba($primary, .3)
+
+.drag-safe-area
+    position: absolute
+    top: 0
+    right: 0
+    width: 30%
+    height: 100%
+    z-index: 99
+    visibility: hidden
+    transition: all .3s
+    &.active
+        visibility: visible

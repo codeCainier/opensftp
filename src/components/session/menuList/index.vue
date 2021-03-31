@@ -14,7 +14,7 @@
                     @click="emitHandle(action === 'local' ? 'upload' : 'download')">
                 <q-item-section>{{ action === 'local' ? '上传' : '下载' }}</q-item-section>
             </q-item>
-            <q-item clickable v-show="listItem.type === '-'">
+            <q-item clickable v-show="enableEdit()">
                 <q-item-section>选择编辑方式</q-item-section>
                 <q-item-section side>
                     <q-icon name="keyboard_arrow_right" size="1em"/>
@@ -95,15 +95,45 @@
 </template>
 
 <script>
+    import path from 'path'
+
     export default {
         name: 'SFTPMenuList',
         props: {
             action: String,
-            listItem: {
-                type: Object,
-                default: {},
-            },
+            listItem: Object,
             showHideFile: Boolean,
+        },
+        computed: {
+            enableEdit() {
+                return () => {
+                    // FIXME: 本地文件下系统编辑暂未开放
+                    if (this.action === 'local') return false
+                    // 目录、链接类型文件不允许编辑
+                    if (['d', 'l'].includes(this.listItem.type)) return false
+                    // 文件大小大于 10 MB 不允许编辑
+                    if (this.listItem.size > 10 * 1024 ** 2) return false
+                    // 文件后缀
+                    const suffix = path.extname(this.listItem.name)
+                    // 不可编辑文件
+                    if ([
+                        // 压缩文件
+                        '.rar', '.zip', '.tar', '.tgz', '.tar.gz', '.7z',
+                        // 图片文件
+                        '.jpg', '.jpeg', '.png', '.gif', '.svg', '.ai', '.psd', '.tiff',
+                        // 图标文件
+                        '.ico', '.icon',
+                        // 音频文件
+                        '.mp3',
+                        // 视频文件
+                        '.mp4', '.avi', '.ts',
+                        // 可执行程序
+                        '.exe', '.dmg',
+                    ].includes(suffix)) return false
+                    // 其他默认允许编辑
+                    return true
+                }
+            },
         },
         methods: {
             emitHandle(action, props) {

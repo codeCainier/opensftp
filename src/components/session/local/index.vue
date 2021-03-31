@@ -60,7 +60,6 @@
                            :class="{ 'drag-enter': dragEnterItem === '.' }"
                            @click.native="selected = null"
                            @dragover.native.prevent="dragOver({ name: '.' })"
-                           @dragenter.native=""
                            @dragleave.native="dragLeave"
                            @drop.native="dropFile($event)">
                 <div class="q-pl-sm q-pt-sm q-pb-xl q-pr-md">
@@ -72,7 +71,6 @@
                          @dblclick="getFileList('..')"
                          @keydown.exact.enter="getFileList('..')"
                          @dragover.prevent.stop="dragOver({ name: '..' })"
-                         @dragenter.stop=""
                          @dragleave.stop="dragLeave">
                         <div class="item icon">
                             <img src="~/assets/sftp-icons/folder-other.svg" alt="">
@@ -93,10 +91,10 @@
                              'focus-temp': openMenu === item.name || renameItem.name === item.name,
                          }"
                          @click.stop="fileFocus(index)"
+                         @click.right="showFileMenu(item, index)"
                          @dblclick="dirEnter(item)"
                          @dragstart="dragStart($event, item, index, 'local')"
                          @dragover.prevent.stop="dragOver(item)"
-                         @dragenter.stop=""
                          @dragleave.stop="dragLeave"
                          @drop.stop="dropFile($event, item)"
                          @dragend="dragEnd"
@@ -135,22 +133,29 @@
                         <!--div class="item owner">{{ item.owner }}</div>-->
                         <!--<div class="item group">{{ item.group }}</div>-->
                         <!-- 右键菜单 -->
-                        <menu-list action="local"
-                                   :listItem="item"
-                                   :showHideFile="showHideFile"
-                                   @show="selected = openMenu = item.name"
-                                   @close="fileFocus(index)"
-                                   @upload="uploadByMenu(item)"
-                                   @rename="renameOpen(item, index)"
-                                   @remove="removeFile('local', item)"
-                                   @mkdir="mkdirLocal"
-                                   @edit="editFile('local', item, $event)"
-                                   @write-file="writeFileLocal"
-                                   @refresh="getFileList('.')"
-                                   @show-hide="showHideFile = !showHideFile"/>
+                        <!--<menu-list action="local"-->
+                        <!--           :listItem="item"-->
+                        <!--           :showHideFile="showHideFile"-->
+                        <!--           @show="selected = openMenu = item.name"-->
+                        <!--           @close="fileFocus(index)"-->
+                        <!--           @upload="uploadByMenu(item)"-->
+                        <!--           @rename="renameOpen(item, index)"-->
+                        <!--           @remove="removeFile('local', item)"-->
+                        <!--           @mkdir="mkdirLocal"-->
+                        <!--           @edit="editFile('local', item, $event)"-->
+                        <!--           @write-file="writeFileLocal"-->
+                        <!--           @refresh="getFileList('.')"-->
+                        <!--           @show-hide="showHideFile = !showHideFile"/>-->
                     </div>
                 </div>
             </q-scroll-area>
+            <!-- 拖动安全区域 -->
+            <div class="drag-safe-area"
+                 :class="{ active: dragEnterItem !== null }"
+                 @dragover.prevent="dragOver({ name: '.' })"
+                 @dragleave="dragLeave"
+                 @drop="dropFile($event)">
+            </div>
             <!-- 空白处右键菜单 -->
             <pwd-menu ref="pwdMenu" action="local"
                       :showHideFile="showHideFile"
@@ -206,6 +211,8 @@ export default {
             openMenu: null,
             // 重命名项目
             renameItem: {},
+            // 被拖动文件名称
+            dragFileName: null,
             // 拖动进入元素
             dragEnterItem: null,
             // 拖动进入计时器
@@ -214,6 +221,9 @@ export default {
             sortBy: 'name',
             // 排序方式
             sortMode: 'asc',
+            fileMenu: null,
+            fileMenuItem: null,
+            fileMenuIndex: null,
         }
     },
     watch: {
@@ -223,7 +233,9 @@ export default {
         },
         dragEnterItem(newVal) {
             clearTimeout(this.dragIntoTimer)
-            if (newVal === null || newVal === '.') return
+            if (newVal === null) return
+            if (newVal === '.')  return
+            if (newVal === this.dragFileName) return
 
             this.dragIntoTimer = setTimeout(() => {
                 this.getFileList(newVal)
@@ -248,15 +260,6 @@ export default {
     },
     methods: {
         ...session,
-        // 右键上传
-        uploadByMenu(item) {
-            // 要上传的本地路径
-            const localPath  = path.join(this.pwd, item.name)
-            // 要保存的远程路径
-            const remotePath = path.posix.join(this.pwdRemote, item.name)
-            // 调用上传函数
-            this.transmit('upload', localPath, remotePath)
-        },
         // 重命名结束
         renameClose(index) {
             // 新名称与旧名称相同 或 新名称为空 相当于取消重命名
@@ -337,6 +340,7 @@ export default {
         },
     },
     created() {
+        this.createFileMenu('local')
         this.pwd = this.$q.electron.remote.app.getPath('home')
         this.getFileList('.')
     }
