@@ -20,8 +20,8 @@ export function CREATE(state, props) {
         port       : props.port,
         username   : props.username,
         password   : tools.aesEncode(props.password),
-        createTIme : Date.now(),
-        updateTIme : Date.now(),
+        createTime : Date.now(),
+        updateTime : Date.now(),
     }
 
     state.pool.push(sessionInfo)

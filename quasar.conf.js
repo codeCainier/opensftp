@@ -21,6 +21,7 @@ module.exports = function ( /* ctx */ ) {
             'i18n',
             'axios',
             'utils',
+            'echarts',
             'directive',
             'components',
         ],

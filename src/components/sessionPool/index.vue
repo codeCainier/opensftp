@@ -11,6 +11,7 @@
                     @click.right    ="showSessionMenu(item, index)"
                     @dblclick       ="login(item)"
                     @keydown.enter  ="login(item)"
+                    @keydown.space  ="showSessionPoster(item)"
                     @keydown.f2     ="renameOpen(item, index)"
                     @keydown.delete ="removeItem(item)"
                     @keydown.alt.r  ="showAttr(item)"
@@ -39,6 +40,7 @@
                            @dblclick.stop=""
                            @keydown.esc="renameCancel(index)"
                            @keydown.stop.delete=""
+                           @keydown.stop.space=""
                            @keydown.stop.up=""
                            @keydown.stop.down=""
                            @keydown.stop.alt.r=""
@@ -55,25 +57,20 @@
         </q-list>
         <attr-panel ref="attr-panel"/>
 
-        <q-dialog v-model="true">
-            <q-card>
-                <q-card-section>
-                    <div class="text-h6">Our Changing Planet</div>
-                    <div class="text-subtitle2">by John Doe</div>
-                </q-card-section>
-            </q-card>
-        </q-dialog>
+        <session-poster ref="session-poster"/>
 
     </q-scroll-area>
 </template>
 
 <script>
-import attrPanel from './attrPanel'
+import attrPanel from 'src/components/sessionPool/attrPanel'
+import sessionPoster from 'src/components/sessionPoster'
 
 export default {
     name: 'SessionPool',
     components: {
         'attr-panel': attrPanel,
+        'session-poster': sessionPoster,
     },
     data() {
         return {
@@ -198,6 +195,9 @@ export default {
             this.sessionMenu.popup({
                 callback: () => this.sessionFocus(),
             })
+        },
+        showSessionPoster(item) {
+            this.$refs['session-poster'].open(item)
         },
     },
     created() {
