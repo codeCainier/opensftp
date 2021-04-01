@@ -41,9 +41,6 @@
     height: 100%
 
 .fs-control
-    position: sticky
-    top: 0
-    z-index: 99
     box-sizing: border-box
     .btn-group
         position: absolute
@@ -101,9 +98,6 @@
         min-width: 80px
 
 .fs-head
-    position: sticky
-    top: 25px
-    z-index: 99
     padding-left: 13px
     padding-right: 21px
     border-top: 1px solid rgba($dark, .1)
@@ -118,6 +112,11 @@
 
 .fs-body
     position: relative
+    height: 100%
+    overflow: scroll
+    transition: all .3s
+    &.drag-enter
+        background: rgba($primary, .3)
     .item
         &.icon
             min-width: 25px
@@ -132,10 +131,10 @@
     &:hover
         background: rgba($primary, .1)
 
-.fs-scroll-area
-    transition: all .3s
-    &.drag-enter
-        background: rgba($primary, .3)
+//.fs-scroll-area
+//    transition: all .3s
+//    &.drag-enter
+//        background: rgba($primary, .3)
 
 .drag-safe-area
     position: absolute

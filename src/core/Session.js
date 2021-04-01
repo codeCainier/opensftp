@@ -416,7 +416,11 @@ export default {
     refresh() {
         this.getFileList('.')
     },
-    // 创建文件右键菜单
+    /**
+     * 创建文件右键菜单
+     * @method
+     * @param   {String}    action      remote || local
+     */
     createFileMenu(action) {
         const { remote } = this.$q.electron
         const fileMenu = new remote.Menu()
@@ -480,12 +484,57 @@ export default {
 
         this.fileMenu = fileMenu
     },
+    /**
+     * 创建容器右键菜单
+     * @method
+     * @param   {String}    action      remote || local
+     */
+    createContainerMenu(action) {
+        const { remote } = this.$q.electron
+        const containerMenu = new remote.Menu()
+
+        containerMenu.append(new remote.MenuItem({
+            label: '刷新',
+            click: this.refresh,
+        }))
+
+        containerMenu.append(new remote.MenuItem({ type: 'separator' }))
+
+        containerMenu.append(new remote.MenuItem({
+            label: '新建',
+            submenu: [
+                {
+                    label: '新建文件',
+                    click: action === 'local' ? this.writeFileLocal : this.writeFileRemote,
+                }, {
+                    label: '新建文件夹',
+                    click: action === 'local' ? this.mkdirLocal : this.mkdirRemote,
+                },
+            ],
+        }))
+
+        containerMenu.append(new remote.MenuItem({ type: 'separator' }))
+
+        containerMenu.append(new remote.MenuItem({
+            label: '显示隐藏文件',
+            type: 'checkbox',
+            checked: this.showHideFile,
+            click: () => this.showHideFile = !this.showHideFile,
+        }))
+
+        this.containerMenu = containerMenu
+    },
     // 显示文件右键菜单
     showFileMenu(item, index) {
-        this.selected      = item.name
+        this.selected      = index
         this.openMenu      = item.name
         this.fileMenuItem  = item
         this.fileMenuIndex = index
-        this.fileMenu.popup()
+        this.fileMenu.popup({
+            callback: () => this.fileFocus(),
+        })
+    },
+    showContainerMenu() {
+        this.containerMenu.popup()
     },
 }

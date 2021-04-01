@@ -1,4 +1,5 @@
-import { LocalStorage } from 'quasar'
+import { LocalStorage, uid } from 'quasar'
+import tools from 'src/utils'
 
 /**
  * 创建会话
@@ -13,14 +14,12 @@ import { LocalStorage } from 'quasar'
  */
 export function CREATE(state, props) {
     const sessionInfo = {
-        id         : props.id,
+        id         : uid(),
         name       : props.name || props.host,
         host       : props.host,
         port       : props.port,
         username   : props.username,
-        // TODO: 会话池会话信息，密码 AES 加密
-        // password   : tools.aesEn(props.password),
-        password   : props.password,
+        password   : tools.aesEncode(props.password),
         createTIme : Date.now(),
         updateTIme : Date.now(),
     }
@@ -41,6 +40,9 @@ export function CREATE(state, props) {
  */
 export function UPDATE(state, props) {
     const { id, updateItem } = props
+
+    if (updateItem.password) updateItem.password = tools.aesEncode(updateItem.password)
+
     state.pool.find(item => {
         if (item.id === id) {
             Object.keys(updateItem).forEach(key => item[key] = updateItem[key])
@@ -66,16 +68,18 @@ export function DELETE(state, id) {
  * 连接会话
  * @param   {Object}    state
  * @param   {Object}    props
- * @param   {String}    props.id            会话连接 ID
  * @param   {Object}    props.connect       会话连接对象
  * @param   {Object}    props.sessionInfo   会话信息
  */
 export function CONNECT(state, props) {
+    const id = uid()
     state.conn.push({
-        id          : props.id,
+        id,
         connect     : props.connect,
         sessionInfo : props.sessionInfo,
     })
+    // 设置会话标签为活跃状态
+    state.active = id
 }
 
 /**

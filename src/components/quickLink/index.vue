@@ -63,25 +63,18 @@
 
                 this.loading = true
 
-                const id = uid()
-
-                this.$store.commit('session/CREATE', {
-                    id,
+                const sessionInfo = {
+                    id: uid(),
                     host,
                     port,
                     username,
                     password,
-                })
+                }
 
-                this.$store.dispatch('session/LOGIN', id)
-                    .then(() => {
-                        this.loading = false
-                        this.$router.push({ path: '/session' })
-                    })
-                    .catch(err => {
-                        this.loading = false
-                        this.confirm(err)
-                    })
+                this.$store.dispatch('session/QUICK_LOGIN', sessionInfo)
+                    .then(() => this.$router.push({ path: '/session' }))
+                    .catch(err => this.confirm(err))
+                    .finally(() => this.loading = false)
             },
         },
     };

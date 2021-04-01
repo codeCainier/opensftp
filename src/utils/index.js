@@ -1,5 +1,5 @@
 import { Dialog, extend } from 'quasar'
-import CryptoJS from 'crypto-js'
+import crypto from 'crypto'
 
 function confirm(obj) {
     if (typeof obj === 'string') obj = {
@@ -30,16 +30,34 @@ function clone (obj) {
 }
 
 /**
- * Base64 加密
+ * AES 加密 (aes-192-cbc)
  * @method
- * @param       {String}    data    传入字符串
- * @return      {string}            加密结果
- * */
-function base64En(data) {
-    data = typeof data === 'string' ? data : JSON.stringify(data);
-    data = CryptoJS.enc.Utf8.parse(data);
-    return CryptoJS.enc.Base64.stringify(data)
-        .toString();
+ * @param       {String}    str         加密前字符串
+ * @param       {String}    algorithm   加密算法，默认为 aes-192-cbc
+ * @param       {String}    key         密钥 24 位
+ * @param       {String}    iv          向量 16 位
+ * @return      {String}                加密后字符串
+ */
+function aesEncode(str, algorithm = 'aes-192-cbc', key= 'APP_AES_192_CBC_KEY_____', iv = 'APP_AES_IV______') {
+    const cipher = crypto.createCipheriv(algorithm, key, iv)
+    let encrypted = cipher.update(str, 'utf8', 'hex')
+    encrypted += cipher.final('hex')
+    return encrypted
+}
+
+/**
+ * AES 解密 (aes-192-cbc)
+ * @method
+ * @param       {String}    str         解密前字符串
+ * @param       {String}    algorithm   加密算法，默认为 aes-192-cbc
+ * @param       {String}    key         密钥 24 位
+ * @param       {String}    iv          向量 16 位
+ * @return      {String}                解密后字符串
+ */
+function aesDecode(str, algorithm = 'aes-192-cbc', key = 'APP_AES_192_CBC_KEY_____', iv = 'APP_AES_IV______') {
+    const cipher = crypto.createDecipheriv(algorithm, key, iv)
+    cipher.update(str, 'hex', 'utf8')
+    return cipher.final('utf8')
 }
 
 /**
@@ -175,8 +193,9 @@ function getUrlParams(url, name) {
 export default {
     confirm,
     clone,
-    base64En,
     add0,
+    aesEncode,
+    aesDecode,
     formatFlow,
     formatDate,
     formatTime,

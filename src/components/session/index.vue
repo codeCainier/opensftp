@@ -1,6 +1,6 @@
 <template>
     <div class="session full-height">
-        <q-splitter class="sftp full-height" v-model="splitterModel">
+        <q-splitter class="sftp full-height overflow-hidden" v-model="splitterModel">
             <template v-slot:before>
                 <local ref="local"
                        :connectId="connectId"

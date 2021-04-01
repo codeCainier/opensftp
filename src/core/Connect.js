@@ -1,7 +1,7 @@
 import path     from 'path'
 import fs       from 'fs'
 import { exec } from'child_process'
-import { uid, debounce }  from 'quasar'
+import { uid, debounce } from 'quasar'
 
 const { Client } = require('ssh2')
 

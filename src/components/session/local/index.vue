@@ -50,105 +50,102 @@
                         :class="{ desc : sortMode === 'desc' }"
                         name="ion-ios-arrow-up"/>
             </div>
-            <!--<div class="item owner">所有者</div>-->
-            <!--<div class="item group">群组</div>-->
         </div>
-        <!-- 文件系统 - 文件列表 -->
-        <div class="fs-body full-height">
-            <q-scroll-area ref="scrollArea"
-                           class="fs-scroll-area full-height"
-                           :class="{ 'drag-enter': dragEnterItem === '.' }"
-                           @click.native="selected = null"
-                           @dragover.native.prevent="dragOver({ name: '.' })"
-                           @dragleave.native="dragLeave"
-                           @drop.native="dropFile($event)">
-                <div class="q-pl-sm q-pt-sm q-pb-xl q-pr-md">
-                    <!-- File .. -->
-                    <div v-show="pwd !== '/'"
-                         class="fs-item" tabindex="0"
-                         :class="{ 'drag-enter': dragEnterItem === '..' }"
-                         @click="selected = null"
-                         @dblclick="getFileList('..')"
-                         @keydown.exact.enter="getFileList('..')"
-                         @dragover.prevent.stop="dragOver({ name: '..' })"
-                         @dragleave.stop="dragLeave">
-                        <div class="item icon">
-                            <img src="~/assets/sftp-icons/folder-other.svg" alt="">
-                        </div>
-                        <div class="item name">..</div>
+        <!-- 文件系统 - 文件列表容器 -->
+        <div class="fs-body full-height"
+             :class="{ 'drag-enter': dragEnterItem === '.' }"
+             @click="selected = null"
+             @click.right="showContainerMenu"
+             @dragover.prevent="dragOver({ name: '.' })"
+             @dragleave="dragLeave"
+             @drop="dropFile($event)">
+            <!-- 文件列表 -->
+            <div class="q-pl-sm q-pt-sm q-pb-xl q-pr-md">
+                <!-- File .. -->
+                <div v-show="pwd !== '/'"
+                     class="fs-item" tabindex="0"
+                     :class="{ 'drag-enter': dragEnterItem === '..' }"
+                     @click="selected = null"
+                     @dblclick="getFileList('..')"
+                     @keydown.exact.enter="getFileList('..')"
+                     @dragover.prevent.stop="dragOver({ name: '..' })"
+                     @dragleave.stop="dragLeave">
+                    <div class="item icon">
+                        <img src="~/assets/sftp-icons/folder-other.svg" alt="">
                     </div>
-                    <!-- File List -->
-                    <div v-for="(item, index) in list"
-                         class="fs-item"
-                         tabindex="0"
-                         draggable="true"
-                         :ref="'file-item-' + index"
-                         :key="item.name"
-                         :class="{
-                             selected: selected === index,
-                             hidden: hideItem(item),
-                             'drag-enter': dragEnterItem === item.name,
-                             'focus-temp': openMenu === item.name || renameItem.name === item.name,
-                         }"
-                         @click.stop="fileFocus(index)"
-                         @click.right="showFileMenu(item, index)"
-                         @dblclick="dirEnter(item)"
-                         @dragstart="dragStart($event, item, index, 'local')"
-                         @dragover.prevent.stop="dragOver(item)"
-                         @dragleave.stop="dragLeave"
-                         @drop.stop="dropFile($event, item)"
-                         @dragend="dragEnd"
-                         @keydown.enter="dirEnter(item)"
-                         @keydown.exact.delete="removeFile('local', item)"
-                         @keydown.f2="renameOpen(item, index)"
-                         @keydown.prevent.up="moveFocus('up')"
-                         @keydown.prevent.down="moveFocus('down')">
-                        <div class="item icon">
-                            <img :src="getFileIcon(item)" alt="">
-                        </div>
-                        <div class="item name">
-                            <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
-                            <label>
-                                <input v-model="renameItem.newName"
-                                       v-show="renameItem.name === item.name"
-                                       type="text"
-                                       tabindex="0"
-                                       :ref="'rename-input-' + index"
-                                       class="rename-input no-outline no-border no-padding"
-                                       :placeholder="item.name"
-                                       spellcheck="false"
-                                       @blur="renameClose(index)"
-                                       @click.stop=""
-                                       @dblclick.stop=""
-                                       @keydown.esc="renameCancel(index)"
-                                       @keydown.stop.delete=""
-                                       @keydown.stop.up=""
-                                       @keydown.stop.down=""
-                                       @keydown.stop.alt.r=""
-                                       @keydown.stop.enter="$refs[`rename-input-${index}`][0].blur()">
-                            </label>
-                        </div>
-                        <div class="item size">{{ fileSize(item) }}</div>
-                        <div class="item date">{{ fileCreatedTime(item.date) }}</div>
-                        <!--div class="item owner">{{ item.owner }}</div>-->
-                        <!--<div class="item group">{{ item.group }}</div>-->
-                        <!-- 右键菜单 -->
-                        <!--<menu-list action="local"-->
-                        <!--           :listItem="item"-->
-                        <!--           :showHideFile="showHideFile"-->
-                        <!--           @show="selected = openMenu = item.name"-->
-                        <!--           @close="fileFocus(index)"-->
-                        <!--           @upload="uploadByMenu(item)"-->
-                        <!--           @rename="renameOpen(item, index)"-->
-                        <!--           @remove="removeFile('local', item)"-->
-                        <!--           @mkdir="mkdirLocal"-->
-                        <!--           @edit="editFile('local', item, $event)"-->
-                        <!--           @write-file="writeFileLocal"-->
-                        <!--           @refresh="getFileList('.')"-->
-                        <!--           @show-hide="showHideFile = !showHideFile"/>-->
-                    </div>
+                    <div class="item name">..</div>
                 </div>
-            </q-scroll-area>
+                <!-- File List -->
+                <div v-for="(item, index) in list"
+                     class="fs-item"
+                     tabindex="0"
+                     draggable="true"
+                     :ref="'file-item-' + index"
+                     :key="item.name"
+                     :class="{
+                         selected: selected === index,
+                         hidden: hideItem(item),
+                         'drag-enter': dragEnterItem === item.name,
+                         'focus-temp': openMenu === item.name || renameItem.name === item.name,
+                     }"
+                     @click.stop="fileFocus(index)"
+                     @click.right="showFileMenu(item, index)"
+                     @dblclick="dirEnter(item)"
+                     @dragstart="dragStart($event, item, index, 'local')"
+                     @dragover.prevent.stop="dragOver(item)"
+                     @dragleave.stop="dragLeave"
+                     @drop.stop="dropFile($event, item)"
+                     @dragend="dragEnd"
+                     @keydown.enter="dirEnter(item)"
+                     @keydown.exact.delete="removeFile('local', item)"
+                     @keydown.f2="renameOpen(item, index)"
+                     @keydown.prevent.up="moveFocus('up')"
+                     @keydown.prevent.down="moveFocus('down')">
+                    <div class="item icon">
+                        <img :src="getFileIcon(item)" alt="">
+                    </div>
+                    <div class="item name">
+                        <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
+                        <label>
+                            <input v-model="renameItem.newName"
+                                   v-show="renameItem.name === item.name"
+                                   type="text"
+                                   tabindex="0"
+                                   :ref="'rename-input-' + index"
+                                   class="rename-input no-outline no-border no-padding"
+                                   :placeholder="item.name"
+                                   spellcheck="false"
+                                   @blur="renameClose(index)"
+                                   @click.stop=""
+                                   @dblclick.stop=""
+                                   @keydown.esc="renameCancel(index)"
+                                   @keydown.stop.delete=""
+                                   @keydown.stop.up=""
+                                   @keydown.stop.down=""
+                                   @keydown.stop.alt.r=""
+                                   @keydown.stop.enter="$refs[`rename-input-${index}`][0].blur()">
+                        </label>
+                    </div>
+                    <div class="item size">{{ fileSize(item) }}</div>
+                    <div class="item date">{{ fileCreatedTime(item.date) }}</div>
+                    <!--div class="item owner">{{ item.owner }}</div>-->
+                    <!--<div class="item group">{{ item.group }}</div>-->
+                    <!-- 右键菜单 -->
+                    <!--<menu-list action="local"-->
+                    <!--           :listItem="item"-->
+                    <!--           :showHideFile="showHideFile"-->
+                    <!--           @show="selected = openMenu = item.name"-->
+                    <!--           @close="fileFocus(index)"-->
+                    <!--           @upload="uploadByMenu(item)"-->
+                    <!--           @rename="renameOpen(item, index)"-->
+                    <!--           @remove="removeFile('local', item)"-->
+                    <!--           @mkdir="mkdirLocal"-->
+                    <!--           @edit="editFile('local', item, $event)"-->
+                    <!--           @write-file="writeFileLocal"-->
+                    <!--           @refresh="getFileList('.')"-->
+                    <!--           @show-hide="showHideFile = !showHideFile"/>-->
+                </div>
+            </div>
             <!-- 拖动安全区域 -->
             <div class="drag-safe-area"
                  :class="{ active: dragEnterItem !== null }"
@@ -156,14 +153,6 @@
                  @dragleave="dragLeave"
                  @drop="dropFile($event)">
             </div>
-            <!-- 空白处右键菜单 -->
-            <pwd-menu ref="pwdMenu" action="local"
-                      :showHideFile="showHideFile"
-                      @before-show="pwdMenuBeforeShow"
-                      @mkdir="mkdirLocal"
-                      @write-file="writeFileLocal"
-                      @refresh="getFileList('.')"
-                      @show-hide="showHideFile = !showHideFile"/>
         </div>
     </div>
 </template>
@@ -174,17 +163,11 @@
  * Linux 思想，一切皆文件
  */
 import path      from 'path'
-import menuList  from 'src/components/session/menuList'
 import iconMatch from 'src/utils/iconMatch'
-import pwdMenu   from 'src/components/session/pwdMenu'
 import session   from 'src/core/Session'
 
 export default {
     name: 'SFTPLocal',
-    components: {
-        'menu-list': menuList,
-        'pwd-menu' : pwdMenu,
-    },
     props: {
         pwdRemote: String,
         connectId: String,
@@ -233,9 +216,15 @@ export default {
         },
         dragEnterItem(newVal) {
             clearTimeout(this.dragIntoTimer)
+
+            // 取消拖动
             if (newVal === null) return
+            // 拖动到当前目录
             if (newVal === '.')  return
+            // 拖动到当前文件
             if (newVal === this.dragFileName) return
+            // 拖动到非目录文件
+            if (!['d', 'l'].includes(this.list.find(item => item.name === newVal).type)) return
 
             this.dragIntoTimer = setTimeout(() => {
                 this.getFileList(newVal)
@@ -313,7 +302,6 @@ export default {
                     // 清除重命名元素
                     this.renameItem = {}
                     this.fileFocus()
-                    this.$refs.scrollArea.setScrollPosition(0)
                     this.loading = false
                 })
                 .catch(err => {
@@ -341,6 +329,7 @@ export default {
     },
     created() {
         this.createFileMenu('local')
+        this.createContainerMenu('local')
         this.pwd = this.$q.electron.remote.app.getPath('home')
         this.getFileList('.')
     }
