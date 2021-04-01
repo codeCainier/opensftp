@@ -23,13 +23,10 @@
                     更新于 {{ tools.formatDate(sessionInfo.updateTime, 'yyyy-MM-dd') }}
                 </q-btn>
                 <q-space/>
-                <q-btn flat round icon="ion-md-trash">
-                    <q-tooltip>删除会话</q-tooltip>
-                </q-btn>
-                <q-btn flat round icon="ion-ios-copy">
+                <q-btn flat round icon="ion-ios-copy" @click="copyToTerminal">
                     <q-tooltip>复制到命令行</q-tooltip>
                 </q-btn>
-                <q-btn flat round icon="ion-md-share">
+                <q-btn flat round icon="ion-md-share" @click="copyToShare">
                     <q-tooltip>分享会话</q-tooltip>
                 </q-btn>
             </q-card-actions>
@@ -39,6 +36,7 @@
 </template>
 
 <script>
+import { copyToClipboard } from 'quasar'
 import ping from 'ping'
 
 export default {
@@ -129,6 +127,29 @@ export default {
                 }]
             }
             this.chart.setOption(option)
+        },
+        // 将会话复制到命令行
+        copyToTerminal() {
+            const { host, port, username } = this.sessionInfo
+            const cmd = `ssh ${username}@${host} -p ${port}\n`
+            copyToClipboard(cmd)
+                .then(() => {
+                    this.notify.success('复制成功，在命令行粘贴以执行')
+                })
+                .catch(() => {
+                    this.notify.error('复制失败')
+                })
+        },
+        // 将会话分享给其他 Open SFTP 用户
+        copyToShare() {
+            const cmd = this.tools.aesEncode(JSON.stringify(this.sessionInfo))
+            copyToClipboard(cmd)
+                .then(() => {
+                    this.notify.success(`复制成功，快分享给你的好友吧～`)
+                })
+                .catch(() => {
+                    this.notify.error('分享失败')
+                })
         },
     },
 }
