@@ -89,7 +89,7 @@
                          'focus-temp': openMenu === item.name || renameItem.name === item.name,
                      }"
                      @click.stop="fileFocus(index)"
-                     @click.right="showFileMenu(item, index)"
+                     @click.stop.right="showFileMenu('local', item, index)"
                      @dblclick="dirEnter(item)"
                      @dragstart="dragStart($event, item, index, 'local')"
                      @dragover.prevent.stop="dragOver(item)"
@@ -128,22 +128,6 @@
                     </div>
                     <div class="item size">{{ fileSize(item) }}</div>
                     <div class="item date">{{ fileCreatedTime(item.date) }}</div>
-                    <!--div class="item owner">{{ item.owner }}</div>-->
-                    <!--<div class="item group">{{ item.group }}</div>-->
-                    <!-- 右键菜单 -->
-                    <!--<menu-list action="local"-->
-                    <!--           :listItem="item"-->
-                    <!--           :showHideFile="showHideFile"-->
-                    <!--           @show="selected = openMenu = item.name"-->
-                    <!--           @close="fileFocus(index)"-->
-                    <!--           @upload="uploadByMenu(item)"-->
-                    <!--           @rename="renameOpen(item, index)"-->
-                    <!--           @remove="removeFile('local', item)"-->
-                    <!--           @mkdir="mkdirLocal"-->
-                    <!--           @edit="editFile('local', item, $event)"-->
-                    <!--           @write-file="writeFileLocal"-->
-                    <!--           @refresh="getFileList('.')"-->
-                    <!--           @show-hide="showHideFile = !showHideFile"/>-->
                 </div>
             </div>
             <!-- 拖动安全区域 -->
@@ -204,9 +188,6 @@ export default {
             sortBy: 'name',
             // 排序方式
             sortMode: 'asc',
-            fileMenu: null,
-            fileMenuItem: null,
-            fileMenuIndex: null,
         }
     },
     watch: {
@@ -217,14 +198,16 @@ export default {
         dragEnterItem(newVal) {
             clearTimeout(this.dragIntoTimer)
 
-            // 取消拖动
-            if (newVal === null) return
-            // 拖动到当前目录
-            if (newVal === '.')  return
-            // 拖动到当前文件
-            if (newVal === this.dragFileName) return
-            // 拖动到非目录文件
-            if (!['d', 'l'].includes(this.list.find(item => item.name === newVal).type)) return
+            if (newVal !== '..') {
+                // 取消拖动
+                if (newVal === null) return
+                // 拖动到当前目录
+                if (newVal === '.')  return
+                // 拖动到当前文件
+                if (newVal === this.dragFileName) return
+                // 拖动到非目录文件
+                if (!['d', 'l'].includes(this.list.find(item => item.name === newVal).type)) return
+            }
 
             this.dragIntoTimer = setTimeout(() => {
                 this.getFileList(newVal)
@@ -288,6 +271,7 @@ export default {
 
             this.connect.listLocal(cwd)
                 .then(list => {
+                    // 列表初始化排序
                     this.list = this.sort(list)
                     // 更新最后访问目录
                     this.pwd = cwd
@@ -328,7 +312,6 @@ export default {
         },
     },
     created() {
-        this.createFileMenu('local')
         this.createContainerMenu('local')
         this.pwd = this.$q.electron.remote.app.getPath('home')
         this.getFileList('.')

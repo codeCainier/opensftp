@@ -1,65 +1,103 @@
 <template>
-    <q-scroll-area class="full-height">
-        <q-list dense>
-            <q-item v-for="(item, index) in $store.state.session.pool"
-                    :key="item.id"
-                    :ref="'session-' + index"
-                    :class="{ 'focus-temp': renameItem.id === item.id || openMenu === index }"
-                    class="list-item cursor-inherit"
-                    clickable v-ripple
-                    @click          ="selectSession(index)"
-                    @click.right    ="showSessionMenu(item, index)"
-                    @dblclick       ="login(item)"
-                    @keydown.enter  ="login(item)"
-                    @keydown.space  ="showSessionPoster(item)"
-                    @keydown.f2     ="renameOpen(item, index)"
-                    @keydown.delete ="removeItem(item)"
-                    @keydown.alt.r  ="showAttr(item)"
-                    @keydown.up     ="moveFocus('up')"
-                    @keydown.down   ="moveFocus('down')">
-                <q-item-section avatar>
-                    <q-avatar rounded size="md">
-                        <q-spinner-gears v-if="loading === item.id" class="session-icon" />
-                        <q-btn v-else flat
-                               class="session-icon"
-                               :class="{ 'text-positive': $q.dark.isActive }"
-                               icon="dns" size="sm"/>
-                    </q-avatar>
-                </q-item-section>
-                <q-item-section>
-                    <q-item-section v-show="renameItem.id !== item.id">{{ itemName(item) }}</q-item-section>
-                    <input v-model="renameItem.name"
-                           v-show="renameItem.id === item.id"
-                           type="text"
-                           :ref="'rename-input-' + index"
-                           class="rename-input no-outline no-border no-padding"
-                           :placeholder="item.host"
+    <div class="session-pool full-height">
+        <!-- 会话池控制中心 -->
+        <div class="pool-control q-mt-xs q-mb-sm">
+            <div class="row">
+                <div class="session-num" :class="{ active: !showSearch }">
+                    <span class="text-h6 text-weight-light q-mx-xs">{{ $store.state.session.pool.length }}</span>
+                    <span>会话</span>
+                </div>
+                <div class="search-input-container" :class="{ active: showSearch }">
+                    <input type="text"
+                           v-model.trim="searchValue"
+                           ref="search-input"
+                           class="search-input"
+                           placeholder="搜索会话"
                            spellcheck="false"
-                           @blur="renameClose"
-                           @click.stop=""
-                           @dblclick.stop=""
-                           @keydown.esc="renameCancel(index)"
-                           @keydown.stop.delete=""
-                           @keydown.stop.space=""
-                           @keydown.stop.up=""
-                           @keydown.stop.down=""
-                           @keydown.stop.alt.r=""
-                           @keydown.stop.enter="renameFinish(index)"
-                           @compositionstart="renameItem.preventKeydown = true"
-                           @compositionend="renameItem.preventKeydown = false">
-                </q-item-section>
-                <q-item-section side>
-                    <q-item-label style="width: 100px" caption class="site-label">
-                        {{ loading === item.id ? '正在连接...' : item.host }}
-                    </q-item-label>
-                </q-item-section>
-            </q-item>
-        </q-list>
-        <attr-panel ref="attr-panel"/>
+                           @input="searchSession"
+                           @keydown.down="searchResFocus">
+                </div>
+                <q-space/>
+                <q-btn class="btn-control btn-search"
+                       :icon="showSearch ? 'close' : 'search'"
+                       flat round
+                       size="sm"
+                       @click="showSearch = !showSearch"/>
+                <q-btn class="btn-control btn-add"
+                       icon="add"
+                       flat round
+                       size="sm">
+                    <q-menu>
 
-        <session-poster ref="session-poster"/>
+                    </q-menu>
+                </q-btn>
+            </div>
+        </div>
+        <!-- 会话池列表 -->
+        <q-scroll-area class="full-height">
+            <q-list dense>
+                <q-item v-for="(item, index) in $store.state.session.pool"
+                        v-show="sessionIsShow(item.id)"
+                        :key="item.id"
+                        :ref="'session-' + index"
+                        :class="{ 'focus-temp': renameItem.id === item.id || openMenu === index }"
+                        class="list-item cursor-inherit"
+                        clickable v-ripple
+                        @click          ="selectSession(index)"
+                        @click.right    ="showSessionMenu(item, index)"
+                        @dblclick       ="login(item)"
+                        @keydown.enter  ="login(item)"
+                        @keydown.space  ="showSessionPoster(item)"
+                        @keydown.f2     ="renameOpen(item, index)"
+                        @keydown.delete ="removeItem(item)"
+                        @keydown.alt.r  ="showAttr(item)"
+                        @keydown.up     ="moveFocus('up')"
+                        @keydown.down   ="moveFocus('down')">
+                    <q-item-section avatar>
+                        <q-avatar rounded size="md">
+                            <q-spinner-gears v-if="loading === item.id" class="session-icon" />
+                            <q-btn v-else flat
+                                   class="session-icon"
+                                   :class="{ 'text-positive': $q.dark.isActive }"
+                                   icon="dns" size="sm"/>
+                        </q-avatar>
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-section v-show="renameItem.id !== item.id">{{ itemName(item) }}</q-item-section>
+                        <input v-model="renameItem.name"
+                               v-show="renameItem.id === item.id"
+                               type="text"
+                               :ref="'rename-input-' + index"
+                               class="rename-input no-outline no-border no-padding"
+                               :placeholder="item.host"
+                               spellcheck="false"
+                               @blur="renameClose"
+                               @click.stop=""
+                               @dblclick.stop=""
+                               @keydown.esc="renameCancel(index)"
+                               @keydown.stop.delete=""
+                               @keydown.stop.space=""
+                               @keydown.stop.up=""
+                               @keydown.stop.down=""
+                               @keydown.stop.alt.r=""
+                               @keydown.stop.enter="renameFinish(index)"
+                               @compositionstart="renameItem.preventKeydown = true"
+                               @compositionend="renameItem.preventKeydown = false">
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-item-label style="width: 100px" caption class="site-label">
+                            {{ loading === item.id ? '正在连接...' : item.host }}
+                        </q-item-label>
+                    </q-item-section>
+                </q-item>
+            </q-list>
 
-    </q-scroll-area>
+            <attr-panel ref="attr-panel"/>
+
+            <session-poster ref="session-poster"/>
+
+        </q-scroll-area>
+    </div>
 </template>
 
 <script>
@@ -81,12 +119,34 @@ export default {
             sessionMenu      : null,
             sessionMenuItem  : null,
             sessionMenuIndex : null,
+            showSearch       : false,
+            searchValue      : '',
+            sessionFilter    : [],
         }
     },
     computed: {
         itemName() {
             return item => item.name || item.host
         },
+        sessionIsShow() {
+            return id => {
+                // 搜索模式关闭时全部进行显示
+                if (!this.showSearch) return true
+                // 搜索模式开启，搜索结果符合时进行显示
+                if (this.sessionFilter.find(item => item.id === id)) return true
+            }
+        },
+    },
+    watch: {
+        showSearch(newVal) {
+            if (!newVal) {
+                this.searchValue = ''
+                this.sessionFilter = []
+            }
+            if (newVal) setTimeout(() => {
+                this.$refs['search-input'].focus()
+            }, 300)
+        }
     },
     methods: {
         // 连接会话
@@ -142,7 +202,7 @@ export default {
         // 移动聚焦元素
         moveFocus(action) {
             if (action === 'up' && this.selected !== 0) this.selected -= 1
-            if (action === 'down' && this.selected !== this.list.length - 1) this.selected += 1
+            if (action === 'down' && this.selected !== this.$store.state.session.pool.length - 1) this.selected += 1
             this.sessionFocus()
         },
         // 会话聚焦
@@ -180,6 +240,11 @@ export default {
             sessionMenu.append(new remote.MenuItem({ type: 'separator' }))
 
             sessionMenu.append(new remote.MenuItem({
+                label: '卡片展示',
+                click: () => this.showSessionPoster(this.sessionMenuItem),
+            }))
+
+            sessionMenu.append(new remote.MenuItem({
                 label: '高级设置',
                 click: () => this.showAttr(this.sessionMenuItem),
             }))
@@ -196,9 +261,27 @@ export default {
                 callback: () => this.sessionFocus(),
             })
         },
+        // 显示会话卡片展示
         showSessionPoster(item) {
             this.$refs['session-poster'].open(item)
         },
+        // 搜索会话
+        searchSession() {
+            const value = this.searchValue.trim()
+            // 搜索内容为空
+            if (!value) return this.sessionFilter = []
+            this.sessionFilter = this.$store.state.session.pool.filter(item => {
+                if (item.name.includes(value)) return true
+                if (item.host.includes(value)) return true
+                if (item.port.includes(value)) return true
+            })
+        },
+        // 搜素结果获取焦点
+        searchResFocus() {
+            if (!this.sessionFilter.length) return
+            this.selected = this.$store.state.session.pool.findIndex(item => item.id === this.sessionFilter[0].id)
+            this.sessionFocus()
+        }
     },
     created() {
         this.createSessionMenu()
@@ -207,13 +290,73 @@ export default {
 </script>
 
 <style scoped lang="sass">
-    .list-item
-        border-radius: 4px
-        .session-icon
-            color: $primary
-        &:focus,&.focus-temp
-            background: $primary
+.body--light
+    .session-pool
+        .pool-control .search-input
+            background: rgba(#FFFFFF, .7)
+            color: $dark
+            &::-webkit-input-placeholder
+                color: $dark
+
+.body--dark
+    .pool-control .search-input
+        background: #666666
+        color: #FFFFFF
+        &::-webkit-input-placeholder
             color: #FFFFFF
-            .session-icon,.site-label
-                color: #FFFFFF
+
+.session-pool
+    display: flex
+    flex-direction: column
+    .pool-control
+        position: relative
+        .session-num
+            position: absolute
+            height: 30px
+            line-height: 30px
+            opacity: 0
+            visibility: hidden
+            transform: translateX(-10px)
+            transition: all .3s
+            &.active
+                opacity: 1
+                visibility: visible
+                transform: translateX(0)
+        .search-input-container
+            position: absolute
+            opacity: 0
+            visibility: hidden
+            transform: translateX(10px)
+            transition: all .3s
+            width: calc(100% - 35px)
+            height: 100%
+            &.active
+                opacity: 1
+                visibility: visible
+                transform: translateX(0)
+            .search-input
+                margin: 0
+                padding: 0 10px
+                border: 0
+                outline: none
+                width: 100%
+                height: 100%
+                border-radius: 30px
+                transition: all .3s
+                &:focus
+                    box-shadow: $shadow-10
+        .btn-control
+            width: 30px
+            height: 30px
+            margin-left: 5px
+
+.list-item
+    border-radius: 4px
+    .session-icon
+        color: $primary
+    &:focus,&.focus-temp
+        background: $primary
+        color: #FFFFFF
+        .session-icon,.site-label
+            color: #FFFFFF
 </style>

@@ -26,9 +26,9 @@
                 <q-btn flat round icon="ion-ios-copy" @click="copyToTerminal">
                     <q-tooltip>复制到命令行</q-tooltip>
                 </q-btn>
-                <q-btn flat round icon="ion-md-share" @click="copyToShare">
-                    <q-tooltip>分享会话</q-tooltip>
-                </q-btn>
+                <!--<q-btn flat round icon="ion-md-share" @click="copyToShare">-->
+                <!--    <q-tooltip>分享会话</q-tooltip>-->
+                <!--</q-btn>-->
             </q-card-actions>
             <!--<div class="absolute-top-left full-width full-height" ref="chart-ping"></div>-->
         </q-card>

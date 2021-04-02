@@ -67,7 +67,6 @@
                      @dblclick="getFileList('..')"
                      @keydown.exact.enter="getFileList('..')"
                      @dragover.prevent.stop="dragOver({ name: '..' })"
-                     @dragenter.stop=""
                      @dragleave.stop="dragLeave">
                     <div class="item icon">
                         <img src="~/assets/sftp-icons/folder-other.svg" alt="">
@@ -88,11 +87,10 @@
                          'focus-temp': openMenu === item.name || renameItem.name === item.name,
                      }"
                      @click.stop="fileFocus(index)"
-                     @click.right="showFileMenu(item, index)"
+                     @click.stop.right="showFileMenu('remote', item, index)"
                      @dblclick="dirEnter(item)"
                      @dragstart="dragStart($event, item, index, 'remote')"
                      @dragover.prevent.stop="dragOver(item)"
-                     @dragenter.stop=""
                      @dragleave.stop="dragLeave"
                      @drop.stop="dropFile($event, item)"
                      @dragend="dragEnd"
@@ -193,9 +191,6 @@ export default {
             sortBy: 'name',
             // 排序方式
             sortMode: 'asc',
-            fileMenu: null,
-            fileMenuItem: null,
-            fileMenuIndex: null,
         }
     },
     watch: {
@@ -206,14 +201,16 @@ export default {
         dragEnterItem(newVal) {
             clearTimeout(this.dragIntoTimer)
 
-            // 取消拖动
-            if (newVal === null) return
-            // 拖动到当前目录
-            if (newVal === '.')  return
-            // 拖动到当前文件
-            if (newVal === this.dragFileName) return
-            // 拖动到非目录文件
-            if (!['d', 'l'].includes(this.list.find(item => item.name === newVal).type)) return
+            if (newVal !== '..') {
+                // 取消拖动
+                if (newVal === null) return
+                // 拖动到当前目录
+                if (newVal === '.')  return
+                // 拖动到当前文件
+                if (newVal === this.dragFileName) return
+                // 拖动到非目录文件
+                if (!['d', 'l'].includes(this.list.find(item => item.name === newVal).type)) return
+            }
 
             this.dragIntoTimer = setTimeout(() => {
                 this.getFileList(newVal)
@@ -277,7 +274,9 @@ export default {
 
             this.connect.listRemote(cwd)
                 .then(list => {
+                    // 列表初始化排序
                     this.list = this.sort(list)
+
                     // 更新最后访问目录
                     this.pwd = cwd
                     // 若指定聚焦文件
@@ -317,7 +316,6 @@ export default {
         },
     },
     created() {
-        this.createFileMenu('remote')
         this.createContainerMenu('remote')
         this.pwd = '/'
         this.getFileList('.')
