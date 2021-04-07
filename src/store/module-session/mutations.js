@@ -12,9 +12,10 @@ import tools from 'src/utils'
  * @param   {String}    props.username  账号
  * @param   {String}    props.password  密码
  */
-export function CREATE(state, props) {
+export function CREATE_SESSION(state, props) {
     const sessionInfo = {
         id         : uid(),
+        type       : 'session',
         name       : props.name || props.host,
         host       : props.host,
         port       : props.port,
@@ -25,6 +26,29 @@ export function CREATE(state, props) {
     }
 
     state.pool.push(sessionInfo)
+    LocalStorage.set('sessionPool', state.pool)
+}
+
+/**
+ * 创建文件夹
+ * @param   {Object}    state
+ * @param   {Object}    props
+ * @param   {String}    props.id        会话信息 ID
+ * @param   {String}    props.name      会话名称
+ * @param   {String}    props.password  密码
+ */
+export function CREATE_DIR(state, props) {
+    const folderInfo = {
+        id         : uid(),
+        type       : 'dir',
+        name       : props.name || '新建会话目录',
+        // password   : tools.aesEncode(props.password),
+        createTime : Date.now(),
+        updateTime : Date.now(),
+        children   : [],
+    }
+
+    state.pool.push(folderInfo)
     LocalStorage.set('sessionPool', state.pool)
 }
 
@@ -105,4 +129,37 @@ export function END(state, id) {
  */
 export function SET_ACTIVE(state, id) {
     state.active = id
+}
+
+/**
+ * 移动会话
+ * @param   {Object}    state
+ */
+export function MOVE(state, { target, position, info }) {
+    function recursionDel(group) {
+        for (let index = 0; index < group.length; index += 1) {
+            const item = group[index]
+            if (item.type === 'dir') {
+                recursionDel(item)
+            }
+            if (item.id === target) {
+                return group.splice(index, 1)
+            }
+        }
+    }
+
+    function recursionAdd(group) {
+        for (let index = 0; index < group.length; index += 1) {
+            const item = group[index]
+            if (item.type === 'dir') {
+                recursionDel(item)
+            }
+            if (item.id === position) {
+                return group.splice(index, 0, info)
+            }
+        }
+    }
+
+    recursionDel(state.pool)
+    recursionAdd(state.pool)
 }

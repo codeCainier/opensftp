@@ -26,7 +26,7 @@ export function QUICK_LOGIN({ state, commit }, sessionInfo) {
                 // 若会话池不存在会话信息，则保存会话信息
                 if (!existSession) {
                     // 保存会话信息
-                    commit('CREATE', sessionInfo)
+                    commit('CREATE_SESSION', sessionInfo)
                 }
                 // 使用已存在的会话信息
                 sessionInfo = getExistSessionInfo(state, sessionInfo)
