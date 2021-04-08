@@ -471,7 +471,7 @@ export default {
             fileMenu.append(new remote.MenuItem({ type: 'separator' }))
 
             fileMenu.append(new remote.MenuItem({
-                label: (action === 'local' ? '上传' : '下载') + ` “${item.name}”`,
+                label: action === 'local' ? '上传' : '下载',
                 click: () => {
                     // 起始路径
                     const fromPath = action === 'local'

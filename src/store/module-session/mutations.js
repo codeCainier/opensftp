@@ -41,14 +41,14 @@ export function CREATE_DIR(state, props) {
     const folderInfo = {
         id         : uid(),
         type       : 'dir',
-        name       : props.name || '新建会话目录',
-        // password   : tools.aesEncode(props.password),
+        name       : props.name,
         createTime : Date.now(),
         updateTime : Date.now(),
         children   : [],
     }
 
-    state.pool.push(folderInfo)
+    state.pool.splice(0, 0, folderInfo)
+    // state.pool.push(folderInfo)
     LocalStorage.set('sessionPool', state.pool)
 }
 
@@ -77,14 +77,24 @@ export function UPDATE(state, props) {
 }
 
 /**
- * 删除会话
+ * 删除节点
  * @param   {Object}    state
- * @param   {String}    id      会话信息 ID
+ * @param   {String}    id      节点 ID
  */
 export function DELETE(state, id) {
-    state.pool.forEach((item, index) => {
-        if (item.id === id) state.pool.splice(index, 1)
-    })
+    // 递归删除
+    function recursionDel(group) {
+        for (let index = 0; index < group.length; index += 1) {
+            const item = group[index]
+            if (item.id === id) {
+                return group.splice(index, 1)
+            }
+            if (item.type === 'dir') {
+                recursionDel(item.children)
+            }
+        }
+    }
+    recursionDel(state.pool)
     LocalStorage.set('sessionPool', state.pool)
 }
 
@@ -134,32 +144,40 @@ export function SET_ACTIVE(state, id) {
 /**
  * 移动会话
  * @param   {Object}    state
+ * @param   {Object}    props
+ * @param   {String}    props.action    移动行为    move || into
+ * @param   {String}    props.target    被移动的元素 ID
+ * @param   {String}    props.position  要移动到位置的后一位元素的 ID
  */
-export function MOVE(state, { target, position, info }) {
+export function MOVE(state, props) {
+    const { action, target, position } = props
+    let moveItem
+    // 递归删除
     function recursionDel(group) {
         for (let index = 0; index < group.length; index += 1) {
             const item = group[index]
-            if (item.type === 'dir') {
-                recursionDel(item)
-            }
             if (item.id === target) {
+                moveItem = item
                 return group.splice(index, 1)
+            }
+            if (item.type === 'dir') {
+                recursionDel(item.children)
             }
         }
     }
-
+    // 递归新增
     function recursionAdd(group) {
         for (let index = 0; index < group.length; index += 1) {
             const item = group[index]
+            if (item.id === position && action === 'move') return group.splice(index, 0, moveItem)
+            if (item.id === position && action === 'into') return item.children.splice(0, 0, moveItem)
             if (item.type === 'dir') {
-                recursionDel(item)
-            }
-            if (item.id === position) {
-                return group.splice(index, 0, info)
+                recursionAdd(item.children)
             }
         }
     }
 
     recursionDel(state.pool)
     recursionAdd(state.pool)
+    LocalStorage.set('sessionPool', state.pool)
 }

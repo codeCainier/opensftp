@@ -2,7 +2,8 @@
     <transition-group name="flip-list" tag="div">
         <div v-for="(item, index) in group"
              :key="item.id"
-             class="list-item">
+             class="list-item"
+             :style="{ 'padding-left': recursionNum * 20 + 'px' }">
             <!-- 拖动辅助线 -->
             <div class="separator" :class="{ active : dragMove === item.id }">
                 <hr/>
@@ -16,21 +17,21 @@
                      'focus-temp'  : renameItem.id === item.id || openMenu === item.id,
                      'drag-enter'  : item.type === 'dir' && dragInto === item.id,
                  }"
-                 @click            = "$emit('focus', index)"
-                 @click.right      = "$emit('menu', item, index)"
-                 @dblclick         = "$emit('login', item)"
-                 @dragstart        = "$emit('drag-start', $event, item, index)"
-                 @dragover.prevent = "$emit('drag-over', $event, item, index, group)"
-                 @drop             = "$emit('drop', $event, item, index)"
-                 @dragleave        = "$emit('drag-leave')"
-                 @dragend          = "$emit('drag-end')"
-                 @keydown.enter    = "$emit('login', item)"
-                 @keydown.space    = "$emit('show-poster', item)"
-                 @keydown.f2       = "$emit('rename-open', item, index)"
-                 @keydown.delete   = "$emit('remove-item', item)"
-                 @keydown.alt.r    = "$emit('open-detail', item)"
-                 @keydown.up       = "$emit('move-focus', 'up')"
-                 @keydown.down     = "$emit('move-focus', 'down')">
+                 @click            = "handleItemFocus(item.id, $refs[`tree-item-${item.id}`][0])"
+                 @click.right      = "handleShowMenu(item, index, $refs)"
+                 @dblclick         = "handleLogin(item)"
+                 @dragstart        = "handleDragStart($event, item, index, $refs[`tree-item-${item.id}`][0])"
+                 @dragover.prevent = "handleDragOver($event, item, index, group, $refs[`tree-item-${item.id}`][0])"
+                 @drop             = "handleDrop($event, item, index)"
+                 @dragleave        = "handleDragLeave"
+                 @dragend          = "handleDragEnd"
+                 @keydown.enter    = "handleLogin(item)"
+                 @keydown.space    = "handleShowPoster(item)"
+                 @keydown.f2       = "handleRenameOpen(item, index, $refs[`rename-input-${index}`][0])"
+                 @keydown.delete   = "handleRemoveItem(item)"
+                 @keydown.alt.r    = "handleOpenDetail(item)"
+                 @keydown.up       = "handleMoveFocus('up')"
+                 @keydown.down     = "handleMoveFocus('down')">
                 <!-- item 图标 -->
                 <q-btn class="session-icon"
                        :icon="item.type === 'dir' ? 'folder' : 'dns'"
@@ -46,16 +47,16 @@
                            class="rename-input no-outline no-border full-width"
                            :placeholder="item.host"
                            spellcheck="false"
-                           @blur="$emit('rename-close')"
+                           @blur="handleRenameClose"
                            @click.stop=""
                            @dblclick.stop=""
-                           @keydown.esc="$emit('rename-cancel', index)"
+                           @keydown.esc="handleRenameCancel(index, $refs[`rename-input-${index}`][0])"
                            @keydown.stop.delete=""
                            @keydown.stop.space=""
                            @keydown.stop.up=""
                            @keydown.stop.down=""
                            @keydown.stop.alt.r=""
-                           @keydown.stop.enter="$emit('rename-finish', index)"
+                           @keydown.stop.enter="handleRenameFinish(index, $refs[`rename-input-${index}`][0])"
                            @compositionstart="renameItem.preventKeydown = true"
                            @compositionend="renameItem.preventKeydown = false">
                 </div>
@@ -63,29 +64,32 @@
                 <div class="session-site text-right ellipsis q-pr-sm">{{ loading === item.id ? '正在连接...' : item.host }}</div>
             </div>
             <session-tree v-if="item.type === 'dir'"
-                          :group="item.children"
-                          :renameItem="renameItem"
-                          :loading="loading"
-                          :dragMove="dragMove"
-                          :dragInto="dragInto"
-                          :openMenu="openMenu"
-                          :selected="selected"
-                          @menu          = "$emit('menu', item, index)"
-                          @focus         = "$emit('focus', index)"
-                          @login         = "$emit('login', item)"
-                          @drag-start    = "$emit('drag-start', $event, item, index)"
-                          @drag-over     = "$emit('drag-over', $event, item, index, group)"
-                          @drag-leave    = "$emit('drag-leave')"
-                          @drag-end      = "$emit('drag-end')"
-                          @drop          = "$emit('drop', $event, item, index)"
-                          @show-poster   = "$emit('show-poster', item)"
-                          @rename-open   = "$emit('rename-open', item, index)"
-                          @rename-close  = "$emit('rename-close')"
-                          @rename-cancel = "$emit('rename-cancel', index)"
-                          @rename-finish = "$emit('rename-finish', index)"
-                          @remove-item   = "$emit('remove-item', item)"
-                          @open-detail   = "$emit('open-detail', item)"
-                          @move-focus    = "$emit('move-focus', 'up')"/>
+
+                          :group         = "item.children"
+                          :renameItem    = "renameItem"
+                          :loading       = "loading"
+                          :dragMove      = "dragMove"
+                          :dragInto      = "dragInto"
+                          :openMenu      = "openMenu"
+                          :selected      = "selected"
+                          :recursionNum  = "recursionNum + 1"
+
+                          @show-menu     = "handleShowMenu"
+                          @item-focus    = "handleItemFocus"
+                          @login         = "handleLogin"
+                          @drag-start    = "handleDragStart"
+                          @drag-over     = "handleDragOver"
+                          @drag-leave    = "handleDragLeave"
+                          @drag-end      = "handleDragEnd"
+                          @drop          = "handleDrop"
+                          @show-poster   = "handleShowPoster"
+                          @rename-open   = "handleRenameOpen"
+                          @rename-close  = "handleRenameClose"
+                          @rename-cancel = "handleRenameCancel"
+                          @rename-finish = "handleRenameFinish"
+                          @remove-item   = "handleRemoveItem"
+                          @open-detail   = "handleOpenDetail"
+                          @move-focus    = "handleMoveFocus"/>
         </div>
     </transition-group>
 </template>
@@ -102,6 +106,10 @@ export default {
         dragInto   : String,
         openMenu   : String,
         selected   : String,
+        recursionNum: {
+            type: Number,
+            default: 0,
+        },
     },
     data() {
         return {
@@ -113,7 +121,58 @@ export default {
         },
     },
     methods: {
-    }
+        handleShowMenu(item, index, refs) {
+            this.$emit('show-menu', item, index, refs)
+        },
+        handleItemFocus(id, treeItemEl) {
+            this.$emit('item-focus', id, treeItemEl)
+        },
+        handleLogin(item) {
+            this.$emit('login', item)
+        },
+        handleDragStart(event, item, index, dragEl) {
+            this.$emit('drag-start', event, item, index, dragEl)
+        },
+        handleDragOver(event, item, index, group, dragEl) {
+            this.$emit('drag-over', event, item, index, group, dragEl)
+        },
+        handleDragLeave() {
+            this.$emit('drag-leave')
+        },
+        handleDragEnd() {
+            this.$emit('drag-end')
+        },
+        handleDrop(event, item, index) {
+            this.$emit('drop', event, item, index)
+        },
+        handleShowPoster(item) {
+            this.$emit('show-poster', item)
+        },
+        handleRenameOpen(item, index, inputEl) {
+            this.$emit('rename-open', item, index, inputEl)
+        },
+        handleRenameClose() {
+            this.$emit('rename-close')
+        },
+        handleRenameCancel(index, inputEl) {
+            this.$emit('rename-cancel', index, inputEl)
+        },
+        handleRenameFinish(index, inputEl) {
+            this.$emit('rename-finish', index, inputEl)
+        },
+        handleRemoveItem(item) {
+            this.$emit('remove-item', item)
+        },
+        handleOpenDetail(item) {
+            this.$emit('open-detail', item)
+        },
+        handleMoveFocus(action) {
+            this.$emit('move-focus', 'up')
+        },
+    },
+    created() {
+        console.log(this.recursionNum);
+    },
 }
 </script>
 
@@ -134,6 +193,7 @@ export default {
 .separator
     padding: 1px 0
     opacity: 0
+    transition: all .3s
     hr
         margin: 0
         border: 0
