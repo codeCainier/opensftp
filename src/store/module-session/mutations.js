@@ -67,12 +67,23 @@ export function UPDATE(state, props) {
 
     if (updateItem.password) updateItem.password = tools.aesEncode(updateItem.password)
 
-    state.pool.find(item => {
-        if (item.id === id) {
-            Object.keys(updateItem).forEach(key => item[key] = updateItem[key])
-            item.updateItem = Date.now()
+    // 递归更新
+    function recursionUpdate(group) {
+        for (let index = 0; index < group.length; index += 1) {
+            const item = group[index]
+            if (item.id === id) {
+                Object.keys(updateItem).forEach(key => item[key] = updateItem[key])
+                item.updateItem = Date.now()
+                return
+            }
+            if (item.type === 'dir') {
+                recursionUpdate(item.children)
+            }
         }
-    })
+    }
+
+    recursionUpdate(state.pool)
+
     LocalStorage.set('sessionPool', state.pool)
 }
 

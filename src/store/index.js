@@ -7,6 +7,7 @@ import setting  from './module-setting'
 import session  from './module-session'
 import transfer from './module-transfer'
 import editor   from './module-editor'
+import sessionTree   from './module-sessionTree'
 
 Vue.use(Vuex)
 
@@ -27,6 +28,7 @@ export default new Vuex.Store({
         session,
         transfer,
         editor,
+        sessionTree,
     },
     // enable strict mode (adds overhead!)
     // for dev mode only

@@ -1,10 +1,10 @@
 <template>
     <div class="session-pool full-height">
         <!-- 会话池控制中心 -->
-        <div class="pool-control q-mt-xs q-mb-sm">
+        <div class="pool-control q-ma-sm q-mt-md">
             <div class="row">
                 <div class="session-num" :class="{ active: !showSearch }">
-                    <span class="text-h6 text-weight-light q-mx-xs">{{ $store.state.session.pool.length }}</span>
+                    <span class="text-h6 text-weight-light q-mx-xs">{{ $store.getters["session/sessionNodeNum"]() }}</span>
                     <span>会话</span>
                 </div>
                 <div class="search-input-container" :class="{ active: showSearch }">
@@ -41,31 +41,8 @@
             </div>
         </div>
         <!-- 会话池列表 -->
-        <div class="full-height scroll">
-            <session-tree :group         = "$store.state.session.pool"
-                          :renameItem    = "renameItem"
-                          :loading       = "loading"
-                          :dragMove      = "dragMove"
-                          :dragInto      = "dragInto"
-                          :openMenu      = "openMenu"
-                          :selected      = "selected"
-
-                          @show-menu     = "showMenu"
-                          @item-focus    = "sessionFocus"
-                          @login         = "login"
-                          @drag-start    = "dragStart"
-                          @drag-over     = "dragOver"
-                          @drag-leave    = "cancelMove"
-                          @drag-end      = "cancelMove"
-                          @drop          = "drop"
-                          @show-poster   = "showPoster"
-                          @rename-open   = "renameOpen"
-                          @rename-close  = "renameClose"
-                          @rename-cancel = "renameCancel"
-                          @rename-finish = "renameFinish"
-                          @remove-item   = "removeItem"
-                          @open-detail   = "showAttr"
-                          @move-focus    = "moveFocus"/>
+        <div class="full-height scroll q-pa-sm" v-show="!showSearch">
+            <session-tree :group="$store.state.session.pool"/>
         </div>
         <!-- 高级设置 -->
         <attr-panel ref="attr-panel"/>
@@ -77,43 +54,18 @@
 <script>
 import attrPanel     from 'src/components/sessionPool/attrPanel'
 import sessionPoster from 'src/components/sessionPoster'
-import sessionTree   from 'src/components/sessionTree'
 
 export default {
     name: 'SessionPool',
     components: {
         'attr-panel'     : attrPanel,
         'session-poster' : sessionPoster,
-        'session-tree'   : sessionTree,
     },
     data() {
         return {
-            loading         : null,     // 当前处于 Loading 状态的会话 ID
-            selected        : null,     // 当前处于选择状态的元素 ID
-            openMenu        : null,     // 当前右键菜单属于开启状态的元素 ID
-            renameItem      : {},       // 当前处于重命名状态的元素对象
             showSearch      : false,    // 会话搜索模块显示状态
             searchValue     : '',       // 会话搜索内容
             sessionFilter   : [],       // 会话搜索结果
-            dragMove        : null,     // 移动到该会话项目前
-            dragInto        : null,     // 移动到该会话目录内
-            dragItem        : null,     // 正在被拖动的元素对象
-            menuMap         : new Map() // 右键菜单 Map
-        }
-    },
-    computed: {
-        isDragItemChild() {
-            return id => {
-                if (this.dragItem.type === 'session') return false
-                const recursionCheck = group => {
-                    if (group.find(item => item.id === id)) return true
-                    for (const item of group) {
-                        if (item.type === 'dir') recursionCheck(item.children)
-                    }
-                    return false
-                }
-                return recursionCheck(this.dragItem.children)
-            }
         }
     },
     watch: {
@@ -125,70 +77,15 @@ export default {
             if (newVal) setTimeout(() => {
                 this.$refs['search-input'].focus()
             }, 300)
-        }
+        },
+        '$store.state.sessionTree.showPoster': function ([newVal]) {
+            this.$refs['session-poster'].open(newVal)
+        },
+        '$store.state.sessionTree.showDetail': function ([newVal]) {
+            this.$refs['attr-panel'].open(newVal)
+        },
     },
     methods: {
-        // 连接会话
-        login(item) {
-            this.loading = item.id
-            this.$store.dispatch('session/LOGIN', item)
-                .then(() => this.$router.push({ path: '/session' }))
-                .catch(err => this.confirm(err))
-                .finally(() => this.loading = false)
-        },
-        // 重命名开始
-        renameOpen(item, index, inputEl) {
-            this.renameItem = this.tools.clone(item)
-            this.renameItem.oldname = this.renameItem.name
-            // TODO: nextTick 无效
-            setTimeout(() => inputEl.focus(), 100)
-        },
-        // 重命名完成
-        renameFinish(index, inputEl) {
-            // 防止输入法回车触发完成事件
-            if (!this.renameItem.preventKeydown) inputEl.blur()
-        },
-        // 重命名结束
-        renameClose() {
-            this.$store.commit('session/UPDATE', {
-                id: this.renameItem.id,
-                updateItem: {
-                    name: this.renameItem.name,
-                },
-            })
-            this.renameItem = {}
-            this.sessionFocus()
-        },
-        // 重命名取消
-        renameCancel(index, inputEl) {
-            this.renameItem.name = this.renameItem.oldname
-            inputEl.blur()
-        },
-        // 删除项目
-        removeItem(item) {
-            this.tools.confirm({
-                message: `确定要删除会话 ${item.name} 吗？`,
-                confirm: () => {
-                    this.$store.commit('session/DELETE', item.id)
-                },
-                cancel: () => {}
-            })
-        },
-        // 显示属性
-        showAttr(item) {
-            this.$refs['attr-panel'].open(item)
-        },
-        // 移动聚焦元素
-        moveFocus(action) {
-            // FIXME:
-            // if (action === 'up' && this.selected !== 0) this.selected -= 1
-            // if (action === 'down' && this.selected !== this.$store.state.session.pool.length - 1) this.selected += 1
-            // this.sessionFocus()
-        },
-        // 显示会话卡片展示
-        showPoster(item) {
-            this.$refs['session-poster'].open(item)
-        },
         // 搜索会话
         searchSession() {
             const value = this.searchValue.trim()
@@ -210,159 +107,6 @@ export default {
         createSessionDir() {
             this.$store.commit('session/CREATE_DIR', {
                 name: '新建会话目录'
-            })
-        },
-        /**
-         * 显示右键菜单
-         * @param   {Object}    item    要显示右键菜单项目对象
-         * @param   {Number}    index   要显示右键菜单项目的索引
-         */
-        showMenu(item, index, refs) {
-            this.selected = item.id     // 更新当前选择会话
-            this.openMenu = item.name   // 更新开启了右键菜单的项目
-
-            // 若未创建右键菜单，则创建右键菜单
-            if (!this.menuMap.get(item.id)) {
-                const { remote } = this.$q.electron
-                const menu = new remote.Menu()
-
-                if (item.type === 'session') menu.append(new remote.MenuItem({
-                    label: '连接会话',
-                    click: () => this.login(item),
-                }))
-
-                menu.append(new remote.MenuItem({ type: 'separator' }))
-
-                menu.append(new remote.MenuItem({
-                    label: '删除',
-                    click: () => this.removeItem(item),
-                }))
-
-                menu.append(new remote.MenuItem({
-                    label: '重命名',
-                    click: () => this.renameOpen(item, index, refs[`rename-input-${index}`][0]),
-                }))
-
-                menu.append(new remote.MenuItem({ type: 'separator' }))
-
-                menu.append(new remote.MenuItem({
-                    label: '卡片展示',
-                    click: () => this.showPoster(item),
-                }))
-
-                menu.append(new remote.MenuItem({
-                    label: '高级设置',
-                    click: () => this.showAttr(item),
-                }))
-
-                this.menuMap.set(item.id, menu)
-            }
-
-            this.menuMap.get(item.id).popup({
-                callback: () => this.sessionFocus(item.id, refs[`tree-item-${item.id}`][0]),
-            })
-        },
-        /**
-         * 选择项目
-         */
-        sessionFocus(id, treeItemEl) {
-            this.selected = id
-            // 清除开启右键菜单的项目
-            this.openMenu = null
-            // dom 更新后对选中项目执行 focus 操作
-            this.$nextTick(() => {
-                // TODO：try catch 防止？
-                try {
-                    treeItemEl.focus()
-                } catch (error) {
-                }
-            })
-        },
-        /**
-         * 拖动开始
-         * @param   {Object}    event   拖动事件对象
-         * @param   {Object}    item    要拖动项目的对象
-         * @param   {Number}    index   要拖动项目的索引
-         * @param   {Element}   dragEl  拖动元素 Element
-         */
-        dragStart(event, item, index, dragEl) {
-            // 克隆对象解除关联
-            this.dragItem = item
-            // 更新选择项目
-            this.selected = item.id
-            // 拖动事件对象设置 Ghost 图像，内容为拖动对象 dom，x y 轴不进行偏移
-            event.dataTransfer.setDragImage(dragEl,0,0)
-        },
-        /**
-         * 拖动经过
-         * @param   {Object}    event   拖动事件对象
-         * @param   {Object}    item    拖动经过的项目对象
-         * @param   {Number}    index   拖动经过的项目索引
-         * @param   {Element}   dragEl  拖动元素 Element
-         */
-        dragOver(event, item, index, group, dragEl) {
-            // 不允许拖动到自身
-            if (this.selected === item.id) return
-            // 目录不允许拖动到自身子级内
-            if (this.isDragItemChild(item.id)) return
-            // 获取鼠标位于拖动经过项目的 Y 轴坐标
-            const { layerY } = event
-            // 分界阈值
-            const { clientHeight } = dragEl
-            // 上 - 位于 1/3 以上，视为将元素移动到经过目标的上方
-            if (layerY <= clientHeight * (1/3)) {
-                if (index !== 0 && this.selected === group[index - 1].id) return
-                this.dragMove = item.id     // 更新移动到该会话项目 ID 前
-                this.dragInto = null        // 清除移入到该会话目录 ID 内
-                return
-            }
-            // 下 - 位于 1/3 以下，视为将元素移动到经过目标的上方
-            if (layerY >= clientHeight * (2/3)) {
-                // 拖到被拖动元素上一位的下方，不做响应
-                if (index !== group.length - 1 && this.selected === group[index + 1].id) return
-                // 拖到目录类型项目的下方不做响应，视为移动至目录内
-                if (item.type === 'dir') return
-                // 若经过项目不为当前会话所在目录的最后一位，则更新移动到下一个会话项目 ID 前
-                if (index !== group.length - 1) this.dragMove = group[index + 1].id
-                // TODO：应该移动到末位
-                // 若经过项目为当前会话所在目录的最后一位，则更新移动到该会话项目 ID 前
-                if (index === group.length - 1) this.dragMove = item.id
-                // 清除移入到该会话目录 ID 内
-                this.dragInto = null
-                return
-            }
-            // 中 - 位于 1/3 - 2/3 区域，且经过项目类型为目录，视为将项目移动至经过目录内
-            if (item.type === 'dir') {
-                this.dragMove = null        // 清除移动到该会话项目 ID 前
-                this.dragInto = item.id     // 更新移入到该会话目录 ID 内
-            }
-        },
-        /**
-         * 取消移动
-         */
-        cancelMove() {
-            this.dragMove = null    // 清除移动到该会话项目 ID 前
-            this.dragInto = null    // 清除移入到该会话目录 ID 内
-        },
-        /**
-         * 拖动完成
-         * @param   {Object}    event   拖动完成事件对象
-         * @param   {Object}    item    拖动完成所在的项目对象
-         * @param   {Number}    index   拖动完成所在的项目索引
-         */
-        drop(event, item, index) {
-            let action
-            // 若为被阻止的行为
-            if (!this.dragInto && !this.dragMove) return
-            // 若为拖入事件
-            if (this.dragInto) action = 'into'
-            // 若为移动事件
-            if (this.dragMove) action = 'move'
-            // 通过 vuex 移动元素
-            this.$store.commit('session/MOVE', {
-                action,
-                target: this.dragItem.id,
-                position: this.dragMove || this.dragInto,
             })
         },
     },

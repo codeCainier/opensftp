@@ -1,7 +1,7 @@
 <template>
     <q-splitter v-model="splitterModel" :limits="[40, 60]" class="full-height">
         <template v-slot:before>
-            <div class="q-pa-sm full-height">
+            <div class="full-height">
                 <session-pool/>
             </div>
         </template>
