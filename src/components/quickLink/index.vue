@@ -2,14 +2,14 @@
     <div class="full-height q-pa-md flex flex-center">
         <div class="container text-center">
             <svg-quickLink class="illustration"/>
-            <q-input v-model.trim="host" label="地址" autofocus>
+            <q-input v-model.trim="host" label="地址" autofocus spellcheck="false">
                 <template v-slot:after>
                     <q-input v-model.trim="port" label="端口"
                              style="width: 80px"
                              type="number"/>
                 </template>
             </q-input>
-            <q-input label="用户" v-model.trim="username"/>
+            <q-input label="用户" v-model.trim="username" spellcheck="false"/>
             <q-input label="密码" v-model.trim="password"
                      :type="showPwd ? 'text' : 'password'"
                      @keydown.enter="login">
@@ -63,15 +63,7 @@
 
                 this.loading = true
 
-                const sessionInfo = {
-                    id: uid(),
-                    host,
-                    port,
-                    username,
-                    password,
-                }
-
-                this.$store.dispatch('session/QUICK_LOGIN', sessionInfo)
+                this.$store.dispatch('session/QUICK_LOGIN', { host, port, username, password })
                     .then(() => this.$router.push({ path: '/session' }))
                     .catch(err => this.confirm(err))
                     .finally(() => this.loading = false)

@@ -1,31 +1,47 @@
 import { LocalStorage, uid } from 'quasar'
 import tools from 'src/utils'
+import electron from 'electron'
+import path from "path";
 
 /**
  * 创建会话
  * @param   {Object}    state
  * @param   {Object}    props
- * @param   {String}    props.id        会话信息 ID
- * @param   {String}    props.name      会话名称
- * @param   {String}    props.host      IP / 域名
- * @param   {String}    props.port      端口
- * @param   {String}    props.username  账号
- * @param   {String}    props.password  密码
+ * @param   {String}    props.id            节点 ID
+ * @param   {String}    props.name          节点名称
+ * @param   {String}    props.icon          节点图标
+ * @param   {String}    props.host          地址
+ * @param   {String}    props.port          端口
+ * @param   {String}    props.username      账号
+ * @param   {String}    props.password      密码
+ * @param   {String}    props.privateKey    SSH Key
+ * @param   {String}    props.authMode      默认的认证方式 password || sshKey
+ * @param   {String}    props.localPath     默认的 Local 目录
+ * @param   {String}    props.remotePath    默认的 Remote 目录
  */
 export function CREATE_SESSION(state, props) {
-    const sessionInfo = {
-        id         : uid(),
-        type       : 'session',
-        name       : props.name || props.host,
-        host       : props.host,
-        port       : props.port,
-        username   : props.username,
-        password   : tools.aesEncode(props.password),
-        createTime : Date.now(),
-        updateTime : Date.now(),
+    const homePath = path.join(electron.remote.app.getPath('home'))
+    const iconPath = 'icons/server-icons/default.svg'
+    const nodeInfo = {
+        id         : props.id || uid(),                         // 节点 ID
+        type       : 'session',                                 // 节点类型 session || dir
+        name       : props.name,                                // 节点名称
+        icon       : props.icon || iconPath,                    // 节点图标
+        detail     : {
+            host       : props.host,                            // 地址
+            port       : props.port,                            // 端口
+            username   : props.username,                        // 账号
+            password   : tools.aesEncode(props.password) || '', // 密码
+            privateKey : props.privateKey || '',                // SSH Key
+            authMode   : props.authMode   || 'password',        // 默认的认证方式  password || sshKey
+            localPath  : props.localPath  || homePath,          // 默认的 Local 目录
+            remotePath : props.remotePath || '/',               // 默认的 Remote 目录
+        },
+        createTime : Date.now(),                                // 创建时间
+        updateTime : Date.now(),                                // 更新时间
     }
 
-    state.pool.push(sessionInfo)
+    state.pool.push(nodeInfo)
     LocalStorage.set('sessionPool', state.pool)
 }
 
@@ -33,22 +49,21 @@ export function CREATE_SESSION(state, props) {
  * 创建文件夹
  * @param   {Object}    state
  * @param   {Object}    props
- * @param   {String}    props.id        会话信息 ID
- * @param   {String}    props.name      会话名称
- * @param   {String}    props.password  密码
+ * @param   {String}    props.id        节点 ID
+ * @param   {String}    props.name      节点名称
  */
 export function CREATE_DIR(state, props) {
     const folderInfo = {
         id         : uid(),
         type       : 'dir',
         name       : props.name,
+        icon       : 'icons/server-icons/folder.svg',
+        children   : [],
         createTime : Date.now(),
         updateTime : Date.now(),
-        children   : [],
     }
 
     state.pool.splice(0, 0, folderInfo)
-    // state.pool.push(folderInfo)
     LocalStorage.set('sessionPool', state.pool)
 }
 
@@ -57,22 +72,28 @@ export function CREATE_DIR(state, props) {
  * @param   {Object}    state
  * @param   {Object}    props
  * @param   {String}    props.id                    会话信息 ID
- * @param   {String}    props.updateItem.host       IP / 域名
- * @param   {String}    props.updateItem.port       端口
- * @param   {String}    props.updateItem.username   账号
- * @param   {String}    props.updateItem.password   密码
+ * @param   {Object}    props.updateItem            更新项目
  */
 export function UPDATE(state, props) {
     const { id, updateItem } = props
-
-    if (updateItem.password) updateItem.password = tools.aesEncode(updateItem.password)
 
     // 递归更新
     function recursionUpdate(group) {
         for (let index = 0; index < group.length; index += 1) {
             const item = group[index]
             if (item.id === id) {
-                Object.keys(updateItem).forEach(key => item[key] = updateItem[key])
+                Object.keys(updateItem).forEach(key => {
+                    if (key === 'name')         item.name               = updateItem.name
+                    if (key === 'icon')         item.icon               = updateItem.icon
+                    if (key === 'host')         item.detail.host        = updateItem.host
+                    if (key === 'port')         item.detail.port        = updateItem.port
+                    if (key === 'username')     item.detail.username    = updateItem.username
+                    if (key === 'password')     item.detail.password    = tools.aesEncode(updateItem.password)
+                    if (key === 'privateKey')   item.detail.privateKey  = updateItem.privateKey
+                    if (key === 'authMode')     item.detail.authMode    = updateItem.authMode
+                    if (key === 'remotePath')   item.detail.remotePath  = updateItem.remotePath
+                    if (key === 'localPath')    item.detail.localPath   = updateItem.localPath
+                })
                 item.updateItem = Date.now()
                 return
             }

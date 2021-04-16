@@ -1,13 +1,6 @@
 import Connect from 'src/core/connect'
 import tools   from 'src/utils'
 
-function getExistSessionInfo ({ pool }, sessionInfo) {
-    const { host, port, username } = sessionInfo
-    return pool.find(item => item.host === host
-        && item.port === port
-        && item.username === username)
-}
-
 /**
  * 快速连接
  * @param   {Object}    store
@@ -15,9 +8,10 @@ function getExistSessionInfo ({ pool }, sessionInfo) {
  * @param   {Function}  store.commit
  * @param   {Object}    sessionInfo     会话信息
  */
-export function QUICK_LOGIN({ state, commit }, sessionInfo) {
+export function QUICK_LOGIN({ state, commit, getters }, sessionInfo) {
     const connect       = new Connect(sessionInfo)
-    const existSession  = getExistSessionInfo(state, sessionInfo)
+    const { host, port, username } = sessionInfo
+    const existSession  = getters.sessionInfo({ host, port, username })
 
     return new Promise((resolve, reject) => {
         connect
@@ -26,10 +20,13 @@ export function QUICK_LOGIN({ state, commit }, sessionInfo) {
                 // 若会话池不存在会话信息，则保存会话信息
                 if (!existSession) {
                     // 保存会话信息
-                    commit('CREATE_SESSION', sessionInfo)
+                    commit('CREATE_SESSION', {
+                        name: sessionInfo.host,
+                        ...sessionInfo,
+                    })
                 }
                 // 使用已存在的会话信息
-                sessionInfo = getExistSessionInfo(state, sessionInfo)
+                sessionInfo = getters.sessionInfo({ host, port, username })
                 // 创建会话标签
                 commit('CONNECT', { connect, sessionInfo })
                 resolve()
@@ -47,9 +44,9 @@ export function QUICK_LOGIN({ state, commit }, sessionInfo) {
  */
 export function LOGIN({ state, commit }, sessionInfo) {
     sessionInfo = tools.clone(sessionInfo)
-    sessionInfo.password = tools.aesDecode(sessionInfo.password)
+    sessionInfo.detail.password = tools.aesDecode(sessionInfo.detail.password)
 
-    const connect = new Connect(sessionInfo)
+    const connect = new Connect(sessionInfo.detail)
     return new Promise((resolve, reject) => {
         connect
             .init()

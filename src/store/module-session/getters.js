@@ -23,3 +23,27 @@ export function sessionNodeNum (state) {
         return num
     }
 }
+
+export function sessionInfo (state) {
+    return cond => {
+        let info
+        function recursionFind(group) {
+            for (let index = 0; index < group.length; index += 1) {
+                const item = group[index]
+                if (item.type === 'dir') recursionFind(item.children)
+                if (item.type === 'session') {
+                    let condMatchNum = 0
+                    Object.keys(cond).forEach(field => {
+                        if (field === 'id'       && item.id === cond.id)                    condMatchNum += 1
+                        if (field === 'host'     && item.detail.host === cond.host)         condMatchNum += 1
+                        if (field === 'port'     && item.detail.port === cond.port)         condMatchNum += 1
+                        if (field === 'username' && item.detail.username === cond.username) condMatchNum += 1
+                    })
+                    if (condMatchNum === Object.keys(cond).length) return info = item
+                }
+            }
+        }
+        recursionFind(state.pool)
+        return info
+    }
+}

@@ -29,11 +29,11 @@
                        size="sm">
                     <q-menu content-class="bg-transparent">
                         <q-list class="bg-aero" dense style="min-width: 120px">
-                            <q-item clickable v-close-popup>
-                                <q-item-section>新建会话</q-item-section>
+                            <q-item clickable v-close-popup @click="createSession">
+                                <q-item-section>创建会话</q-item-section>
                             </q-item>
                             <q-item clickable v-close-popup @click="createSessionDir">
-                                <q-item-section>新建目录</q-item-section>
+                                <q-item-section>创建会话目录</q-item-section>
                             </q-item>
                         </q-list>
                     </q-menu>
@@ -44,28 +44,30 @@
         <div class="full-height scroll q-pa-sm" v-show="!showSearch">
             <session-tree :group="$store.state.session.pool"/>
         </div>
-        <!-- 高级设置 -->
-        <attr-panel ref="attr-panel"/>
         <!-- 会话卡片 -->
         <session-poster ref="session-poster"/>
+        <!-- 会话详情 -->
+        <session-detail ref="session-detail" :key="sessionDetailKey" @close="refreshSessionDetail"/>
     </div>
 </template>
 
 <script>
-import attrPanel     from 'src/components/sessionPool/attrPanel'
 import sessionPoster from 'src/components/sessionPoster'
+import sessionDetail from 'src/components/sessionDetail'
+import { uid } from 'quasar'
 
 export default {
     name: 'SessionPool',
     components: {
-        'attr-panel'     : attrPanel,
         'session-poster' : sessionPoster,
+        'session-detail' : sessionDetail,
     },
     data() {
         return {
             showSearch      : false,    // 会话搜索模块显示状态
             searchValue     : '',       // 会话搜索内容
             sessionFilter   : [],       // 会话搜索结果
+            sessionDetailKey: uid(),
         }
     },
     watch: {
@@ -82,7 +84,7 @@ export default {
             this.$refs['session-poster'].open(newVal)
         },
         '$store.state.sessionTree.showDetail': function ([newVal]) {
-            this.$refs['attr-panel'].open(newVal)
+            this.$refs['session-detail'].open(newVal)
         },
     },
     methods: {
@@ -108,6 +110,12 @@ export default {
             this.$store.commit('session/CREATE_DIR', {
                 name: '新建会话目录'
             })
+        },
+        createSession() {
+            this.$refs['session-detail'].open()
+        },
+        refreshSessionDetail() {
+            this.sessionDetailKey = uid()
         },
     },
 };

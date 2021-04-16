@@ -10,7 +10,7 @@
              draggable="true"
              :ref="'tree-item-' + nodeItem.id"
              :class="{
-                 'focus-temp'  : sessionTree.renameItem.id === nodeItem.id || sessionTree.openMenu === nodeItem.id,
+                 'focus-temp'  : sessionTree.selected === nodeItem.id || sessionTree.renameItem.id === nodeItem.id || sessionTree.openMenu === nodeItem.id,
                  'drag-enter'  : nodeItem.type === 'dir' && sessionTree.dragInto === nodeItem.id,
              }"
              @click            = "handleItemFocus(nodeItem.id)"
@@ -29,18 +29,21 @@
              @keydown.down     = "handleMoveFocus('down')">
             <!-- item 图标 -->
             <q-btn class="session-icon"
-                   :icon="itemIcon(nodeItem)"
                    flat
-                   size="sm"/>
+                   size="sm">
+                <q-avatar size="sm" square>
+                    <img :src="nodeItem.icon">
+                </q-avatar>
+            </q-btn>
             <!-- item 名称 -->
             <div class="session-name full-width">
-                <div v-show="sessionTree.renameItem.id !== nodeItem.id" class="text-name">{{ itemName(nodeItem) }}</div>
+                <div v-show="sessionTree.renameItem.id !== nodeItem.id" class="text-name">{{ nodeItem.name }}</div>
                 <input v-model="sessionTree.renameItem.name"
                        v-show="sessionTree.renameItem.id === nodeItem.id"
                        type="text"
                        :ref="'rename-input-' + nodeItem.id"
                        class="rename-input no-outline no-border full-width"
-                       :placeholder="nodeItem.host"
+                       :placeholder="nodeItem.name"
                        spellcheck="false"
                        @blur="handleRenameClose"
                        @click.stop=""
@@ -57,9 +60,11 @@
             </div>
             <!-- item 简介 -->
             <div class="session-site text-right ellipsis q-pr-sm">
-                <div v-if="nodeItem.type === 'session'">{{ $store.state.sessionTree.loading === nodeItem.id ? '正在连接...' : nodeItem.host }}</div>
+                <div v-if="nodeItem.type === 'session'">{{ $store.state.sessionTree.loading === nodeItem.id ? '正在连接...' : nodeItem.detail.host }}</div>
                 <div v-if="nodeItem.type === 'dir'">
-                    <q-icon name="ion-ios-arrow-back" class="icon" :class="{ open: showItemChild }"/>
+                    <q-btn flat size="sm" @click="showItemChild = !showItemChild">
+                        <q-icon name="ion-ios-arrow-back" class="icon" :class="{ open: showItemChild }"/>
+                    </q-btn>
                 </div>
             </div>
         </div>
@@ -90,16 +95,6 @@ export default {
         }
     },
     computed: {
-        itemIcon() {
-            return item => {
-                if (item.type === 'dir' && this.showItemChild)  return 'folder_open'
-                if (item.type === 'dir' && !this.showItemChild) return 'folder'
-                return 'dns'
-            }
-        },
-        itemName() {
-            return item => item.name || item.host
-        },
         isDragItemChild() {
             return id => {
                 const { dragItem } = this.$store.state.sessionTree
@@ -157,7 +152,7 @@ export default {
             }))
 
             if (item.type === 'session') menu.append(new remote.MenuItem({
-                label: '高级设置',
+                label: '编辑会话',
                 click: () => this.handleOpenDetail(item),
             }))
 
@@ -443,6 +438,7 @@ export default {
         color: #999999
         min-width: 120px
         .icon
+            font-size: 12px
             transition: all .3s
             &.open
                 transform: rotate(-90deg)
