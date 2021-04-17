@@ -165,7 +165,6 @@ export default {
     },
     methods: {
         open(item) {
-            console.log(item)
             if (item) {
                 this.updateItem = item
                 this.name       = item.name

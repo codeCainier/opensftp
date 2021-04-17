@@ -85,7 +85,10 @@ export default {
         group        : Array,
         nodeItem     : Object,
         nodeIndex    : Number,
-        recursionNum : Number,
+        recursionNum : {
+            type: Number,
+            default: 0,
+        },
     },
     data() {
         return {
@@ -134,14 +137,19 @@ export default {
 
             menu.append(new remote.MenuItem({ type: 'separator' }))
 
-            menu.append(new remote.MenuItem({
-                label: '删除',
-                click: () => this.handleRemoveItem(item),
+            if (item.type === 'session') menu.append(new remote.MenuItem({
+                label: '编辑',
+                click: () => this.handleOpenDetail(item),
             }))
 
             menu.append(new remote.MenuItem({
-                label: '重命名',
+                label: '重新命名',
                 click: () => this.handleRenameOpen(item),
+            }))
+
+            menu.append(new remote.MenuItem({
+                label: '删除',
+                click: () => this.handleRemoveItem(item),
             }))
 
             menu.append(new remote.MenuItem({ type: 'separator' }))
@@ -149,11 +157,6 @@ export default {
             menu.append(new remote.MenuItem({
                 label: '卡片展示',
                 click: () => this.handleShowPoster(item),
-            }))
-
-            if (item.type === 'session') menu.append(new remote.MenuItem({
-                label: '编辑会话',
-                click: () => this.handleOpenDetail(item),
             }))
 
             menu.popup({
@@ -383,63 +386,62 @@ export default {
     &.active
         opacity: 1
 
-.list-item
-    .tree-item
-        display: flex
-        flex-direction: row
-        border-radius: 4px
-        transition: all .3s
-        &::before,&::after
-            content: ''
-            position: absolute
-            width: 200%
-            height: 1px
-            background: #FFFFFF
-            left: -50%
-            opacity: 0
-        &::before
-            top: 0
-            transform: scale(.5)
-        &::after
-            bottom: 0
-            transform: scale(.5)
-        &:hover
-            background: rgba($primary, .3)
-        &:focus,&.focus-temp
-            background: $primary
+.tree-item
+    display: flex
+    flex-direction: row
+    border-radius: 4px
+    transition: all .3s
+    &::before,&::after
+        content: ''
+        position: absolute
+        width: 200%
+        height: 1px
+        background: #FFFFFF
+        left: -50%
+        opacity: 0
+    &::before
+        top: 0
+        transform: scale(.5)
+    &::after
+        bottom: 0
+        transform: scale(.5)
+    &:hover
+        background: rgba($primary, .3)
+    &:focus,&.focus-temp
+        background: $primary
+        color: #FFFFFF
+        .session-icon
             color: #FFFFFF
-            .session-icon
-                color: #FFFFFF
-            .session-site
-                color: #FFFFFF
-        &.drag-enter
-            background: rgba($primary, .3)
-            transform: scale(1.05)
+        .session-site
+            color: #FFFFFF
+    &.drag-enter
+        background: rgba($primary, .3)
+        transform: scale(1.05)
 
-        &.move-before::before,
-        &.move-after::after
-            opacity: 1
+    &.move-before::before,
+    &.move-after::after
+        opacity: 1
 
-    .session-icon
-        width: 30px
-        height: 30px
-        margin: 3px
+.session-icon
+    width: 30px
+    height: 30px
+    margin: 3px
 
-    .session-name
-        line-height: 36px
-        .text-name
-            padding: 0 2px
-        input
-            padding: 0 2px
+.session-name
+    line-height: 36px
+    .text-name
+        padding: 0 2px
+    input
+        padding: 0 2px
 
-    .session-site
-        line-height: 36px
-        font-size: .8rem
-        color: #999999
-        min-width: 120px
-        .icon
-            font-size: 12px
-            transition: all .3s
-            &.open
-                transform: rotate(-90deg)
+.session-site
+    line-height: 36px
+    font-size: .8rem
+    color: #999999
+    min-width: 120px
+    .icon
+        font-size: 12px
+        transition: all .3s
+        &.open
+            transform: rotate(-90deg)
 </style>

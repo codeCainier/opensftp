@@ -40,8 +40,16 @@
                 </q-btn>
             </div>
         </div>
+        <!-- 过滤结果列表 -->
+        <div v-if="showSearch" class="full-height scroll q-pa-sm">
+            <session-node v-for="(item, index) in sessionFilter"
+                          :key="item.id"
+                          :group="[]"
+                          :nodeItem="item"
+                          :node-index="index"/>
+        </div>
         <!-- 会话池列表 -->
-        <div class="full-height scroll q-pa-sm" v-show="!showSearch">
+        <div v-else class="full-height scroll q-pa-sm">
             <session-tree :group="$store.state.session.pool"/>
         </div>
         <!-- 会话卡片 -->
@@ -54,6 +62,7 @@
 <script>
 import sessionPoster from 'src/components/sessionPoster'
 import sessionDetail from 'src/components/sessionDetail'
+import sessionNode   from 'src/components/sessionTree/treeNode'
 import { uid } from 'quasar'
 
 export default {
@@ -61,6 +70,7 @@ export default {
     components: {
         'session-poster' : sessionPoster,
         'session-detail' : sessionDetail,
+        'session-node'   : sessionNode,
     },
     data() {
         return {
@@ -90,14 +100,17 @@ export default {
     methods: {
         // 搜索会话
         searchSession() {
+            // TODO: ?
             const value = this.searchValue.trim()
             // 搜索内容为空
             if (!value) return this.sessionFilter = []
-            this.sessionFilter = this.$store.state.session.pool.filter(item => {
-                if (item.name.includes(value)) return true
-                if (item.host.includes(value)) return true
-                if (item.port.includes(value)) return true
-            })
+            this.sessionFilter = this.$store.getters['session/sessionFilter'](value)
+            console.log(this.sessionFilter)
+            // this.sessionFilter = this.$store.state.session.pool.filter(item => {
+            //     if (item.name.includes(value)) return true
+            //     if (item.host.includes(value)) return true
+            //     if (item.port.includes(value)) return true
+            // })
         },
         // 搜素结果获取焦点
         searchResFocus() {

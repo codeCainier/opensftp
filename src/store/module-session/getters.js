@@ -13,10 +13,8 @@ export function sessionNodeNum (state) {
         function recursionCount(group) {
             for (let index = 0; index < group.length; index += 1) {
                 const item = group[index]
-                if (item.type === 'session') return num += 1
-                if (item.type === 'dir') {
-                    recursionCount(item.children)
-                }
+                if (item.type === 'session') num += 1
+                if (item.type === 'dir') recursionCount(item.children)
             }
         }
         recursionCount(state.pool)
@@ -45,5 +43,25 @@ export function sessionInfo (state) {
         }
         recursionFind(state.pool)
         return info
+    }
+}
+
+export function sessionFilter (state) {
+    return str => {
+        const arr = []
+        function recursionFilter(group) {
+            for (let index = 0; index < group.length; index += 1) {
+                const item = group[index]
+                if (item.type === 'dir') recursionFilter(item.children)
+                if (item.type === 'session') {
+                    const include = item.name.includes(str)
+                        || item.detail.host.includes(str)
+                        || item.detail.port.includes(str)
+                    if (include) arr.push(item)
+                }
+            }
+        }
+        recursionFilter(state.pool)
+        return arr
     }
 }
