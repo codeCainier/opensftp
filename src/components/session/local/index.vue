@@ -244,12 +244,10 @@ export default {
             if (this.list.filter(item => item.name === this.renameItem.newName).length === 1) {
                 // TODO: 由 keydown enter 触发的事件，会影响 confirm 组件
                 return setTimeout(() => {
-                    this.tools.confirm({
-                        message: `已存在文件 ${this.renameItem.newName}`,
-                        confirm: () => {
+                    this.confirm(`已存在文件 ${this.renameItem.newName}`)
+                        .then(() => {
                             setTimeout(() => this.$refs[`rename-input-${index}`][0].focus(), 100)
-                        }
-                    })
+                        })
                 }, 500);
             }
             // 重命名
@@ -259,7 +257,7 @@ export default {
                     this.getFileList('.', null, this.renameItem.newName)
                 })
                 .catch(err => {
-                    this.tools.confirm(err)
+                    this.alert(err)
                     this.loading = false
                 })
         },
@@ -291,7 +289,7 @@ export default {
                 .catch(err => {
                     this.loading = false
                     this.pwdInput = this.pwd
-                    this.tools.confirm(err)
+                    this.alert(err)
                 })
         },
         // 拖动完成

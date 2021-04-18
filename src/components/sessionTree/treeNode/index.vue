@@ -10,23 +10,25 @@
              draggable="true"
              :ref="'tree-item-' + nodeItem.id"
              :class="{
-                 'focus-temp'  : sessionTree.selected === nodeItem.id || sessionTree.renameItem.id === nodeItem.id || sessionTree.openMenu === nodeItem.id,
+                 'focus-temp'  : sessionTree.renameItem.id === nodeItem.id || sessionTree.openMenu === nodeItem.id,
                  'drag-enter'  : nodeItem.type === 'dir' && sessionTree.dragInto === nodeItem.id,
              }"
              @click            = "handleItemFocus(nodeItem.id)"
              @click.right      = "handleShowMenu(nodeItem)"
-             @dblclick         = "handleLogin(nodeItem)"
+             @dblclick         = "handleDoubleClick(nodeItem)"
              @dragstart        = "handleDragStart($event, nodeItem, nodeIndex)"
              @dragover.prevent = "handleDragOver($event, nodeItem, nodeIndex, group)"
              @drop             = "handleDrop($event, nodeItem, nodeIndex)"
              @dragleave        = "handleDragCancel"
              @dragend          = "handleDragCancel"
-             @keydown.enter    = "handleLogin(nodeItem)"
+             @keydown.enter    = "handleDoubleClick(nodeItem)"
              @keydown.space    = "handleShowPoster(nodeItem)"
              @keydown.f2       = "handleRenameOpen(nodeItem)"
              @keydown.delete   = "handleRemoveItem(nodeItem)"
              @keydown.up       = "handleMoveFocus('up')"
-             @keydown.down     = "handleMoveFocus('down')">
+             @keydown.down     = "handleMoveFocus('down')"
+             @keydown.left     = "handleDirToggle(nodeItem, 'close')"
+             @keydown.right    = "handleDirToggle(nodeItem, 'open')">
             <!-- item 图标 -->
             <q-btn class="session-icon"
                    flat
@@ -180,17 +182,34 @@ export default {
             })
         },
         /**
+         * 双击节点
+         * @param   {Object}    item    被双击的节点对象
+         */
+        handleDoubleClick(item) {
+            if (item.type === 'dir')     return this.handleDirToggle()
+            if (item.type === 'session') return this.handleLogin(item)
+        },
+        /**
          * 连接会话
          * @param   {Object}    item    要连接会话的节点对象
          */
         handleLogin(item) {
-            if (item.type === 'dir') return this.showItemChild = !this.showItemChild
-
             this.$store.commit('sessionTree/SET_LOADING', item.id)
             this.$store.dispatch('session/LOGIN', item)
                 .then(() => this.$router.push({ path: '/session' }))
-                .catch(err => this.confirm(err))
+                .catch(err => this.alert(err))
                 .finally(() => this.$store.commit('sessionTree/SET_LOADING', null))
+        },
+        /**
+         * 控制目录
+         * @param   {Object}    item    节点对象
+         * @param   {String}    action  指定目录状态
+         */
+        handleDirToggle(item, action) {
+            if (item.type !== 'dir') return
+            if (action === 'open')  return this.showItemChild = true
+            if (action === 'close') return this.showItemChild = false
+            this.showItemChild = !this.showItemChild
         },
         /**
          * 拖动开始
@@ -331,15 +350,13 @@ export default {
          * @param   {Object}    item    要删除的节点对象
          */
         handleRemoveItem(item) {
-            this.tools.confirm({
-                message: item.type === 'session'
-                    ? `确定要删除会话 ${item.name} 吗？`
-                    : `确定要删除文件夹 ${item.name} 吗？文件夹下的会话将全部删除！`,
-                confirm: () => {
-                    this.$store.commit('session/DELETE', item.id)
-                },
-                cancel: () => {}
+            this.confirm({
+                message: `确定要删除 ${item.name} 吗？`,
+                detail: item.type === 'dir' ? '文件夹下的会话将全部删除！' : ''
             })
+                .then(() => {
+                    this.$store.commit('session/DELETE', item.id)
+                })
         },
         /**
          * 显示节点详情

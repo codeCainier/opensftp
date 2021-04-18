@@ -11,19 +11,16 @@ export default {
     removeFile(action, item) {
         const mode = action === 'remote' ? 'rmRemote' : 'rmLocal'
         // TODO: 弹出删除对话框时，文件 Focus 状态应使用 class 补充
-        this.tools.confirm({
-            message: `您确定要删除 ${item.name} 吗？注意，删除无法恢复！`,
-            confirm: () => {
+        this.confirm(`您确定要删除 ${item.name} 吗？注意，删除无法恢复！`)
+            .then(() => {
                 this.loading = true
                 this.connect[mode](action === 'remote'
                     ? path.posix.join(this.pwd, item.name)
                     : path.join(this.pwd, item.name))
                     .then(() => this.getFileList('.'))
-                    .catch(err => this.tools.confirm(err))
+                    .catch(err => this.alert(err))
                     .finally(() => this.loading = false)
-            },
-            cancel: () => {},
-        })
+            })
     },
     /**
      * 文件获取焦点
@@ -158,7 +155,7 @@ export default {
                 this.loading = true
                 this.connect[mode](oldPath, newPath)
                     .then(() => this.getFileList('.'))
-                    .catch(err => this.tools.confirm(err))
+                    .catch(err => this.alert(err))
                     .finally(() => this.loading = false)
             })
             // 取消覆盖
@@ -190,11 +187,9 @@ export default {
                 .then(stats => {
                     const isDir = stats.isDirectory()
 
-                    if (!isDir) this.confirm({
-                        message: '文件已存在，是否进行覆盖？',
-                        confirm: () => resolve(),
-                        cancel : () => reject(),
-                    })
+                    if (!isDir) this.confirm('文件已存在，是否进行覆盖？')
+                        .then(() => resolve())
+                        .catch(() => reject())
 
                     if (isDir) this.$q.dialog({
                         message: '目录已存在，请选择覆盖模式',
@@ -301,16 +296,14 @@ export default {
             // 若未输入文件名称，则使用默认名称
             if (!data) data = defaultName
             // 输入的文件名称已存在，则给出提示
-            if (this.findItemFromList({ name: data })) return this.tools.confirm({
-                message: `已存在 ${data}`,
-                confirm: () => this.createFile(action, type),
-            })
+            if (this.findItemFromList({ name: data })) return this.confirm(`已存在 ${data}`)
+                .then(() => this.createFile(action, type))
             // Loading
             this.loading = true
             // 创建文件
             this.connect[mode](join(this.pwd, data))
                 .then(() => this.getFileList('.', null, data))
-                .catch(err => this.confirm(err))
+                .catch(err => this.alert(err))
                 .finally(() => this.loading = false)
         })
     },

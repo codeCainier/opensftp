@@ -198,18 +198,15 @@ export default {
             })
             this.show = false
             const sessionInfo = this.$store.getters['session/sessionInfo']({ id })
-            this.confirm({
-                message: `会话创建成功，是否连接 ${sessionInfo.name}？`,
-                confirm: () => {
+            this.confirm(`会话创建成功，是否连接 ${sessionInfo.name}？`)
+                .then(() => {
                     this.$store.commit('sessionTree/SET_SELECTED', id)
                     this.$store.commit('sessionTree/SET_LOADING', id)
                     this.$store.dispatch('session/LOGIN', sessionInfo)
                         .then(() => this.$router.push({ path: '/session' }))
-                        .catch(err => this.confirm(err))
+                        .catch(err => this.alert(err))
                         .finally(() => this.$store.commit('sessionTree/SET_LOADING', null))
-                },
-                cancel: () => {},
-            })
+                })
         },
         update() {
             this.$store.commit('session/UPDATE', {

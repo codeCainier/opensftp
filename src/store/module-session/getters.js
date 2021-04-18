@@ -48,14 +48,15 @@ export function sessionInfo (state) {
 
 export function sessionFilter (state) {
     return str => {
+        str = str.trim().toLocaleLowerCase()
         const arr = []
         function recursionFilter(group) {
             for (let index = 0; index < group.length; index += 1) {
                 const item = group[index]
                 if (item.type === 'dir') recursionFilter(item.children)
                 if (item.type === 'session') {
-                    const include = item.name.includes(str)
-                        || item.detail.host.includes(str)
+                    const include = item.name.toLocaleLowerCase().includes(str)
+                        || item.detail.host.toLocaleLowerCase().includes(str)
                         || item.detail.port.includes(str)
                     if (include) arr.push(item)
                 }

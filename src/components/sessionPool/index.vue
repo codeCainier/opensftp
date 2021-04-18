@@ -15,6 +15,7 @@
                            placeholder="搜索会话"
                            spellcheck="false"
                            @input="searchSession"
+                           @keydown.esc="showSearch = false"
                            @keydown.down="searchResFocus">
                 </div>
                 <q-space/>
@@ -43,6 +44,7 @@
         <!-- 过滤结果列表 -->
         <div v-if="showSearch" class="full-height scroll q-pa-sm">
             <session-node v-for="(item, index) in sessionFilter"
+                          :ref="'session-node-' + index"
                           :key="item.id"
                           :group="[]"
                           :nodeItem="item"
@@ -63,7 +65,7 @@
 import sessionPoster from 'src/components/sessionPoster'
 import sessionDetail from 'src/components/sessionDetail'
 import sessionNode   from 'src/components/sessionTree/treeNode'
-import { uid } from 'quasar'
+import { uid, debounce } from 'quasar'
 
 export default {
     name: 'SessionPool',
@@ -100,23 +102,15 @@ export default {
     methods: {
         // 搜索会话
         searchSession() {
-            // TODO: ?
             const value = this.searchValue.trim()
             // 搜索内容为空
             if (!value) return this.sessionFilter = []
             this.sessionFilter = this.$store.getters['session/sessionFilter'](value)
-            console.log(this.sessionFilter)
-            // this.sessionFilter = this.$store.state.session.pool.filter(item => {
-            //     if (item.name.includes(value)) return true
-            //     if (item.host.includes(value)) return true
-            //     if (item.port.includes(value)) return true
-            // })
         },
         // 搜素结果获取焦点
         searchResFocus() {
-            // if (!this.sessionFilter.length) return
-            // this.selected = this.$store.state.session.pool.findIndex(item => item.id === this.sessionFilter[0].id)
-            // this.sessionFocus()
+            if (!this.sessionFilter.length) return
+            this.$refs['session-node-0'][0].handleItemFocus(this.sessionFilter[0].id)
         },
         // 创建目录
         createSessionDir() {
@@ -131,17 +125,19 @@ export default {
             this.sessionDetailKey = uid()
         },
     },
+    created() {
+        this.searchSession = debounce(this.searchSession, 300)
+    },
 };
 </script>
 
 <style scoped lang="sass">
 .body--light
-    .session-pool
-        .pool-control .search-input
-            background: rgba(#FFFFFF, .7)
+    .pool-control .search-input
+        background: #EEEEEE
+        color: $dark
+        &::-webkit-input-placeholder
             color: $dark
-            &::-webkit-input-placeholder
-                color: $dark
 
 .body--dark
     .pool-control .search-input
