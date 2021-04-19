@@ -63,7 +63,11 @@
 
                 this.loading = true
 
-                this.$store.dispatch('session/QUICK_LOGIN', { host, port, username, password })
+                this.$store.dispatch('session/QUICK_LOGIN', {
+                    host, port, username,
+                    password: this.tools.aesEncode(password),
+                    autoMode: 'password',
+                })
                     .then(() => this.$router.push({ path: '/session' }))
                     .catch(err => this.alert(err))
                     .finally(() => this.loading = false)

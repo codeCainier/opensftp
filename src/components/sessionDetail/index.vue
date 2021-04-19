@@ -191,7 +191,7 @@ export default {
                 port        : this.port,
                 username    : this.username,
                 password    : this.authMode === 'password' ? this.password : '',
-                privateKey  : this.authMode === 'ssKey' ? this.privateKey : '',
+                privateKey  : this.authMode === 'sshKey' ? this.privateKey : '',
                 authMode    : this.authMode,
                 localPath   : this.localPath,
                 remotePath  : this.remotePath,
@@ -217,8 +217,8 @@ export default {
                     host        : this.host,
                     port        : this.port,
                     username    : this.username,
-                    password    : this.authMode === 'password' ? this.password : '',
-                    privateKey  : this.authMode === 'ssKey' ? this.privateKey : '',
+                    password    : this.password,
+                    privateKey  : this.privateKey,
                     authMode    : this.authMode,
                     localPath   : this.localPath,
                     remotePath  : this.remotePath,
@@ -229,7 +229,7 @@ export default {
         selectPrivateKey() {
             this.$q.electron.remote.dialog.showOpenDialog({
                 defaultPath: path.dirname(this.privateKey),
-                properties: [ 'openFile' ],
+                properties: [ 'openFile', 'showHiddenFiles' ],
                 message: '选择 SSH Key',
                 buttonLabel: '确认'
             })

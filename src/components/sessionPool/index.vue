@@ -31,28 +31,28 @@
                     <q-menu content-class="bg-transparent">
                         <q-list class="bg-aero" dense style="min-width: 120px">
                             <q-item clickable v-close-popup @click="createSession">
-                                <q-item-section>创建会话</q-item-section>
+                                <q-item-section>新建会话</q-item-section>
                             </q-item>
                             <q-item clickable v-close-popup @click="createSessionDir">
-                                <q-item-section>创建会话目录</q-item-section>
+                                <q-item-section>新建文件夹</q-item-section>
                             </q-item>
                         </q-list>
                     </q-menu>
                 </q-btn>
             </div>
         </div>
-        <!-- 过滤结果列表 -->
-        <div v-if="showSearch" class="full-height scroll q-pa-sm">
-            <session-node v-for="(item, index) in sessionFilter"
-                          :ref="'session-node-' + index"
-                          :key="item.id"
-                          :group="[]"
-                          :nodeItem="item"
-                          :node-index="index"/>
-        </div>
         <!-- 会话池列表 -->
-        <div v-else class="full-height scroll q-pa-sm">
-            <session-tree :group="$store.state.session.pool"/>
+        <div class="full-height scroll q-pa-sm" @contextmenu="showMenu">
+            <!-- 过滤结果列表 -->
+            <div v-if="showSearch">
+                <session-node v-for="(item, index) in sessionFilter"
+                              :ref="'session-node-' + index"
+                              :key="item.id"
+                              :item="item"
+                              :index="index"/>
+            </div>
+            <!-- 会话池树形结构 -->
+            <session-tree v-else ref="session-tree" :group="$store.state.session.pool"/>
         </div>
         <!-- 会话卡片 -->
         <session-poster ref="session-poster"/>
@@ -112,17 +112,74 @@ export default {
             if (!this.sessionFilter.length) return
             this.$refs['session-node-0'][0].handleItemFocus(this.sessionFilter[0].id)
         },
-        // 创建目录
+        // 新建文件夹
         createSessionDir() {
+            const id = uid()
             this.$store.commit('session/CREATE_DIR', {
+                id,
                 name: '新建会话目录'
             })
+
+            this.$nextTick(() => {
+                const node = this.findNode(id, this.$refs['session-tree'])
+                node.handleRenameOpen()
+            })
         },
+        // 新建会话
         createSession() {
             this.$refs['session-detail'].open()
         },
+        // 刷新会话详情面板
         refreshSessionDetail() {
             this.sessionDetailKey = uid()
+        },
+        // 显示容器右键菜单
+        showMenu() {
+            const { remote } = this.$q.electron
+            const menu = new remote.Menu()
+
+            menu.append(new remote.MenuItem({
+                label: '新建',
+                submenu: [
+                    {
+                        label: '新建会话',
+                        click: () => this.createSession(),
+                    }, {
+                        label: '新建文件夹',
+                        click: () => this.createSessionDir(),
+                    },
+                ],
+            }))
+
+            menu.append(new remote.MenuItem({ type: 'separator' }))
+
+            menu.append(new remote.MenuItem({
+                label: '折叠所有文件夹',
+                click: () => {
+                    this.alert('功能开发中')
+                },
+            }))
+
+            menu.append(new remote.MenuItem({
+                label: '展开所有文件夹',
+                click: () => {
+                    this.alert('功能开发中')
+                },
+            }))
+
+            menu.append(new remote.MenuItem({ type: 'separator' }))
+
+            menu.popup()
+        },
+        // 寻找节点
+        findNode(id, sessionTree) {
+            const treeNodeList = sessionTree.$refs['tree-node']
+            for (const item of treeNodeList) {
+                if (item.item.id === id) return item
+                if ('session-tree' in item.$refs && 'tree-node' in item.$refs['session-tree'].$refs) {
+                    this.findNode(id, item.$refs['session-tree'])
+                }
+            }
         },
     },
     created() {

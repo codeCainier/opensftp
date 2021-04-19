@@ -315,7 +315,7 @@ export default {
     },
     created() {
         this.createContainerMenu('remote')
-        this.pwd = '/'
+        this.pwd = this.connect.sessionInfo.detail.remotePath
         this.getFileList('.')
     },
 }

@@ -10,11 +10,11 @@
             <q-card-section class="q-mb-md">
                 <div class="text-subtitle1 text-weight-bold q-mb-sm">{{ sessionInfo.name }}</div>
                 <div class="text-subtitle2">
-                    <span>{{ sessionInfo.username }}</span>
+                    <span>{{ sessionInfo.detail.username }}</span>
                     <span>@</span>
-                    <span>{{ sessionInfo.host }}</span>
+                    <span>{{ sessionInfo.detail.host }}</span>
                     <span>:</span>
-                    <span>{{ sessionInfo.port }}</span>
+                    <span>{{ sessionInfo.detail.port }}</span>
                 </div>
             </q-card-section>
             <q-card-actions>
@@ -47,7 +47,9 @@ export default {
         return {
             show: false,
             // 会话信息
-            sessionInfo: {},
+            sessionInfo: {
+                detail: {},
+            },
             // 单次 ping 等待时间
             pingTime: '-',
             // ping 间隔
@@ -130,7 +132,7 @@ export default {
         },
         // 将会话复制到命令行
         copyToTerminal() {
-            const { host, port, username } = this.sessionInfo
+            const { host, port, username } = this.sessionInfo.detail
             const cmd = `ssh ${username}@${host} -p ${port}\n`
             copyToClipboard(cmd)
                 .then(() => {

@@ -9,9 +9,12 @@ import tools   from 'src/utils'
  * @param   {Object}    sessionInfo     会话信息
  */
 export function QUICK_LOGIN({ state, commit, getters }, sessionInfo) {
-    const connect       = new Connect(sessionInfo)
     const { host, port, username } = sessionInfo
     const existSession  = getters.sessionInfo({ host, port, username })
+
+    sessionInfo = existSession || sessionInfo
+
+    const connect = new Connect(sessionInfo)
 
     return new Promise((resolve, reject) => {
         connect
@@ -43,10 +46,7 @@ export function QUICK_LOGIN({ state, commit, getters }, sessionInfo) {
  * @param   {Object}    sessionInfo     会话信息
  */
 export function LOGIN({ state, commit }, sessionInfo) {
-    sessionInfo = tools.clone(sessionInfo)
-    sessionInfo.detail.password = tools.aesDecode(sessionInfo.detail.password)
-
-    const connect = new Connect(sessionInfo.detail)
+    const connect = new Connect(sessionInfo)
     return new Promise((resolve, reject) => {
         connect
             .init()

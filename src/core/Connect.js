@@ -2,12 +2,13 @@ import path     from 'path'
 import fs       from 'fs'
 import { exec } from'child_process'
 import { uid, debounce } from 'quasar'
+import tools    from 'src/utils'
 
 const { Client } = require('ssh2')
 
 class Connect {
     constructor(sessionInfo) {
-        this.sessionInfo = sessionInfo
+        this.sessionInfo = tools.clone(sessionInfo)
     }
 
     async init() {
@@ -21,6 +22,10 @@ class Connect {
     }
 
     initConn() {
+        const { host, port, username, authMode } = this.sessionInfo.detail
+        const password   = authMode === 'password' ? tools.aesDecode(this.sessionInfo.detail.password)   : ''
+        const privateKey = authMode === 'sshKey'   ? fs.readFileSync(this.sessionInfo.detail.privateKey) : ''
+
         return new Promise((resolve, reject) => {
             const conn = new Client()
             conn
@@ -29,7 +34,13 @@ class Connect {
                     resolve(conn)
                 })
                 .on('error', err => reject(err))
-                .connect(this.sessionInfo)
+                .connect({
+                    host,
+                    port,
+                    username,
+                    password,
+                    privateKey,
+                })
         })
     }
 

@@ -41,7 +41,7 @@ export function CREATE_SESSION(state, props) {
         updateTime : Date.now(),                                // 更新时间
     }
 
-    state.pool.push(nodeInfo)
+    state.pool.splice(0, 0, nodeInfo)
     LocalStorage.set('sessionPool', state.pool)
 }
 
@@ -54,7 +54,7 @@ export function CREATE_SESSION(state, props) {
  */
 export function CREATE_DIR(state, props) {
     const folderInfo = {
-        id         : uid(),
+        id         : props.id || uid(),
         type       : 'dir',
         name       : props.name,
         icon       : 'icons/server-icons/folder.svg',

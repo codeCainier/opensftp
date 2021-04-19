@@ -4,9 +4,10 @@
              :key="item.id"
              class="list-item"
              :style="{ 'padding-left': recursionNum * 20 + 'px' }">
-            <tree-node :group="group"
-                       :nodeItem="item"
-                       :nodeIndex="index"
+            <tree-node ref="tree-node"
+                       :group="group"
+                       :item="item"
+                       :index="index"
                        :recursionNum="recursionNum"/>
         </div>
     </transition-group>

@@ -311,7 +311,7 @@ export default {
     },
     created() {
         this.createContainerMenu('local')
-        this.pwd = this.$q.electron.remote.app.getPath('home')
+        this.pwd = this.connect.sessionInfo.detail.localPath
         this.getFileList('.')
     }
 }
