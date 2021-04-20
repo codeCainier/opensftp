@@ -544,4 +544,11 @@ export default {
     showContainerMenu() {
         this.containerMenu.popup()
     },
+    /**
+     * 返回上级目录
+     * @method
+     */
+    backPrevDir() {
+        this.getFileList('..', '', path.basename(this.pwd))
+    },
 }

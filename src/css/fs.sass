@@ -88,6 +88,9 @@
         margin-right: 5px
     &.name
         width: 100%
+        overflow: hidden
+        text-overflow: ellipsis
+        white-space: nowrap
     &.size
         min-width: 80px
     &.date
@@ -121,6 +124,9 @@
         &.icon
             min-width: 25px
             margin-right: 5px
+            img
+                width: 25px
+                height: 25px
 
 .fs-item
     outline: none

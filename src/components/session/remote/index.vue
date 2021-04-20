@@ -64,8 +64,8 @@
                      class="fs-item" tabindex="0"
                      :class="{ 'drag-enter': dragEnterItem === '..' }"
                      @click="selected = null"
-                     @dblclick="getFileList('..')"
-                     @keydown.exact.enter="getFileList('..')"
+                     @dblclick="backPrevDir"
+                     @keydown.exact.enter="backPrevDir"
                      @dragover.prevent.stop="dragOver({ name: '..' })"
                      @dragleave.stop="dragLeave">
                     <div class="item icon">
@@ -100,10 +100,10 @@
                      @keydown.prevent.up="moveFocus('up')"
                      @keydown.prevent.down="moveFocus('down')">
                     <div class="item icon">
-                        <img :src="getFileIcon(item)" alt="">
+                        <!--<img :src="getFileIcon(item)" alt="">-->
                     </div>
                     <div class="item name">
-                        <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
+                        <span v-show="renameItem.name !== item.name">{{ item.name }}</span>
                         <label>
                             <input v-model="renameItem.newName"
                                    v-show="renameItem.name === item.name"

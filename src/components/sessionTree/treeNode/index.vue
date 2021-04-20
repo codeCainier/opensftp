@@ -89,7 +89,7 @@ export default {
         index : Number,
         group: {
             type: Array,
-            default: [],
+            default: () => [],
         },
         recursionNum : {
             type: Number,

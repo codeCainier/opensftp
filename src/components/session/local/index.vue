@@ -66,12 +66,12 @@
                      class="fs-item" tabindex="0"
                      :class="{ 'drag-enter': dragEnterItem === '..' }"
                      @click="selected = null"
-                     @dblclick="getFileList('..')"
-                     @keydown.exact.enter="getFileList('..')"
+                     @dblclick="backPrevDir"
+                     @keydown.exact.enter="backPrevDir"
                      @dragover.prevent.stop="dragOver({ name: '..' })"
                      @dragleave.stop="dragLeave">
                     <div class="item icon">
-                        <img src="~/assets/sftp-icons/folder-other.svg" alt="">
+                        <img class="" src="~/assets/sftp-icons/folder-other.svg" alt="">
                     </div>
                     <div class="item name">..</div>
                 </div>
@@ -102,10 +102,10 @@
                      @keydown.prevent.up="moveFocus('up')"
                      @keydown.prevent.down="moveFocus('down')">
                     <div class="item icon">
-                        <img :src="getFileIcon(item)" alt="">
+                        <img :src="item.icon" alt="">
                     </div>
                     <div class="item name">
-                        <div v-show="renameItem.name !== item.name">{{ item.name }}</div>
+                        <span v-show="renameItem.name !== item.name">{{ item.name }}</span>
                         <label>
                             <input v-model="renameItem.newName"
                                    v-show="renameItem.name === item.name"
@@ -223,9 +223,14 @@ export default {
             // 只有文件类型才有文件大小概念
             return item => item.type === 'd' ? '-' : this.tools.formatFlow(item.size, 1024, 'B', 1024, 0)
         },
-        getFileIcon() {
-            return item => iconMatch(item)
-        },
+        // getFileIcon() {
+        //     return async item => {
+        //         const icon = await this.$q.electron.remote.app.getFileIcon(path.join(this.pwd, item.name))
+        //         console.log(icon.toDataURL());
+        //         return icon.toDataURL();
+        //         // return iconMatch(item)
+        //     }
+        // },
         fileCreatedTime() {
             return time => this.tools.formatDate(time, 'MM-dd HH:mm')
         },
@@ -268,7 +273,15 @@ export default {
             const cwd = pathName || path.join(this.pwd, dirname)
 
             this.connect.listLocal(cwd)
-                .then(list => {
+                .then(async list => {
+                    for (const item of list) {
+                        // /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/
+                        // if (item.type === '-') {
+                        //     const icon = await this.$q.electron.remote.app.getFileIcon(path.join(this.pwd, item.name))
+                        //     item.icon = icon.toDataURL();
+                        // }
+                        item.icon = await iconMatch(this.pwd, item)
+                    }
                     // 列表初始化排序
                     this.list = this.sort(list)
                     // 更新最后访问目录
