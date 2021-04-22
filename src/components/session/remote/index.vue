@@ -88,19 +88,19 @@
                      }"
                      @click.stop="fileFocus(index)"
                      @click.stop.right="showFileMenu('remote', item, index)"
-                     @dblclick="dirEnter(item)"
+                     @dblclick="dirEnter(item, 'remote')"
                      @dragstart="dragStart($event, item, index, 'remote')"
                      @dragover.prevent.stop="dragOver(item)"
                      @dragleave.stop="dragLeave"
                      @drop.stop="dropFile($event, item)"
                      @dragend="dragEnd"
-                     @keydown.enter="dirEnter(item)"
+                     @keydown.enter="dirEnter(item, 'remote')"
                      @keydown.exact.delete="removeFile('remote', item)"
                      @keydown.f2="renameOpen(item, index)"
                      @keydown.prevent.up="moveFocus('up')"
                      @keydown.prevent.down="moveFocus('down')">
                     <div class="item icon">
-                        <!--<img :src="getFileIcon(item)" alt="">-->
+                        <img :src="item.icon" alt="">
                     </div>
                     <div class="item name">
                         <span v-show="renameItem.name !== item.name">{{ item.name }}</span>
@@ -226,9 +226,6 @@ export default {
             // 只有文件类型才有文件大小概念
             return item => item.type === 'd' ? '-' : this.tools.formatFlow(item.size, 1024, 'B', 1024, 0)
         },
-        getFileIcon() {
-            return item => iconMatch(item)
-        },
         fileCreatedTime() {
             return time => this.tools.formatDate(time, 'MM-dd HH:mm')
         },
@@ -271,12 +268,15 @@ export default {
             const cwd = pathName || path.posix.join(this.pwd, dirname)
 
             this.connect.listRemote(cwd)
-                .then(list => {
-                    // 列表初始化排序
-                    this.list = this.sort(list)
-
+                .then(async list => {
                     // 更新最后访问目录
                     this.pwd = cwd
+                    // 匹配文件图标
+                    for (const item of list) {
+                        item.icon = await iconMatch(this.pwd, item, 'remote')
+                    }
+                    // 列表初始化排序
+                    this.list = this.sort(list)
                     // 若指定聚焦文件
                     if (focusFile) {
                         this.selected = this.list.findIndex(item => item.name === focusFile)

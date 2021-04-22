@@ -79,9 +79,11 @@ export default {
      * 进入目录
      * @method
      * @param   {Object}    item         目标目录对象
+     * @param   {String}    action       会话类型   remote || local
      */
-    dirEnter(item) {
+    dirEnter(item,action) {
         if (['d', 'l'].includes(item.type)) this.getFileList(item.name)
+        if (action === 'local' && item.type === '-') this.openFileByDefault(item)
     },
     /**
      * 开始重命名
@@ -419,16 +421,13 @@ export default {
         containerMenu.append(new remote.MenuItem({ type: 'separator' }))
 
         containerMenu.append(new remote.MenuItem({
-            label: '新建',
-            submenu: [
-                {
-                    label: '新建文件',
-                    click: action === 'local' ? this.writeFileLocal : this.writeFileRemote,
-                }, {
-                    label: '新建文件夹',
-                    click: action === 'local' ? this.mkdirLocal : this.mkdirRemote,
-                },
-            ],
+            label: '新建文件',
+            click: action === 'local' ? this.writeFileLocal : this.writeFileRemote,
+        }))
+
+        containerMenu.append(new remote.MenuItem({
+            label: '新建文件夹',
+            click: action === 'local' ? this.mkdirLocal : this.mkdirRemote,
         }))
 
         containerMenu.append(new remote.MenuItem({ type: 'separator' }))
@@ -461,10 +460,59 @@ export default {
                 click: this.refresh,
             }))
 
+            if (action === 'local' && item.type === '-') fileMenu.append(new remote.MenuItem({
+                label: '打开',
+                click: () => {
+                    this.openFileByDefault(item)
+                },
+            }))
+
             fileMenu.append(new remote.MenuItem({ type: 'separator' }))
 
             fileMenu.append(new remote.MenuItem({
-                label: action === 'local' ? '上传' : '下载',
+                label: '新建文件',
+                click: action === 'local' ? this.writeFileLocal : this.writeFileRemote,
+            }))
+
+            fileMenu.append(new remote.MenuItem({
+                label: '新建文件夹',
+                click: action === 'local' ? this.mkdirLocal : this.mkdirRemote,
+            }))
+
+            if (item.type === 'd') fileMenu.append(new remote.MenuItem({
+                label: `在文件夹内新建`,
+                submenu: [
+                    {
+                        label: '新建文件',
+                        click: () => {
+                            this.alert('功能开发中')
+                        },
+                    }, {
+                        label: '新建文件夹',
+                        click: () => {
+                            this.alert('功能开发中')
+                        },
+                    },
+                ],
+            }))
+
+            if (action === 'local') fileMenu.append(new remote.MenuItem({
+                label: '在 Finder 中显示',
+                click: () => {
+                    remote.shell.showItemInFolder(path.join(this.pwd, item.name))
+                },
+            }))
+
+            // if (action === 'remote') fileMenu.append(new remote.MenuItem({
+            //     label: '在集成终端中打开',
+            //     click: () => {
+            //     },
+            // }))
+
+            fileMenu.append(new remote.MenuItem({ type: 'separator' }))
+
+            fileMenu.append(new remote.MenuItem({
+                label: action === 'local' ? '上传至远程目录' : '下载到本地目录',
                 click: () => {
                     // 起始路径
                     const fromPath = action === 'local'
@@ -477,21 +525,6 @@ export default {
                     // 调用传输
                     this.transmit(action === 'local' ? 'upload' : 'download', fromPath, distPath)
                 },
-            }))
-
-            fileMenu.append(new remote.MenuItem({ type: 'separator' }))
-
-            fileMenu.append(new remote.MenuItem({
-                label: '新建',
-                submenu: [
-                    {
-                        label: '新建文件',
-                        click: action === 'local' ? this.writeFileLocal : this.writeFileRemote,
-                    }, {
-                        label: '新建文件夹',
-                        click: action === 'local' ? this.mkdirLocal : this.mkdirRemote,
-                    },
-                ],
             }))
 
             // FIXME: 暂时只做了 Remote 端编辑功能
@@ -511,14 +544,16 @@ export default {
                 }))
             }
 
-            fileMenu.append(new remote.MenuItem({
-                label: '删除',
-                click: () => this.removeFile(action, item),
-            }))
+            fileMenu.append(new remote.MenuItem({ type: 'separator' }))
 
             fileMenu.append(new remote.MenuItem({
                 label: '重命名',
                 click: () => this.renameOpen(item, index),
+            }))
+
+            fileMenu.append(new remote.MenuItem({
+                label: '删除',
+                click: () => this.removeFile(action, item),
             }))
 
             fileMenu.append(new remote.MenuItem({ type: 'separator' }))
@@ -550,5 +585,17 @@ export default {
      */
     backPrevDir() {
         this.getFileList('..', '', path.basename(this.pwd))
+    },
+    /**
+     * 使用默认方式打开本地文件
+     * @method
+     * @param   {Object}    item         目标目录对象
+     */
+    openFileByDefault(item) {
+        this.$q.electron.remote.shell.openPath(path.join(this.pwd, item.name))
+            .then(() => {
+            })
+            .catch(() => {
+            })
     },
 }

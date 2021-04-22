@@ -90,13 +90,13 @@
                      }"
                      @click.stop="fileFocus(index)"
                      @click.stop.right="showFileMenu('local', item, index)"
-                     @dblclick="dirEnter(item)"
+                     @dblclick="dirEnter(item, 'local')"
                      @dragstart="dragStart($event, item, index, 'local')"
                      @dragover.prevent.stop="dragOver(item)"
                      @dragleave.stop="dragLeave"
                      @drop.stop="dropFile($event, item)"
                      @dragend="dragEnd"
-                     @keydown.enter="dirEnter(item)"
+                     @keydown.enter="dirEnter(item, 'local')"
                      @keydown.exact.delete="removeFile('local', item)"
                      @keydown.f2="renameOpen(item, index)"
                      @keydown.prevent.up="moveFocus('up')"
@@ -223,14 +223,6 @@ export default {
             // 只有文件类型才有文件大小概念
             return item => item.type === 'd' ? '-' : this.tools.formatFlow(item.size, 1024, 'B', 1024, 0)
         },
-        // getFileIcon() {
-        //     return async item => {
-        //         const icon = await this.$q.electron.remote.app.getFileIcon(path.join(this.pwd, item.name))
-        //         console.log(icon.toDataURL());
-        //         return icon.toDataURL();
-        //         // return iconMatch(item)
-        //     }
-        // },
         fileCreatedTime() {
             return time => this.tools.formatDate(time, 'MM-dd HH:mm')
         },
@@ -274,18 +266,14 @@ export default {
 
             this.connect.listLocal(cwd)
                 .then(async list => {
+                    // 更新最后访问目录
+                    this.pwd = cwd
+                    // 匹配文件图标
                     for (const item of list) {
-                        // /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/
-                        // if (item.type === '-') {
-                        //     const icon = await this.$q.electron.remote.app.getFileIcon(path.join(this.pwd, item.name))
-                        //     item.icon = icon.toDataURL();
-                        // }
-                        item.icon = await iconMatch(this.pwd, item)
+                        item.icon = await iconMatch(this.pwd, item, 'local')
                     }
                     // 列表初始化排序
                     this.list = this.sort(list)
-                    // 更新最后访问目录
-                    this.pwd = cwd
                     // 若指定聚焦文件
                     if (focusFile) {
                         this.selected = this.list.findIndex(item => item.name === focusFile)
