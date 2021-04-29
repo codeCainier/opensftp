@@ -148,7 +148,7 @@ export default {
             updateItem  : null,
             authMode    : 'password',
             name        : '',
-            icon        : 'icons/server-icons/default.svg',
+            icon        : './icons/server-icons/default.svg',
             host        : '',
             port        : '22',
             username    : 'root',

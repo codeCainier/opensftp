@@ -11,7 +11,7 @@
                        flat size="md"
                        @click="$emit('select', iconPath(icon))">
                     <q-avatar size="md" square>
-                        <img :src="'icons/server-icons/' + icon">
+                        <img :src="'./icons/server-icons/' + icon">
                     </q-avatar>
                 </q-btn>
             </div>
@@ -22,7 +22,7 @@
                        flat size="md"
                        @click="$emit('select', iconPath(icon))">
                     <q-avatar size="md" square>
-                        <img :src="'icons/server-icons/' + icon">
+                        <img :src="'./icons/server-icons/' + icon">
                     </q-avatar>
                 </q-btn>
             </div>
