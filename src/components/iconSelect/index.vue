@@ -11,7 +11,7 @@
                        flat size="md"
                        @click="$emit('select', iconPath(icon))">
                     <q-avatar size="md" square>
-                        <img :src="'./icons/server-icons/' + icon">
+                        <img :src="'./statics/icons/server-icons/' + icon">
                     </q-avatar>
                 </q-btn>
             </div>
@@ -22,7 +22,7 @@
                        flat size="md"
                        @click="$emit('select', iconPath(icon))">
                     <q-avatar size="md" square>
-                        <img :src="'./icons/server-icons/' + icon">
+                        <img :src="'./statics/icons/server-icons/' + icon">
                     </q-avatar>
                 </q-btn>
             </div>
@@ -44,7 +44,7 @@ export default {
     },
     data() {
         return {
-            iconList: fs.readdirSync(path.join(__statics, 'icons/server-icons')),
+            iconList: fs.readdirSync(path.join(__statics, 'statics/icons/server-icons')),
             filterVal: '',
             filterList: [],
         }
@@ -56,7 +56,7 @@ export default {
     },
     computed: {
         iconPath() {
-            return name => path.join('icons/server-icons', name)
+            return name => path.join('statics/icons/server-icons', name)
         },
     },
     methods: {

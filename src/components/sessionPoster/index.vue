@@ -4,7 +4,7 @@
               @keydown.space="show = false">
         <q-card class="session-poster text-white"
                 :style="{
-                    'background-image': `url('./images/session.jpeg')`
+                    'background-image': `url('./statics/images/session.jpeg')`
                 }">
             <div class="bg-mask absolute-top-left full-height full-width"></div>
             <q-card-section class="q-mb-md">

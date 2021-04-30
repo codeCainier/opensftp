@@ -29,7 +29,7 @@ function getMacFolderIcon(filepath) {
     if (filepath === MusicPath)    icon = 'MusicFolderIcon'
     if (filepath === PicturePath)  icon = 'PicturesFolderIcon'
     if (filepath === VideoPath)    icon = 'MovieFolderIcon'
-    return `./icons/system-icons/mac/${icon}.png`
+    return `./statics/icons/system-icons/mac/${icon}.png`
 }
 
 function getWinFolderIcon (filepath) {
