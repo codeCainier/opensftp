@@ -237,7 +237,7 @@ export default {
                     if (res.canceled) return
                     [this.privateKey] = res.filePaths
                 })
-                .catch(err => console.log(err))
+                .catch(err => console.error(err))
         },
         selectLocalPath() {
             this.$q.electron.remote.dialog.showOpenDialog({
@@ -250,7 +250,7 @@ export default {
                     if (res.canceled) return
                     [this.localPath] = res.filePaths
                 })
-                .catch(err => console.log(err))
+                .catch(err => console.error(err))
         },
     },
 };

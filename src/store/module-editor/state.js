@@ -50,7 +50,6 @@ Object.keys(state).forEach((editorName) => {
     try {
         fs.statSync(state[editorName].path)
     } catch (e) {
-        console.log(e)
         state[editorName].path = null
     }
 })

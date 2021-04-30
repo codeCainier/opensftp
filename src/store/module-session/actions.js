@@ -9,29 +9,35 @@ import tools   from 'src/utils'
  * @param   {Object}    sessionInfo     会话信息
  */
 export function QUICK_LOGIN({ state, commit, getters }, sessionInfo) {
-    const { host, port, username } = sessionInfo
-    const existSession  = getters.sessionInfo({ host, port, username })
+    const { host, port, username, password } = sessionInfo
 
-    sessionInfo = existSession || sessionInfo
-
-    const connect = new Connect(sessionInfo)
+    const connect = new Connect({
+        detail: {
+            host,
+            port,
+            username,
+            password: tools.aesEncode(password),
+            authMode: 'password',
+        }
+    })
 
     return new Promise((resolve, reject) => {
         connect
             .init()
             .then(() => {
                 // 若会话池不存在会话信息，则保存会话信息
-                if (!existSession) {
-                    // 保存会话信息
-                    commit('CREATE_SESSION', {
-                        name: sessionInfo.host,
-                        ...sessionInfo,
-                    })
-                }
-                // 使用已存在的会话信息
-                sessionInfo = getters.sessionInfo({ host, port, username })
-                // 创建会话标签
-                commit('CONNECT', { connect, sessionInfo })
+                if (!getters.sessionInfo({ host, port, username })) commit('CREATE_SESSION', {
+                    name: host,
+                    host,
+                    port,
+                    username,
+                    password,
+                    authMode: 'password',
+                })
+                // 更新 connect 对象中会话信息
+                connect.sessionInfo = tools.clone(getters.sessionInfo({ host, port, username }))
+                // 使用会话信息创建会话标签
+                commit('CONNECT', connect)
                 resolve()
             })
             .catch(err => reject(err))
@@ -52,7 +58,7 @@ export function LOGIN({ state, commit }, sessionInfo) {
             .init()
             .then(() => {
                 // 创建会话标签
-                commit('CONNECT', { connect, sessionInfo })
+                commit('CONNECT', connect)
                 resolve()
             })
             .catch(err => reject(err))

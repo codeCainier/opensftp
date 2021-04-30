@@ -32,7 +32,6 @@
 </template>
 
 <script>
-    import { uid } from 'quasar'
     import svgQuickLink from 'src/components/svg/quickLink'
 
     export default {
@@ -44,10 +43,10 @@
             return {
                 loading: false,
                 showPwd: false,
-                host: '',
+                host: '192.168.0.152',
                 port: '22',
                 username: 'root',
-                password: '',
+                password: 'srunsoft@xian',
                 conn: null,
             };
         },
@@ -64,9 +63,10 @@
                 this.loading = true
 
                 this.$store.dispatch('session/QUICK_LOGIN', {
-                    host, port, username,
-                    password: this.tools.aesEncode(password),
-                    autoMode: 'password',
+                    host,
+                    port,
+                    username,
+                    password,
                 })
                     .then(() => this.$router.push({ path: '/session' }))
                     .catch(err => this.alert(err))

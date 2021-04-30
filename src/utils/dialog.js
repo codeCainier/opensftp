@@ -30,7 +30,7 @@ export function alert (obj) {
             defaultId: 0,
         })
             .then(res => resolve(res))
-            .catch(err => console.log(err))
+            .catch(err => console.error(err))
     })
 }
 
@@ -66,7 +66,7 @@ export function confirm (obj) {
                 // 取消回调
                 if (res.response === 1) return reject(res)
             })
-            .catch(err => console.log(err))
+            .catch(err => console.error(err))
     })
 }
 

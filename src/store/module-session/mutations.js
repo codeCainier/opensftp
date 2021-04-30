@@ -21,7 +21,7 @@ import path from "path";
  */
 export function CREATE_SESSION(state, props) {
     const homePath = path.join(electron.remote.app.getPath('home'))
-    const iconPath = 'icons/server-icons/default.svg'
+    const iconPath = 'statics/icons/server-icons/default.svg'
     const nodeInfo = {
         id         : props.id || uid(),                         // 节点 ID
         type       : 'session',                                 // 节点类型 session || dir
@@ -133,16 +133,13 @@ export function DELETE(state, id) {
 /**
  * 连接会话
  * @param   {Object}    state
- * @param   {Object}    props
- * @param   {Object}    props.connect       会话连接对象
- * @param   {Object}    props.sessionInfo   会话信息
+ * @param   {Object}    connect     会话连接对象
  */
-export function CONNECT(state, props) {
+export function CONNECT(state, connect) {
     const id = uid()
     state.conn.push({
         id,
-        connect     : props.connect,
-        sessionInfo : props.sessionInfo,
+        connect,
     })
     // 设置会话标签为活跃状态
     state.active = id
