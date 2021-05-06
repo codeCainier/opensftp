@@ -43,10 +43,10 @@
             return {
                 loading: false,
                 showPwd: false,
-                host: '192.168.0.152',
+                host: '',
                 port: '22',
                 username: 'root',
-                password: 'srunsoft@xian',
+                password: '',
                 conn: null,
             };
         },
