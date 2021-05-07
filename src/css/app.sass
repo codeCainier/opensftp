@@ -1,3 +1,4 @@
+@import "~quasar/dist/quasar"
 @import "src/css/quasar.variables"
 
 // app global css in Sass form
@@ -13,33 +14,40 @@ input
     &[type="number"]
         -moz-appearance: textfield
 
+.module-background
+    @extend .absolute-top-left
+    @extend .full-width
+    @extend .full-height
+    z-index: -1
+
 body
     @include disable-copy
     background: transparent !important
     transition: all .3s
 
     &.body--light
-        #q-app
-            background: rgba(#FFFFFF, .7)
-            &.os-win
-                background: #FFFFFF
+        .module-background
+            background: #FFFFFF
         .bg-aero
             background: rgba(#FFFFFF, .5)
             backdrop-filter: blur(10px) saturate(180%)
+        .q-splitter__separator
+            background: #EEEEEE
     &.body--dark
-        #q-app
-            background: rgba($dark, .3)
-            &.os-win
-                background: $dark
         .bg-aero
             background: rgba($dark, .5)
             backdrop-filter: blur(10px) saturate(180%)
+        .module-background
+            background: $dark
+        .q-splitter__separator
+            background: rgba($dark, .3)
 
 #q-app
     transition: all .3s
 
 .q-tooltip
     background: $dark
+    font-size: .8rem
 
 .q-dialog__backdrop
     backdrop-filter: blur(10px)

@@ -1,5 +1,5 @@
 <template>
-    <div id='q-app' :class="{ 'os-win' : $q.platform.is.win }">
+    <div id='q-app' :class="{ 'disable-aero-blur': !$store.state.setting.aero.enable }">
         <router-view/>
     </div>
 </template>
@@ -10,7 +10,15 @@
         beforeCreate() {
             this.$router.push({ path: '/' })
         },
-        mounted() {
-        },
     }
 </script>
+
+<style lang="sass">
+body
+    &.body--light
+        .disable-aero-blur
+            background: #FFFFFF
+    &.body--dark
+        .disable-aero-blur
+            background: $dark
+</style>

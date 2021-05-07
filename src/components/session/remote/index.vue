@@ -95,7 +95,7 @@
                      @drop.stop="dropFile($event, item)"
                      @dragend="dragEnd"
                      @keydown.enter="dirEnter(item, 'remote')"
-                     @keydown.exact.delete="removeFile('remote', item)"
+                     @keydown.meta.delete="removeFile('remote', item)"
                      @keydown.f2="renameOpen(item, index)"
                      @keydown.prevent.up="moveFocus('up')"
                      @keydown.prevent.down="moveFocus('down')">
@@ -135,7 +135,7 @@
                  :class="{ active: dragEnterItem !== null }"
                  @dragover.prevent="dragOver({ name: '.' })"
                  @dragleave="dragLeave"
-                 @drop="dropFile($event)">
+                 @drop.stop="dropFile($event)">
             </div>
         </div>
     </div>

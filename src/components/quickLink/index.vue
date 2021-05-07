@@ -1,5 +1,5 @@
 <template>
-    <div class="full-height q-pa-md flex flex-center">
+    <div class="full-height q-pa-md flex flex-center relative-position">
         <div class="container text-center">
             <svg-quickLink class="illustration"/>
             <q-input v-model.trim="host" label="地址" autofocus spellcheck="false">
@@ -28,6 +28,7 @@
                    class="q-mt-md full-width"
                    @click="login"/>
         </div>
+        <div class="module-background" :style="moduleBg()"></div>
     </div>
 </template>
 
@@ -49,6 +50,15 @@
                 password: '',
                 conn: null,
             };
+        },
+        computed: {
+            moduleBg() {
+                return () => {
+                    const style = {}
+                    style.opacity = this.$store.state.setting.aero.quickLink / 100
+                    return style
+                }
+            }
         },
         methods: {
             // 连接会话

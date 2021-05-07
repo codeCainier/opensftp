@@ -57,7 +57,7 @@ export function CREATE_DIR(state, props) {
         id         : props.id || uid(),
         type       : 'dir',
         name       : props.name,
-        icon       : 'icons/server-icons/folder.svg',
+        icon       : 'statics/icons/server-icons/folder.svg',
         children   : [],
         createTime : Date.now(),
         updateTime : Date.now(),

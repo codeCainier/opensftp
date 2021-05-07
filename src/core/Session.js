@@ -59,6 +59,7 @@ export default {
             ? path.posix.join(this.pwd, dragItem.name)
             : path.join(this.pwd, dragItem.name))
         event.dataTransfer.setDragImage(this.$refs[`file-item-${index}`][0],0,0)
+        this.$emit('change-drag-status', true)
     },
     /**
      * 拖动结束
@@ -67,6 +68,7 @@ export default {
     dragEnd() {
         this.dragEnterItem = null
         this.dragFileName  = null
+        this.$emit('change-drag-status', false)
     },
     /**
      * 拖动离开
@@ -547,7 +549,7 @@ export default {
             fileMenu.append(new remote.MenuItem({ type: 'separator' }))
 
             fileMenu.append(new remote.MenuItem({
-                label: '重命名',
+                label: '重新命名',
                 click: () => this.renameOpen(item, index),
             }))
 

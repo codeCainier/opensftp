@@ -361,7 +361,7 @@ class Connect {
 
     async editRemoteFile(remotePath, editorPath, callback = () => {}) {
         const filename  = path.basename(remotePath)
-        const cacheDir  = path.join(__dirname, '../../cache', uid())
+        const cacheDir  = path.join(__statics, '../cache', uid())
         const localPath = path.join(cacheDir, filename)
         const cmd       = `${editorPath.replace(/ /g, '\\ ')} ${localPath}`
         await this.mkdirLocal(cacheDir)

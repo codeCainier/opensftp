@@ -1,10 +1,5 @@
 <template>
-    <div class="row full-height">
-        <!-- 返回主页按钮 -->
-        <q-btn v-show="$store.state.session.conn.length"
-               icon="home" flat
-               class="no-border-radius"
-               @click="backHome"/>
+    <div class="full-width full-height row scroll-x">
         <!-- 会话标签 -->
         <q-btn v-for="item in $store.state.session.conn"
                :key="item.id"
@@ -12,12 +7,17 @@
                class="no-border-radius"
                style="margin-right: 1px"
                unelevated no-caps
-               @click="changeTag(item)">
+               @click="changeTag(item)"
+               @contextmenu="showMenu(item)">
+            <!-- 会话信息 -->
+            <q-tooltip :offset="[0, 10]">
+                <div class="text-weight-bolder">{{ item.connect.sessionInfo.name }}</div>
+                <div class="text-weight-bold">{{ item.connect.sessionInfo.detail.username }}@{{ item.connect.sessionInfo.detail.host }}:{{ item.connect.sessionInfo.detail.port }}</div>
+            </q-tooltip>
             <!-- 会话图标 -->
             <q-icon name="dns"/>
             <!-- 会话名称 -->
             <div class="label q-mx-sm ellipsis" style="width: 100px; font-size: .85rem">{{ item.connect.sessionInfo.name }}</div>
-            <q-space/>
             <!-- 关闭按钮 -->
             <q-btn flat round size="xs" icon="close" @click="closeTag(item.id)"/>
             <!-- 当会话连接存在传输任务时 -->
@@ -75,16 +75,6 @@
 
             }
         },
-        watch: {
-            '$store.state.session.conn': function (newVal) {
-                if (!newVal.length) this.backHome()
-            },
-            '$store.state.transfer.list': {
-                deep: true,
-                handler(newVal) {
-                }
-            }
-        },
         computed: {
             taskList() {
                 return id => this.$store.getters['transfer/CONNECT_TRANSFER'](id)
@@ -106,11 +96,6 @@
             closeTag(id) {
                 this.$store.dispatch('session/EXIT', id)
             },
-            backHome() {
-                if (this.$route.path === '/home') return
-                this.$store.commit('session/SET_ACTIVE', null)
-                this.$router.push({ path: '/' })
-            },
             changeTag(item) {
                 if (this.$store.state.session.active === item.id) return this.$store.commit('sftp/CLOSE_TERM')
                 this.$store.commit('session/SET_ACTIVE', item.id)
@@ -118,6 +103,48 @@
             },
             speedFormat(speed) {
                 return this.tools.formatFlow(speed)
+            },
+            // 显示右键菜单
+            showMenu(item) {
+                const { remote } = this.$q.electron
+                const menu = new remote.Menu()
+
+                menu.append(new remote.MenuItem({
+                    label: '新建相同会话',
+                    click: () => {
+                        this.alert('功能开发中')
+                    },
+                }))
+
+                menu.append(new remote.MenuItem({ type: 'separator' }))
+
+                menu.append(new remote.MenuItem({
+                    label: '关闭会话',
+                    click: () => this.closeTag(item.id),
+                }))
+
+                menu.append(new remote.MenuItem({
+                    label: '关闭其他会话',
+                    click: () => {
+                        this.alert('功能开发中')
+                    },
+                }))
+
+                menu.append(new remote.MenuItem({
+                    label: '关闭右侧会话',
+                    click: () => {
+                        this.alert('功能开发中')
+                    },
+                }))
+
+                menu.append(new remote.MenuItem({
+                    label: '关闭所有会话',
+                    click: () => {
+                        this.alert('功能开发中')
+                    },
+                }))
+
+                menu.popup()
             },
         },
         created() {

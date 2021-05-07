@@ -1,6 +1,6 @@
 <template>
     <q-toggle v-model="dark"
-              class="q-electron-drag--exception"
+              class="q-electron-drag--exception q-mr-sm"
               color="dark"
               checked-icon="ion-md-moon"
               unchecked-icon="ion-md-sunny"

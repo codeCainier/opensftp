@@ -1,6 +1,6 @@
 <template>
     <q-bar class="q-electron-drag">
-        <transfer-progress/>
+        <!--<transfer-progress/>-->
         <dark-toggle/>
         <session-tag/>
         <q-space />
@@ -14,7 +14,7 @@
 import sessionTag from 'src/components/sessionTag'
 import headerMenu from 'src/components/headerMenu'
 import darkToggle from 'src/components/headerDarkToggle'
-import transferProgress from 'src/components/headerProgress'
+// import transferProgress from 'src/components/headerProgress'
 
 export default {
     name: 'HeaderBarWin',
@@ -22,7 +22,7 @@ export default {
         'session-tag': sessionTag,
         'header-menu': headerMenu,
         'dark-toggle': darkToggle,
-        'transfer-progress': transferProgress,
+        // 'transfer-progress': transferProgress,
     },
     data() {
         return {};

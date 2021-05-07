@@ -1,5 +1,5 @@
 <template>
-    <div class="session-pool full-height">
+    <div class="session-pool full-height relative-position">
         <!-- 会话池控制中心 -->
         <div class="pool-control q-ma-sm q-mt-md">
             <div class="row">
@@ -58,6 +58,7 @@
         <session-poster ref="session-poster"/>
         <!-- 会话详情 -->
         <session-detail ref="session-detail" :key="sessionDetailKey" @close="refreshSessionDetail"/>
+        <div class="module-background" :style="moduleBg()"></div>
     </div>
 </template>
 
@@ -98,6 +99,15 @@ export default {
         '$store.state.sessionTree.showDetail': function ([newVal]) {
             this.$refs['session-detail'].open(newVal)
         },
+    },
+    computed: {
+        moduleBg() {
+            return () => {
+                const style = {}
+                style.opacity = this.$store.state.setting.aero.sessionPool / 100
+                return style
+            }
+        }
     },
     methods: {
         // 搜索会话

@@ -28,7 +28,7 @@
                     // 鼠标右键选择
                     rightClickSelectsWord: true,
                     // 允许透明度
-                    allowTransparency: false,
+                    allowTransparency: true,
                     // 字体大小
                     fontSize: 14,
                     // 渲染方式 canvas || dom
@@ -43,7 +43,7 @@
                     // 主题
                     theme: {
                         // 背景颜色 hax || rgb || rgba || transparent
-                        background: '#000000',
+                        background: 'transparent',
                         // 文字颜色
                         foreground: '#FFFFFF',
                         // 光标颜色
@@ -189,14 +189,14 @@
 
 <style lang="sass" scoped>
 .terminal-container
-    //background: transparent
-    background: #000000
+    background: rgba($dark, .7)
     padding-top: 32px
     visibility: hidden
     opacity: 0
     transform: translateY(100%)
     z-index: 999
     transition: all .3s
+    backdrop-filter: blur(20px)
     &.active
         opacity: 1
         transform: translateY(0)

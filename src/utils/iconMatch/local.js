@@ -45,11 +45,12 @@ export default async (pwd, item) => {
 
     const filepath = path.join(pwd, name)
 
-    // 若为文件，使用系统默认图标
+    // 普通文件，使用系统默认图标
     if (type === '-') {
         const nativeImage = await app.getFileIcon(filepath)
         return nativeImage.toDataURL()
     }
 
-    if (type === 'd') return getFolderIcon(filepath)
+    // 目录文件 / 链接文件，使用系统文件夹图标进行匹配
+    if (['d', 'l'].includes(type)) return getFolderIcon(filepath)
 }

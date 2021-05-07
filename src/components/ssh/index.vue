@@ -9,7 +9,6 @@
                @keydown.ctrl.u="cmd = ''"
                @keydown.enter="openTerminal(cmd)">
         <q-space/>
-        <!--<q-btn icon="settings" class="no-border-radius" flat size="sm"/>-->
         <terminal ref="terminal" :connect="connect"/>
     </div>
 </template>

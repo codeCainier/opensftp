@@ -265,7 +265,10 @@ export default {
         background: rgba(#FFFFFF, .7)
         .form-input,
         .form-select
+            background: rgba($dark, .1)
             color: $dark
+        .input-slot-btn
+            background: rgba($primary ,.8)
     .card-footer
         background: #EEEEEE
         border-top: 1px solid #DDDDDD
@@ -278,7 +281,10 @@ export default {
         background: rgba($dark, .7)
         .form-input,
         .form-select
+            background: rgba(#FFFFFF, .1)
             color: #FFFFFF
+        .input-slot-btn
+            background: rgba($primary ,.3)
     .card-footer
         background: #282828
         border-top: 1px solid #000000
@@ -313,7 +319,6 @@ export default {
             outline: none
             height: 30px
             border-radius: 4px
-            background: rgba(#FFFFFF, .1)
             &:focus
                 border-color: $primary
             &::-webkit-input-placeholder
@@ -325,7 +330,6 @@ export default {
             height: 30px
             border: 2px solid transparent
             border-radius: 4px
-            background: rgba(#FFFFFF, .1)
             &:focus
                 border-color: $primary
         .input-slot-btn
@@ -337,7 +341,6 @@ export default {
             padding: 0 10px
             border: 2px solid transparent
             outline: none
-            background: rgba($primary ,.3)
             color: #FFFFFF
             border-radius: 4px
             white-space: nowrap
