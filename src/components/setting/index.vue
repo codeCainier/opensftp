@@ -44,7 +44,7 @@
                                             <!--<div class="text-subtitle2 text-weight-regular text-grey">关闭毛玻璃效果，则半透明效果一同关闭</div>-->
                                         </q-card-section>
                                         <q-slide-transition>
-                                            <div v-show="$store.state.setting.aero.enable">
+                                            <div v-show="$store.state.setting.aeroEnable">
                                                 <q-separator/>
                                                 <q-card-section>
                                                     <div class="row">
@@ -83,16 +83,54 @@
                         <q-tab-panel class="full-height" name="ssh">
                             <div class="title-main q-my-md">SSH Terminal 设置</div>
                             <div class="row q-col-gutter-md">
-                                <div class="col-6">
-                                    <div class="title-sec q-mb-md">外观设置</div>
+                                <div class="col-6 q-gutter-md">
+                                    <div class="title-sec">外观设置</div>
                                     <q-card class="setting-card shadow-transition">
                                         <q-card-section>
                                             <div class="row">
                                                 <div class="text-subtitle2 flex items-center">面板背景颜色</div>
                                                 <q-space/>
+                                                <q-btn icon="view_module" flat size="sm" :style="{ background: sshBackground }">
+                                                    <q-tooltip>{{ sshBackground.toLocaleUpperCase() }}</q-tooltip>
+                                                    <q-popup-proxy>
+                                                        <q-color v-model="sshBackground"
+                                                                 no-header
+                                                                 no-footer
+                                                                 v-close-popup
+                                                                 default-view="palette"/>
+                                                    </q-popup-proxy>
+                                                </q-btn>
                                             </div>
                                         </q-card-section>
+                                        <q-card-section>
+                                            <div class="row">
+                                                <div class="text-subtitle2 flex items-center">面板背景不透明度</div>
+                                                <q-space/>
+                                                <div class="text-subtitle1">{{ sshOpacity }}%</div>
+                                            </div>
+                                            <q-slider v-model="sshOpacity" :min="0" :max="100" :step="5" label/>
+                                        </q-card-section>
                                     </q-card>
+                                    <!--<q-card class="setting-card shadow-transition">-->
+                                    <!--    <q-card-section>-->
+                                    <!--        <div class="row">-->
+                                    <!--            <div class="text-subtitle2 flex items-center">文字颜色</div>-->
+                                    <!--            <q-space/>-->
+                                    <!--            <q-btn icon="view_module" flat size="sm" :style="{ background: sshTextColor }">-->
+                                    <!--                <q-tooltip>{{ sshTextColor.toLocaleUpperCase() }}</q-tooltip>-->
+                                    <!--                <q-popup-proxy>-->
+                                    <!--                    <q-color v-model="sshTextColor"-->
+                                    <!--                             no-header-->
+                                    <!--                             no-footer-->
+                                    <!--                             v-close-popup-->
+                                    <!--                             default-view="palette"/>-->
+                                    <!--                </q-popup-proxy>-->
+                                    <!--            </q-btn>-->
+                                    <!--        </div>-->
+                                    <!--    </q-card-section>-->
+                                    <!--</q-card>-->
+                                </div>
+                                <div class="col-6">
                                 </div>
                             </div>
                         </q-tab-panel>
@@ -140,39 +178,61 @@ export default {
     computed: {
         aeroEnable: {
             get () {
-                return this.$store.state.setting.aero.enable
+                return this.$store.state.setting.aeroEnable
             },
-            set (enable) {
-                this.$store.commit('setting/SET_AERO', { enable })
+            set (aeroEnable) {
+                this.$store.commit('setting/UPDATE', { aeroEnable })
             },
         },
         sessionPoolOpacity: {
             get () {
-                return this.$store.state.setting.aero.sessionPool
+                return this.$store.state.setting.sessionPoolOpacity
             },
-            set (value) {
-                this.$store.commit('setting/SET_AERO', { sessionPool: value })
+            set (sessionPoolOpacity) {
+                this.$store.commit('setting/UPDATE', { sessionPoolOpacity })
             },
         },
         quickLinkOpacity: {
             get () {
-                return this.$store.state.setting.aero.quickLink
+                return this.$store.state.setting.quickLinkOpacity
             },
-            set (value) {
-                this.$store.commit('setting/SET_AERO', { quickLink: value })
+            set (quickLinkOpacity) {
+                this.$store.commit('setting/UPDATE', { quickLinkOpacity })
             },
         },
         sftpOpacity: {
             get () {
-                return this.$store.state.setting.aero.sftp
+                return this.$store.state.setting.sftpOpacity
             },
-            set (value) {
-                this.$store.commit('setting/SET_AERO', { sftp: value })
+            set (sftpOpacity) {
+                this.$store.commit('setting/UPDATE', { sftpOpacity })
+            },
+        },
+        sshBackground: {
+            get () {
+                return this.$store.state.setting.sshBackground
+            },
+            set (sshBackground) {
+                this.$store.commit('setting/UPDATE', { sshBackground })
+            },
+        },
+        sshOpacity: {
+            get () {
+                return this.$store.state.setting.sshOpacity
+            },
+            set (sshOpacity) {
+                this.$store.commit('setting/UPDATE', { sshOpacity })
+            },
+        },
+        sshTextColor: {
+            get () {
+                return this.$store.state.setting.sshTextColor
+            },
+            set (sshTextColor) {
+                this.$store.commit('setting/UPDATE', { sshTextColor })
             },
         },
     },
-    methods: {
-    }
 }
 </script>
 

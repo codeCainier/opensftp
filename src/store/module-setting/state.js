@@ -2,25 +2,27 @@ import { LocalStorage, Dark } from 'quasar'
 import { remote } from 'electron'
 
 const state = {
-    show       : false,
-    autoUpdate : true,
-    dark       : 'auto',
-    aero : {
-        enable: true,
-        sessionPool: 85,
-        quickLink: 65,
-        sftp: 80,
-        ssh: 90,
-    },
-    ssh: {
-        background: 'rgba(0, 0, 0, .7)',
-    }
+    show               : false,
+    autoUpdate         : readCache('autoUpdate',         true),
+    dark               : readCache('dark',               'auto'),
+    aeroEnable         : readCache('aeroEnable',         true),
+    sessionPoolOpacity : readCache('sessionPoolOpacity', 85),
+    quickLinkOpacity   : readCache('quickLinkOpacity',   65),
+    sftpOpacity        : readCache('sftpOpacity',        80),
+    sshBackground      : readCache('sshBackground',      '#000000'),
+    sshOpacity         : readCache('sshOpacity',         70),
+    sshTextColor       : readCache('sshTextColor',       '#FFFFFF'),
 }
 
-Object.keys(state).forEach(key => state[key] = LocalStorage.getItem(key) === null ? state[key] : LocalStorage.getItem(key))
+function readCache(key, defaultValue) {
+    const value = LocalStorage.getItem(key)
+    return value === null ? defaultValue : value
+}
 
 Dark.set(state.dark)
+
 remote.getCurrentWindow().setVibrancy(state.dark ? 'dark' : 'light')
+
 state.dark = Dark.isActive
 
 export default function () {

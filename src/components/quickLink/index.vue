@@ -55,7 +55,7 @@
             moduleBg() {
                 return () => {
                     const style = {}
-                    style.opacity = this.$store.state.setting.aero.quickLink / 100
+                    style.opacity = this.$store.state.setting.quickLinkOpacity / 100
                     return style
                 }
             }

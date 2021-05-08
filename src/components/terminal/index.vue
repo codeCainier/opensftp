@@ -1,12 +1,13 @@
 <template>
     <q-card class="terminal-container fixed-top-left full-height full-width"
-            :class="{ active: show }">
+            :class="{ active: show }"
+            :style="terminalStyle()">
         <div ref="terminal" class="full-height overflow-hidden q-pa-sm"></div>
     </q-card>
 </template>
 
 <script>
-    import { debounce } from 'quasar'
+    import { debounce, colors } from 'quasar'
     import { Terminal } from 'xterm'
     import { WebLinksAddon } from 'xterm-addon-web-links'
     import { FitAddon } from 'xterm-addon-fit'
@@ -45,7 +46,7 @@
                         // 背景颜色 hax || rgb || rgba || transparent
                         background: 'transparent',
                         // 文字颜色
-                        foreground: '#FFFFFF',
+                        foreground: this.$store.state.setting.sshTextColor,
                         // 光标颜色
                         cursor: '#FFFFFF',
                         // 选中颜色
@@ -53,7 +54,7 @@
                         // TODO: The accent color of the cursor (fg color for a block cursor)
                         cursorAccent: '#FF0000',
                     },
-                }
+                },
             }
         },
         watch: {
@@ -63,6 +64,11 @@
             '$store.state.sftp.closeTermListener': function () {
                 this.show = false
             },
+            // TODO: sshTextColor
+            // '$store.state.setting.sshTextColor': function (newVal) {
+            //     this.option.theme.foreground = newVal
+            //     this.init()
+            // },
         },
         computed: {
             termSize() {
@@ -72,6 +78,14 @@
                     // 0.6 为 font-size 基数
                     cols: Number(((this.$store.state.layout.contWidth - 16) / (0.6 * this.option.fontSize)).toFixed(0))
                 })
+            },
+            terminalStyle() {
+                return () => {
+                    const style = {}
+                    const { sshBackground, sshOpacity } = this.$store.state.setting
+                    style.background = colors.changeAlpha(sshBackground, sshOpacity / 100)
+                    return style
+                }
             },
         },
         methods: {
@@ -189,7 +203,6 @@
 
 <style lang="sass" scoped>
 .terminal-container
-    background: rgba($dark, .7)
     padding-top: 32px
     visibility: hidden
     opacity: 0

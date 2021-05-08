@@ -21,7 +21,7 @@
             moduleBg() {
                 return () => {
                     const style = {}
-                    style.opacity = this.$store.state.setting.aero.sftp / 100
+                    style.opacity = this.$store.state.setting.sftpOpacity / 100
                     return style
                 }
             }

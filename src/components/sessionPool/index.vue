@@ -104,7 +104,7 @@ export default {
         moduleBg() {
             return () => {
                 const style = {}
-                style.opacity = this.$store.state.setting.aero.sessionPool / 100
+                style.opacity = this.$store.state.setting.sessionPoolOpacity / 100
                 return style
             }
         }

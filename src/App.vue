@@ -1,5 +1,5 @@
 <template>
-    <div id='q-app' :class="{ 'disable-aero-blur': !$store.state.setting.aero.enable }">
+    <div id='q-app' :class="{ 'disable-aero-blur': !$store.state.setting.aeroEnable }">
         <router-view/>
     </div>
 </template>

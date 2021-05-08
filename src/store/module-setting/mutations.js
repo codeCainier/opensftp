@@ -14,10 +14,10 @@ export function DARK_TOGGLE(state) {
     remote.getCurrentWindow().setVibrancy(state.dark ? 'dark' : 'light')
 }
 
-// 设置 AERO 毛玻璃效果
-export function SET_AERO(state, props) {
+export function UPDATE(state, props) {
     Object.keys(props).forEach(key => {
-        state.aero[key] = props[key]
+        state[key] = props[key]
+        LocalStorage.set(key, state[key])
     })
-    LocalStorage.set('aero', state.aero)
 }
+

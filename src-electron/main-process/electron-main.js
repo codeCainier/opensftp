@@ -33,7 +33,8 @@ function createWindow() {
         useContentSize: true,
         frame: false,
         // win 设备不开启窗口透明
-        transparent: os.type() !== 'Windows_NT',
+        // transparent: os.type() !== 'Windows_NT',
+        transparent: false,
         webPreferences: {
             // Change from /quasar.conf.js > electron > nodeIntegration;
             // More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration
