@@ -251,7 +251,7 @@ export default {
             const { id, type } = this.item
             const { selected } = this.$store.state.sessionTree
             // 不允许拖动到自身
-            if (selected === id) return
+            if (selected.includes(id)) return
             // 目录不允许拖动到自身子级内
             if (this.isDragItemChild(id)) return
             // 获取鼠标位于拖动经过项目的 Y 轴坐标
@@ -260,7 +260,7 @@ export default {
             const { clientHeight } = this.$refs[`tree-item-${id}`]
             // 上 - 位于 1/3 以上，视为将元素移动到经过目标的上方
             if (layerY <= clientHeight * (1/3)) {
-                if (this.index !== 0 && selected === this.group[this.index - 1].id) return
+                if (this.index !== 0 && selected.includes(this.group[this.index - 1].id)) return
                 // 更新移动到该会话项目 ID 前
                 this.$store.commit('sessionTree/SET_DRAG_MOVE', id)
                 // 清除移入到该会话目录 ID 内
@@ -270,7 +270,7 @@ export default {
             // 下 - 位于 1/3 以下，视为将元素移动到经过目标的上方
             if (layerY >= clientHeight * (2/3)) {
                 // 拖到被拖动元素上一位的下方，不做响应
-                if (this.index !== this.group.length - 1 && selected === this.group[this.index + 1].id) return
+                if (this.index !== this.group.length - 1 && selected.includes(this.group[this.index + 1].id)) return
                 // 拖到目录类型项目的下方不做响应，视为移动至目录内
                 if (type === 'dir') return
                 // 若经过项目不为当前会话所在目录的最后一位，则更新移动到下一个会话项目 ID 前

@@ -2,7 +2,7 @@ import tools from 'src/utils'
 import { uid } from 'quasar'
 
 export function SET_SELECTED(state, id) {
-    state.selected = id
+    state.selected.push(id)
 }
 
 export function SET_OPEN_MENU(state, id) {

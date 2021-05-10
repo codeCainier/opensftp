@@ -32,8 +32,31 @@ function aesEncode(str, algorithm = 'aes-192-cbc', key= 'APP_AES_192_CBC_KEY____
  */
 function aesDecode(str, algorithm = 'aes-192-cbc', key = 'APP_AES_192_CBC_KEY_____', iv = 'APP_AES_IV______') {
     const cipher = crypto.createDecipheriv(algorithm, key, iv)
-    cipher.update(str, 'hex', 'utf8')
-    return cipher.final('utf8')
+    let decrypted = cipher.update(str, 'hex', 'utf8')
+    decrypted += cipher.final('utf8')
+    return decrypted
+}
+
+/**
+ * Base64 加密
+ * @method
+ * @param       {String}    str         加密前字符串
+ * @return      {String}                加密后字符串
+ */
+function base64Encode(str) {
+    const buff = Buffer.from(str, 'utf-8')
+    return buff.toString('base64')
+}
+
+/**
+ * Base64 解密
+ * @method
+ * @param       {String}    str         解密前字符串
+ * @return      {String}                解密后字符串
+ */
+function base64Decode(str) {
+    const buff = Buffer.from(str, 'base64')
+    return buff.toString('utf-8')
 }
 
 /**
@@ -171,6 +194,8 @@ export default {
     add0,
     aesEncode,
     aesDecode,
+    base64Encode,
+    base64Decode,
     formatFlow,
     formatDate,
     formatTime,

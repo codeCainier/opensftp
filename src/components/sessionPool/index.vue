@@ -58,6 +58,7 @@
         <session-poster ref="session-poster"/>
         <!-- 会话详情 -->
         <session-detail ref="session-detail" :key="sessionDetailKey" @close="refreshSessionDetail"/>
+        <!-- 模块背景 -->
         <div class="module-background" :style="moduleBg()"></div>
     </div>
 </template>

@@ -4,7 +4,7 @@ const state = {
     dragMove: null,
     dragInto: null,
     openMenu: null,
-    selected: null,
+    selected: [],
     showPoster: null,
     showDetail: null,
 }
