@@ -3,8 +3,11 @@ const state = {
     loading: null,
     dragMove: null,
     dragInto: null,
+    dragList: {},
     openMenu: null,
-    selected: [],
+    selected: {},
+    selectedCache: {},
+    stopBlur: false,
     showPoster: null,
     showDetail: null,
 }

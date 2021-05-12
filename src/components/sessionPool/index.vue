@@ -42,7 +42,10 @@
             </div>
         </div>
         <!-- 会话池列表 -->
-        <div class="full-height scroll q-pa-sm" @contextmenu="showMenu">
+        <div class="session-list full-height scroll q-pa-sm"
+             tabindex="-1"
+             @contextmenu="showMenu"
+             @keydown.meta.a="selectAll">
             <!-- 过滤结果列表 -->
             <div v-if="showSearch">
                 <session-node v-for="(item, index) in sessionFilter"
@@ -192,6 +195,28 @@ export default {
                 }
             }
         },
+        // 全选节点
+        selectAll() {
+            // 未开启筛选时，进行的全选操作
+            if (!this.showSearch) {
+                const { selected } = this.$store.state.sessionTree
+                const { pool } = this.$store.state.session
+                // 若节点树中没有节点，则无法进行全选
+                if (!pool.length) return
+                // 若当前无选中的节点，则默认会话树中第一个节点作为选中 Focus 节点
+                if (!Object.keys(selected).length) {
+                    const treeNode = this.$refs['session-tree'].$refs['tree-node'][0]
+                    const nodeId   = treeNode.item.id
+                    this.$store.commit('sessionTree/SET_SELECTED', { [nodeId]: treeNode.item })
+                    treeNode.$refs[`tree-item-${nodeId}`].focus()
+                }
+                this.$store.commit('sessionTree/SET_SELECTED', this.$store.getters['session/sessionNodeList']())
+            }
+            // 开启筛选时，进行的全选操作
+            if (this.showSearch) {
+
+            }
+        },
     },
     created() {
         this.searchSession = debounce(this.searchSession, 300)
@@ -258,4 +283,6 @@ export default {
             width: 30px
             height: 30px
             margin-left: 5px
+    .session-list
+        outline: none
 </style>

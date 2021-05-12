@@ -189,6 +189,15 @@ function getUrlParams(url, name) {
         : unescape(r[2]);
 }
 
+/**
+ * 睡眠指定时长
+ * @method
+ * @param       {Number}    time    睡眠时间
+ */
+async function sleep(time) {
+    return new Promise(resolve => setTimeout(() => resolve(), time))
+}
+
 export default {
     clone,
     add0,
@@ -200,4 +209,5 @@ export default {
     formatDate,
     formatTime,
     getUrlParams,
+    sleep,
 }

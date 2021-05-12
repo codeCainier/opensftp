@@ -10,17 +10,25 @@
              draggable="true"
              :ref="'tree-item-' + item.id"
              :class="{
-                 'focus-temp'  : sessionTree.renameItem.id === item.id || sessionTree.openMenu === item.id,
-                 'drag-enter'  : item.type === 'dir' && sessionTree.dragInto === item.id,
+                 'active'     : item.id in $store.state.sessionTree.selected,
+                 'rename'     : $store.state.sessionTree.renameItem.id === item.id,
+                 'drag-item'  : item.id in $store.state.sessionTree.dragList,
+                 'drag-enter' : item.type === 'dir' && sessionTree.dragInto === item.id,
              }"
-             @click               = "handleItemFocus"
-             @click.right         = "handleShowMenu"
+             @focus               = "handleFocus"
+             @blur                = "handleBlur"
+             @mousedown.meta      = "handleMultipleSelectMeta"
+             @mousedown.right     = "handleBeforeShowMenu"
+             @mousedown.left      = "handleBeforeClick"
+             @mouseup.left        = "handleAfterClick"
+             @click               = "handleClick"
+             @contextmenu         = "handleShowMenu"
              @dblclick            = "handleDoubleClick"
              @dragstart           = "handleDragStart"
              @dragover.prevent    = "handleDragOver"
              @drop                = "handleDrop"
              @dragleave           = "handleDragCancel"
-             @dragend             = "handleDragCancel"
+             @dragend             = "handleDragEnd"
              @keydown.enter       = "handleDoubleClick"
              @keydown.space       = "handleShowPoster"
              @keydown.f2          = "handleRenameOpen"
@@ -106,17 +114,21 @@ export default {
     computed: {
         isDragItemChild() {
             return id => {
-                const { dragItem } = this.$store.state.sessionTree
-                if (dragItem.type === 'session') return false
-                let isChild = false
-                const recursionCheck = group => {
-                    for (const item of group) {
-                        if (item.id === id) return isChild = true
-                        if (item.type === 'dir') recursionCheck(item.children)
+                const { dragList } = this.$store.state.sessionTree
+
+                for (const dragItemId in dragList) {
+                    const dragItem = dragList[dragItemId]
+                    if (dragItem.type === 'session') return false
+                    let isChild = false
+                    const recursionCheck = group => {
+                        for (const item of group) {
+                            if (item.id === id) return isChild = true
+                            if (item.type === 'dir') recursionCheck(item.children)
+                        }
                     }
+                    recursionCheck(dragItem.children)
+                    return isChild
                 }
-                recursionCheck(dragItem.children)
-                return isChild
             }
         },
     },
@@ -128,10 +140,6 @@ export default {
          */
         handleShowMenu() {
             const { id, type, name } = this.item
-            // 更新当前选择会话
-            this.$store.commit('sessionTree/SET_SELECTED', id)
-            // 更新开启了右键菜单的项目
-            this.$store.commit('sessionTree/SET_OPEN_MENU', id)
 
             const { remote } = this.$q.electron
             const menu = new remote.Menu()
@@ -183,24 +191,61 @@ export default {
             }))
 
             menu.popup({
-                callback: () => this.handleItemFocus(),
+                callback: () => {
+                    this.$store.commit('sessionTree/STOP_BLUR', false)
+                    this.$refs[`tree-item-${id}`].focus()
+                }
             })
         },
         /**
-         * 选择节点
+         * 显示右键菜单前
          */
-        handleItemFocus() {
+        handleBeforeShowMenu() {
             const { id } = this.item
-            this.$store.commit('sessionTree/SET_SELECTED', id)
-            // 清除开启右键菜单的项目
-            this.$store.commit('sessionTree/SET_OPEN_MENU', null)
-            // dom 更新后对选中项目执行 focus 操作
-            this.$nextTick(() => {
-                try {
-                    this.$refs[`tree-item-${id}`].focus()
-                } catch (error) {
-                }
-            })
+            const selected = id in this.$store.state.sessionTree.selected
+            // 更新当前选择会话
+            if (!selected) this.$store.commit('sessionTree/SET_SELECTED', { [id]: this.item })
+            // 开启暂停失焦
+            this.$store.commit('sessionTree/STOP_BLUR', true)
+        },
+        /**
+         * 点击节点前
+         */
+        handleBeforeClick() {
+            // 将已选择节点进行缓存
+            this.$store.commit('sessionTree/SET_SELECTED_CACHE', this.$store.state.sessionTree.selected)
+            // 若未开启暂停失焦，则代表为正常左键点击，被点击元素成为焦点
+            if (!this.$store.state.sessionTree.stopBlur) {
+                this.$store.commit('sessionTree/SET_SELECTED', { [this.item.id]: this.item })
+            }
+            // 暂停失焦
+            this.$store.commit('sessionTree/STOP_BLUR', true)
+        },
+        /**
+         * 点击节点后
+         */
+        handleAfterClick() {
+            // 关闭暂停失焦
+            this.$store.commit('sessionTree/STOP_BLUR', false)
+        },
+        /**
+         * 点击节点
+         */
+        handleClick() {
+
+        },
+        /**
+         * 节点聚焦
+         */
+        handleFocus() {
+        },
+        /**
+         * 节点失焦
+         */
+        handleBlur() {
+            // 若失焦为暂停状态
+            if (this.$store.state.sessionTree.stopBlur) return
+            this.$store.commit('sessionTree/SET_UNSELECTED_ALL')
         },
         /**
          * 双击节点
@@ -237,9 +282,7 @@ export default {
          */
         handleDragStart(event) {
             const { id } = this.item
-            this.$store.commit('sessionTree/SET_DRAG_ITEM', this.item)
-            // 更新选择项目
-            this.$store.commit('sessionTree/SET_SELECTED', id)
+            this.$store.commit('sessionTree/SET_DRAG_LIST', this.$store.state.sessionTree.selectedCache)
             // 拖动事件对象设置 Ghost 图像，内容为拖动对象 dom，x y 轴不进行偏移
             event.dataTransfer.setDragImage(this.$refs[`tree-item-${id}`],0,0)
         },
@@ -251,7 +294,7 @@ export default {
             const { id, type } = this.item
             const { selected } = this.$store.state.sessionTree
             // 不允许拖动到自身
-            if (selected.includes(id)) return
+            if (id in selected) return
             // 目录不允许拖动到自身子级内
             if (this.isDragItemChild(id)) return
             // 获取鼠标位于拖动经过项目的 Y 轴坐标
@@ -260,7 +303,7 @@ export default {
             const { clientHeight } = this.$refs[`tree-item-${id}`]
             // 上 - 位于 1/3 以上，视为将元素移动到经过目标的上方
             if (layerY <= clientHeight * (1/3)) {
-                if (this.index !== 0 && selected.includes(this.group[this.index - 1].id)) return
+                if (this.index !== 0 && this.group[this.index - 1].id in selected) return
                 // 更新移动到该会话项目 ID 前
                 this.$store.commit('sessionTree/SET_DRAG_MOVE', id)
                 // 清除移入到该会话目录 ID 内
@@ -270,7 +313,7 @@ export default {
             // 下 - 位于 1/3 以下，视为将元素移动到经过目标的上方
             if (layerY >= clientHeight * (2/3)) {
                 // 拖到被拖动元素上一位的下方，不做响应
-                if (this.index !== this.group.length - 1 && selected.includes(this.group[this.index + 1].id)) return
+                if (this.index !== this.group.length - 1 && this.group[this.index + 1].id in selected) return
                 // 拖到目录类型项目的下方不做响应，视为移动至目录内
                 if (type === 'dir') return
                 // 若经过项目不为当前会话所在目录的最后一位，则更新移动到下一个会话项目 ID 前
@@ -300,11 +343,23 @@ export default {
             this.$store.commit('sessionTree/SET_DRAG_INTO', null)
         },
         /**
+         * 取消结束
+         */
+        handleDragEnd() {
+            this.handleDragCancel()
+            // 清除已选择节点的缓存
+            this.$store.commit('sessionTree/SET_SELECTED_CACHE', null)
+            // 清除拖动项目
+            this.$store.commit('sessionTree/SET_DRAG_LIST', null)
+            // 关闭暂停失焦
+            this.$store.commit('sessionTree/STOP_BLUR', false)
+        },
+        /**
          * 拖动完成
          * @param   {Object}    event   拖动完成事件对象
          */
         handleDrop(event) {
-            const { dragInto, dragMove, dragItem } = this.$store.state.sessionTree
+            const { dragInto, dragMove, dragList } = this.$store.state.sessionTree
             let action
             // 若为被阻止的行为
             if (!dragInto && !dragMove) return
@@ -313,11 +368,15 @@ export default {
             // 若为移动事件
             if (dragMove) action = 'move'
             // 通过 vuex 移动元素
-            this.$store.commit('session/MOVE', {
-                action,
-                target: dragItem.id,
-                position: dragMove || dragInto,
-            })
+            for (const target in dragList) {
+                this.$store.commit('session/MOVE', {
+                    action,
+                    target,
+                    position: dragMove || dragInto,
+                })
+            }
+            // 清除拖动项目
+            this.$store.commit('sessionTree/SET_DRAG_LIST', null)
         },
         /**
          * 显示节点卡片
@@ -342,7 +401,7 @@ export default {
                 updateItem: { name },
             })
             this.$store.commit('sessionTree/RENAME_CLOSE')
-            this.handleItemFocus()
+            this.$refs[`tree-item-${id}`].focus()
         },
         /**
          * 重命名取消
@@ -384,6 +443,18 @@ export default {
         handleMoveFocus(action) {
             console.log('move focus ' + action)
         },
+        /**
+         * 多选
+         */
+        handleMultipleSelectMeta() {
+            const { id } = this.item
+            const action = id in this.$store.state.sessionTree.selected ? 'remove' : 'add'
+
+            this.$store.commit('sessionTree/STOP_BLUR', true)
+
+            if (action === 'remove') this.$store.commit('sessionTree/SET_SELECTED_REMOVE', id)
+            if (action === 'add')    this.$store.commit('sessionTree/SET_SELECTED_ADD', { [id]: this.item })
+        },
     },
 }
 </script>
@@ -418,7 +489,7 @@ export default {
     display: flex
     flex-direction: row
     border-radius: 4px
-    transition: all .3s
+    transition: transform .3s
     &::before,&::after
         content: ''
         position: absolute
@@ -435,12 +506,15 @@ export default {
         transform: scale(.5)
     &:hover
         background: rgba($primary, .3)
-    &:focus,&.focus-temp
+    &.active,&.rename
         background: $primary
         color: #FFFFFF
-        .session-icon
+        .session-icon,.session-site
             color: #FFFFFF
-        .session-site
+    &.drag-item
+        background: #888888
+        color: #FFFFFF
+        .session-icon,.session-site
             color: #FFFFFF
     &.drag-enter
         background: rgba($primary, .3)

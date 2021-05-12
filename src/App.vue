@@ -5,10 +5,16 @@
 </template>
 
 <script>
+    import {LocalStorage} from "quasar";
+
     export default {
         name: 'App',
         beforeCreate() {
             this.$router.push({ path: '/' })
+        },
+        mounted() {
+            // const cache = LocalStorage.getItem('sessionPool')
+            // console.log(JSON.stringify(cache));
         },
     }
 </script>

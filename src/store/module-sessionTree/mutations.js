@@ -1,8 +1,33 @@
 import tools from 'src/utils'
 import { uid } from 'quasar'
 
-export function SET_SELECTED(state, id) {
-    state.selected.push(id)
+export function STOP_BLUR(state, action) {
+    state.stopBlur = action
+}
+
+export function SET_SELECTED(state, selected) {
+    state.selected = tools.clone(selected)
+}
+
+export function SET_SELECTED_ADD(state, selected) {
+    state.selected = {
+        ...state.selected,
+        ...selected,
+    }
+}
+
+export function SET_SELECTED_REMOVE(state, id) {
+    const selected = tools.clone(state.selected)
+    delete selected[id]
+    state.selected = selected
+}
+
+export function SET_SELECTED_CACHE(state, selected) {
+    state.selectedCache = selected ? tools.clone(selected) : {}
+}
+
+export function SET_UNSELECTED_ALL(state) {
+    state.selected = {}
 }
 
 export function SET_OPEN_MENU(state, id) {
@@ -13,8 +38,8 @@ export function SET_LOADING(state, id) {
     state.loading = id
 }
 
-export function SET_DRAG_ITEM(state, item) {
-    state.dragItem = item
+export function SET_DRAG_LIST(state, selected) {
+    state.dragList = selected ? tools.clone(selected) : {}
 }
 
 export function SET_DRAG_MOVE(state, id) {

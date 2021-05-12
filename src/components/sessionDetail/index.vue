@@ -200,7 +200,8 @@ export default {
             const sessionInfo = this.$store.getters['session/sessionInfo']({ id })
             this.confirm(`会话创建成功，是否连接 ${sessionInfo.name}？`)
                 .then(() => {
-                    this.$store.commit('sessionTree/SET_SELECTED', id)
+                    // FIXME: item value
+                    // this.$store.commit('sessionTree/SET_SELECTED', { [id]: true })
                     this.$store.commit('sessionTree/SET_LOADING', id)
                     this.$store.dispatch('session/LOGIN', sessionInfo)
                         .then(() => this.$router.push({ path: '/session' }))
