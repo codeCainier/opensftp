@@ -69,14 +69,29 @@ export function sessionFilter (state) {
 
 export function sessionNodeList (state) {
     return () => {
-        const list = []
+        const list = {}
         function recursionRead(group) {
             group.forEach(item => {
-                list.push({ [item.id]: item })
+                list[item.id] = item
                 if (item.type === 'dir') recursionRead(item.children)
             })
         }
         recursionRead(state.pool)
         return list
+    }
+}
+
+export function sessionItem (state) {
+    return id => {
+        let sessionInfo
+        function recursionFind(group) {
+            for (let index = 0; index < group.length; index += 1) {
+                const item = group[index]
+                if (item.id === id) return sessionInfo = item
+                if (item.type === 'dir') recursionFind(item.children)
+            }
+        }
+        recursionFind(state.pool)
+        return sessionInfo
     }
 }

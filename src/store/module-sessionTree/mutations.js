@@ -22,10 +22,6 @@ export function SET_SELECTED_REMOVE(state, id) {
     state.selected = selected
 }
 
-export function SET_SELECTED_CACHE(state, selected) {
-    state.selectedCache = selected ? tools.clone(selected) : {}
-}
-
 export function SET_UNSELECTED_ALL(state) {
     state.selected = {}
 }

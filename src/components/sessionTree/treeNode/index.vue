@@ -15,6 +15,7 @@
                  'drag-item'  : item.id in $store.state.sessionTree.dragList,
                  'drag-enter' : item.type === 'dir' && sessionTree.dragInto === item.id,
              }"
+             :data-node-id        = "item.id"
              @focus               = "handleFocus"
              @blur                = "handleBlur"
              @mousedown.meta      = "handleMultipleSelectMeta"
@@ -212,19 +213,26 @@ export default {
          * 点击节点前
          */
         handleBeforeClick() {
-            // 将已选择节点进行缓存
-            this.$store.commit('sessionTree/SET_SELECTED_CACHE', this.$store.state.sessionTree.selected)
-            // 若未开启暂停失焦，则代表为正常左键点击，被点击元素成为焦点
-            if (!this.$store.state.sessionTree.stopBlur) {
-                this.$store.commit('sessionTree/SET_SELECTED', { [this.item.id]: this.item })
+            const { selected } = this.$store.state.sessionTree
+
+            // 若未开启暂停失焦，且拖动列表存在项目
+            if (!this.$store.state.sessionTree.stopBlur && Object.keys(selected).length > 1) {
+                this.$store.commit('sessionTree/STOP_BLUR', true)
+                setTimeout(() => {
+                   if (!Object.keys(this.$store.state.sessionTree.dragList).length) {
+                       this.handleAfterClick()
+                   }
+                }, 100)
             }
-            // 暂停失焦
-            this.$store.commit('sessionTree/STOP_BLUR', true)
         },
         /**
          * 点击节点后
          */
         handleAfterClick() {
+            // 若未开启暂停失焦，则代表为正常左键点击，被点击元素成为焦点
+            if (!this.$store.state.sessionTree.stopBlur) {
+                this.$store.commit('sessionTree/SET_SELECTED', { [this.item.id]: this.item })
+            }
             // 关闭暂停失焦
             this.$store.commit('sessionTree/STOP_BLUR', false)
         },
@@ -282,7 +290,11 @@ export default {
          */
         handleDragStart(event) {
             const { id } = this.item
-            this.$store.commit('sessionTree/SET_DRAG_LIST', this.$store.state.sessionTree.selectedCache)
+            const { selected } = this.$store.state.sessionTree
+
+            if (!selected[id]) this.$store.commit('sessionTree/SET_SELECTED', { [id]: this.item })
+
+            this.$store.commit('sessionTree/SET_DRAG_LIST', this.$store.state.sessionTree.selected)
             // 拖动事件对象设置 Ghost 图像，内容为拖动对象 dom，x y 轴不进行偏移
             event.dataTransfer.setDragImage(this.$refs[`tree-item-${id}`],0,0)
         },
@@ -347,8 +359,6 @@ export default {
          */
         handleDragEnd() {
             this.handleDragCancel()
-            // 清除已选择节点的缓存
-            this.$store.commit('sessionTree/SET_SELECTED_CACHE', null)
             // 清除拖动项目
             this.$store.commit('sessionTree/SET_DRAG_LIST', null)
             // 关闭暂停失焦
@@ -441,7 +451,7 @@ export default {
          * @param   {String}    action  移动方向
          */
         handleMoveFocus(action) {
-            console.log('move focus ' + action)
+            // console.log('move focus ' + action)
         },
         /**
          * 多选
@@ -450,6 +460,7 @@ export default {
             const { id } = this.item
             const action = id in this.$store.state.sessionTree.selected ? 'remove' : 'add'
 
+            // 暂停失焦
             this.$store.commit('sessionTree/STOP_BLUR', true)
 
             if (action === 'remove') this.$store.commit('sessionTree/SET_SELECTED_REMOVE', id)

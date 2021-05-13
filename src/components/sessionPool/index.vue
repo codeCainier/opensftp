@@ -45,7 +45,9 @@
         <div class="session-list full-height scroll q-pa-sm"
              tabindex="-1"
              @contextmenu="showMenu"
-             @keydown.meta.a="selectAll">
+             @keydown.meta.a="selectAll"
+             @keydown.up="moveFocus('up')"
+             @keydown.down="moveFocus('down')">
             <!-- 过滤结果列表 -->
             <div v-if="showSearch">
                 <session-node v-for="(item, index) in sessionFilter"
@@ -215,6 +217,32 @@ export default {
             // 开启筛选时，进行的全选操作
             if (this.showSearch) {
 
+            }
+        },
+        moveFocus(action) {
+            if (!this.showSearch) {
+                const { selected } = this.$store.state.sessionTree
+                const { pool } = this.$store.state.session
+                // 若节点树中没有节点，则无法进行全选
+                if (!pool.length) return
+                // 暂时不区分 down 与 up
+                // 若当前无选中的节点，则默认会话树中第一个节点作为选中 Focus 节点
+                if (!Object.keys(selected).length) {
+                    const nodeEl   = document.querySelector('.session-list [data-node-id]')
+                    const nodeId   = nodeEl.getAttribute('data-node-id')
+                    const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
+                    this.$store.commit('sessionTree/SET_SELECTED', { [nodeId]: nodeItem })
+                    nodeEl.focus()
+                    return
+                }
+                // 若方向为 up
+                if (action === 'up') {
+
+                }
+                // 若方向为 down
+                if (action === 'down') {
+
+                }
             }
         },
     },

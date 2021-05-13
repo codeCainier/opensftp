@@ -6,7 +6,6 @@ const state = {
     dragList: {},
     openMenu: null,
     selected: {},
-    selectedCache: {},
     stopBlur: false,
     showPoster: null,
     showDetail: null,
