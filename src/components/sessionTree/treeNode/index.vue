@@ -65,6 +65,7 @@
                        @keydown.stop.up=""
                        @keydown.stop.down=""
                        @keydown.stop.alt.r=""
+                       @keydown.stop.meta.a=""
                        @keydown.stop.enter="handleRenameFinish"
                        @compositionstart="preventKeydown = true"
                        @compositionend="preventKeydown = false">

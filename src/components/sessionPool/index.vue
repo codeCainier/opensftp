@@ -235,6 +235,7 @@ export default {
                     nodeEl.focus()
                     return
                 }
+                // TODO
                 // 若方向为 up
                 if (action === 'up') {
 
