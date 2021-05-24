@@ -141,63 +141,11 @@ export default {
          * 显示右键菜单
          */
         handleShowMenu() {
-            const { id, type, name } = this.item
-
-            const { remote } = this.$q.electron
-            const menu = new remote.Menu()
-
-            if (type === 'session') menu.append(new remote.MenuItem({
-                label: `连接会话 “${name}”`,
-                click: () => this.handleLogin(),
-            }))
-
-            if (type === 'dir') menu.append(new remote.MenuItem({
-                label: `在 “${name} 下新建”`,
-                submenu: [
-                    {
-                        label: '新建会话',
-                        click: () => {
-                            this.alert('功能开发中')
-                        },
-                    }, {
-                        label: '新建文件夹',
-                        click: () => {
-                            this.alert('功能开发中')
-                        },
-                    },
-                ],
-            }))
-
-            menu.append(new remote.MenuItem({ type: 'separator' }))
-
-            if (type === 'session') menu.append(new remote.MenuItem({
-                label: '编辑',
-                click: () => this.handleOpenDetail(),
-            }))
-
-            menu.append(new remote.MenuItem({
-                label: '重新命名',
-                click: () => this.handleRenameOpen(),
-            }))
-
-            menu.append(new remote.MenuItem({
-                label: '删除',
-                click: () => this.handleRemoveItem(),
-            }))
-
-            menu.append(new remote.MenuItem({ type: 'separator' }))
-
-            if (type === 'session') menu.append(new remote.MenuItem({
-                label: '卡片展示',
-                click: () => this.handleShowPoster(),
-            }))
-
-            menu.popup({
-                callback: () => {
-                    this.$store.commit('sessionTree/STOP_BLUR', false)
-                    this.$refs[`tree-item-${id}`].focus()
-                }
-            })
+            const selectedNum = Object.keys(this.$store.state.sessionTree.selected).length
+            // 单选时显示右键菜单
+            if (selectedNum === 1) this.createContextMenuSingle()
+            // 多选时显示右键菜单
+            if (selectedNum > 1) this.createContextMenuMultiple()
         },
         /**
          * 显示右键菜单前
@@ -466,6 +414,99 @@ export default {
 
             if (action === 'remove') this.$store.commit('sessionTree/SET_SELECTED_REMOVE', id)
             if (action === 'add')    this.$store.commit('sessionTree/SET_SELECTED_ADD', { [id]: this.item })
+        },
+        /**
+         * 创建右键菜单（单选）
+         */
+        createContextMenuSingle() {
+            const { id, type, name } = this.item
+            const { remote } = this.$q.electron
+            const menu = new remote.Menu()
+
+            if (type === 'session') menu.append(new remote.MenuItem({
+                label: `连接会话 “${name}”`,
+                click: () => this.handleLogin(),
+            }))
+
+            if (type === 'dir') menu.append(new remote.MenuItem({
+                label: `在 “${name} 下新建”`,
+                submenu: [
+                    {
+                        label: '新建会话',
+                        click: () => {
+                            this.alert('功能开发中')
+                        },
+                    }, {
+                        label: '新建文件夹',
+                        click: () => {
+                            this.alert('功能开发中')
+                        },
+                    },
+                ],
+            }))
+
+            menu.append(new remote.MenuItem({ type: 'separator' }))
+
+            if (type === 'session') menu.append(new remote.MenuItem({
+                label: '编辑',
+                click: () => this.handleOpenDetail(),
+            }))
+
+            menu.append(new remote.MenuItem({
+                label: '重新命名',
+                click: () => this.handleRenameOpen(),
+            }))
+
+            menu.append(new remote.MenuItem({
+                label: '删除',
+                click: () => this.handleRemoveItem(),
+            }))
+
+            menu.append(new remote.MenuItem({ type: 'separator' }))
+
+            if (type === 'session') menu.append(new remote.MenuItem({
+                label: '卡片展示',
+                click: () => this.handleShowPoster(),
+            }))
+
+            menu.popup({
+                callback: () => {
+                    this.$store.commit('sessionTree/STOP_BLUR', false)
+                    this.$refs[`tree-item-${id}`].focus()
+                }
+            })
+        },
+        /**
+         * 创建右键菜单（多选）
+         */
+        createContextMenuMultiple() {
+            const { id } = this.item
+            const { remote } = this.$q.electron
+            const menu = new remote.Menu()
+            const selectedItems = this.$store.state.sessionTree.selected
+            const selectedNum = Object.keys(selectedItems).length
+
+            menu.append(new remote.MenuItem({
+                label: `删除 (${selectedNum} 个项目)`,
+                click: () => {
+                    this.confirm({
+                        message: `确定要删除${selectedNum}个项目吗？`,
+                        detail: '文件夹下的会话将全部删除！',
+                    })
+                        .then(() => {
+                            Object.keys(selectedItems).forEach(id => {
+                                this.$store.commit('session/DELETE', id)
+                            })
+                        })
+                },
+            }))
+
+            menu.popup({
+                callback: () => {
+                    this.$store.commit('sessionTree/STOP_BLUR', false)
+                    this.$refs[`tree-item-${id}`].focus()
+                }
+            })
         },
     },
 }
