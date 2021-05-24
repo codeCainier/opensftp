@@ -192,7 +192,10 @@ export default {
     },
     watch: {
         pwd(newVal) {
-            this.pwdInput = newVal
+            // 匹配以 :\ 结尾的字符串
+            const reg=/:\\$/;
+            if (newVal !== '/') this.pwdInput = newVal
+            if (newVal.match(reg)) this.pwd = '/'
             this.$emit('update-pwd', newVal)
         },
         dragEnterItem(newVal) {
@@ -262,8 +265,8 @@ export default {
         getFileList(dirname, pathName, focusFile) {
             this.loading = true
 
+            if (this.pwd === '/') this.pwd = this.pwdInput
             const cwd = pathName || path.join(this.pwd, dirname)
-
             this.connect.listLocal(cwd)
                 .then(async list => {
                     // 更新最后访问目录

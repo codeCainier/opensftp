@@ -333,27 +333,44 @@ class Connect {
 
         for (const filename of fileList) {
             // FIXME: stat / lstat / fstat
-            const stats = fs.lstatSync(path.join(cwd, filename))
+            try {
+                const stats = fs.lstatSync(path.join(cwd, filename))
+                let type = ''
 
-            let type = ''
+                if (stats.isFile())            type = '-'
+                if (stats.isDirectory())       type = 'd'
+                if (stats.isSymbolicLink())    type = 'l'
+                if (stats.isFIFO())            type = 'p'
+                if (stats.isBlockDevice())     type = 'b'
+                if (stats.isCharacterDevice()) type = 'c'
+                if (stats.isSocket())          type = 's'
 
-            if (stats.isFile())            type = '-'
-            if (stats.isDirectory())       type = 'd'
-            if (stats.isSymbolicLink())    type = 'l'
-            if (stats.isFIFO())            type = 'p'
-            if (stats.isBlockDevice())     type = 'b'
-            if (stats.isCharacterDevice()) type = 'c'
-            if (stats.isSocket())          type = 's'
-
-            list.push({
-                name: filename,
-                type,
-                date: stats.mtime.getTime(),
-                fileNum: stats.nlink,
-                owner: stats.uid,
-                group: stats.gid,
-                size: stats.size,
-            })
+                list.push({
+                    name: filename,
+                    type,
+                    date: stats.mtime.getTime(),
+                    fileNum: stats.nlink,
+                    owner: stats.uid,
+                    group: stats.gid,
+                    size: stats.size,
+                })
+            } catch (e) {
+                list.push({
+                    name: filename,
+                    // FIXME: temp
+                    type: '-',
+                    // FIXME: temp
+                    date: '-',
+                    // FIXME: temp
+                    fileNum: 0,
+                    // FIXME: temp
+                    owner: '-',
+                    // FIXME: temp
+                    group: '-',
+                    // FIXME: temp
+                    size: 0,
+                })
+            }
         }
 
         return list
