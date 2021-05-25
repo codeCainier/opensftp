@@ -154,7 +154,6 @@ export default {
          * 多选
          */
         handleClickMeta() {
-            console.log('meta click');
             this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
         },
         /**
@@ -364,7 +363,32 @@ export default {
          * @param   {String}    action  移动方向
          */
         handleMoveFocus(action) {
-            // console.log('move focus ' + action)
+            console.log('move focus ' + action)
+            const nodeList = [...document.querySelectorAll('.session-list [data-node-id]')]
+            // 遍历所有节点
+            for (let index = 0; index < nodeList.length; index += 1) {
+                const nodeEl = nodeList[index]
+                const nodeId = nodeEl.getAttribute('data-node-id')
+                if (nodeId === this.item.id) {
+                    if (action === 'up') {
+                        if (index === 0) return
+                        const prevNodeEl   = nodeList[index - 1]
+                        const prevNodeId   = prevNodeEl.getAttribute('data-node-id')
+                        const prevNodeItem = this.$store.getters['session/sessionItem'](prevNodeId)
+                        this.$store.commit('sessionTree/SET_NODE_SELECTED', prevNodeItem)
+                        prevNodeEl.focus()
+                    }
+                    if (action === 'down') {
+                        if (index === nodeList.length - 1) return
+                        const nextNodeEl   = nodeList[index + 1]
+                        const nextNodeId   = nextNodeEl.getAttribute('data-node-id')
+                        const nextNodeItem = this.$store.getters['session/sessionItem'](nextNodeId)
+                        this.$store.commit('sessionTree/SET_NODE_SELECTED', nextNodeItem)
+                        nextNodeEl.focus()
+                    }
+                    return
+                }
+            }
         },
         /**
          * 创建右键菜单（单选）
