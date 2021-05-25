@@ -1,33 +1,25 @@
 import tools from 'src/utils'
 import { uid } from 'quasar'
 
-export function STOP_BLUR(state, action) {
-    state.stopBlur = action
-}
-
-export function SET_SELECTED(state, selected) {
-    state.selected = tools.clone(selected)
-}
-
-export function SET_SELECTED_ADD(state, selected) {
-    state.selected = {
-        ...state.selected,
-        ...selected,
+export function SET_NODE_SELECTED(state, item) {
+    state.focusNode = item
+    state.selectedNode = {
+        [item.id]: item,
     }
 }
 
-export function SET_SELECTED_REMOVE(state, id) {
-    const selected = tools.clone(state.selected)
-    delete selected[id]
-    state.selected = selected
+export function SET_NODE_SELECTED_ADD(state, item) {
+    state.focusNode = item
+    state.selectedNode = {
+        ...state.selectedNode,
+        ...{
+            [item.id]: item,
+        }
+    }
 }
 
-export function SET_UNSELECTED_ALL(state) {
-    state.selected = {}
-}
-
-export function SET_OPEN_MENU(state, id) {
-    state.openMenu = id
+export function SET_NODE_SELECTED_ALL(state, nodes) {
+    state.selectedNode = tools.clone(nodes)
 }
 
 export function SET_LOADING(state, id) {

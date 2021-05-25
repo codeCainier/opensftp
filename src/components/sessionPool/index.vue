@@ -1,7 +1,7 @@
 <template>
     <div class="session-pool full-height relative-position">
         <!-- 会话池控制中心 -->
-        <div class="pool-control q-ma-sm q-mt-md">
+        <div class="pool-control q-ma-sm q-mt-md" @click="selectedCancel">
             <div class="row">
                 <div class="session-num" :class="{ active: !showSearch }">
                     <span class="text-h6 text-weight-light q-mx-xs">{{ $store.getters["session/sessionNodeNum"]() }}</span>
@@ -44,10 +44,11 @@
         <!-- 会话池列表 -->
         <div class="session-list full-height scroll q-pa-sm"
              tabindex="-1"
-             @contextmenu="showMenu"
-             @keydown.meta.a="selectAll"
-             @keydown.up="moveFocus('up')"
-             @keydown.down="moveFocus('down')">
+             @focus          = "selectedCancel"
+             @contextmenu    = "showMenu"
+             @keydown.meta.a = "selectAll"
+             @keydown.up     = "moveFocus('up')"
+             @keydown.down   = "moveFocus('down')">
             <!-- 过滤结果列表 -->
             <div v-if="showSearch">
                 <session-node v-for="(item, index) in sessionFilter"
@@ -201,37 +202,42 @@ export default {
         selectAll() {
             // 未开启筛选时，进行的全选操作
             if (!this.showSearch) {
-                const { selected } = this.$store.state.sessionTree
                 const { pool } = this.$store.state.session
+                const selectedNum = this.$store.getters['sessionTree/selectedNodeNum']()
                 // 若节点树中没有节点，则无法进行全选
                 if (!pool.length) return
                 // 若当前无选中的节点，则默认会话树中第一个节点作为选中 Focus 节点
-                if (!Object.keys(selected).length) {
-                    const treeNode = this.$refs['session-tree'].$refs['tree-node'][0]
-                    const nodeId   = treeNode.item.id
-                    this.$store.commit('sessionTree/SET_SELECTED', { [nodeId]: treeNode.item })
-                    treeNode.$refs[`tree-item-${nodeId}`].focus()
+                if (!selectedNum) {
+                    const nodeEl   = document.querySelector('.session-list [data-node-id]')
+                    const nodeId   = nodeEl.getAttribute('data-node-id')
+                    const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
+                    this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
+                    nodeEl.focus()
                 }
-                this.$store.commit('sessionTree/SET_SELECTED', this.$store.getters['session/sessionNodeList']())
+                this.$store.commit('sessionTree/SET_NODE_SELECTED_ALL', this.$store.getters['session/sessionNodeList']())
             }
             // 开启筛选时，进行的全选操作
             if (this.showSearch) {
 
             }
         },
+        // 取消选择
+        selectedCancel() {
+            this.$store.commit('sessionTree/SET_NODE_SELECTED_ALL', {})
+        },
         moveFocus(action) {
             if (!this.showSearch) {
-                const { selected } = this.$store.state.sessionTree
                 const { pool } = this.$store.state.session
+                const selectedNum = this.$store.getters['sessionTree/selectedNodeNum']()
                 // 若节点树中没有节点，则无法进行全选
                 if (!pool.length) return
                 // 暂时不区分 down 与 up
                 // 若当前无选中的节点，则默认会话树中第一个节点作为选中 Focus 节点
-                if (!Object.keys(selected).length) {
+                if (!selectedNum) {
                     const nodeEl   = document.querySelector('.session-list [data-node-id]')
                     const nodeId   = nodeEl.getAttribute('data-node-id')
                     const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
-                    this.$store.commit('sessionTree/SET_SELECTED', { [nodeId]: nodeItem })
+                    this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
                     nodeEl.focus()
                     return
                 }
