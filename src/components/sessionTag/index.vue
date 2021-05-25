@@ -94,6 +94,7 @@
         },
         methods: {
             closeTag(id) {
+                if(this.$store.state.session.conn.length === 1) this.$router.push({ path: '/' })
                 this.$store.dispatch('session/EXIT', id)
             },
             changeTag(item) {
