@@ -252,6 +252,7 @@ export default {
                     const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
                     this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
                     nodeEl.focus()
+                    // FIXME: 跳过目录子级
                 }
             }
         },

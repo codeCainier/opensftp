@@ -1,7 +1,7 @@
 import { LocalStorage, uid } from 'quasar'
 import tools from 'src/utils'
 import electron from 'electron'
-import path from "path";
+import path from 'path'
 
 /**
  * 创建会话
