@@ -192,7 +192,6 @@ export default {
     },
     watch: {
         pwd(newVal) {
-            console.log(newVal)
             // 匹配以 :\ 结尾的字符串
             const reg=/:\\$/;
             if (newVal !== '/') this.pwdInput = newVal
