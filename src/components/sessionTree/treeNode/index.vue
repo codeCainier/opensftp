@@ -10,7 +10,7 @@
              draggable="true"
              :ref="'tree-item-' + item.id"
              :class="{
-                 'active'     : item.id in $store.state.sessionTree.selected,
+                 'active'     : item.id in $store.state.sessionTree.selectedNode,
                  'rename'     : $store.state.sessionTree.renameItem.id === item.id,
                  'drag-item'  : item.id in $store.state.sessionTree.dragList,
                  'drag-enter' : item.type === 'dir' && sessionTree.dragInto === item.id,
@@ -18,11 +18,8 @@
              :data-node-id        = "item.id"
              @focus               = "handleFocus"
              @blur                = "handleBlur"
-             @mousedown.meta      = "handleMultipleSelectMeta"
-             @mousedown.right     = "handleBeforeShowMenu"
-             @mousedown.left      = "handleBeforeClick"
-             @mouseup.left        = "handleAfterClick"
-             @click               = "handleClick"
+             @click.exact         = "handleClick"
+             @click.meta          = "handleClickMeta"
              @contextmenu         = "handleShowMenu"
              @dblclick            = "handleDoubleClick"
              @dragstart           = "handleDragStart"
@@ -141,55 +138,24 @@ export default {
          * 显示右键菜单
          */
         handleShowMenu() {
-            const selectedNum = Object.keys(this.$store.state.sessionTree.selected).length
-            // 单选时显示右键菜单
-            if (selectedNum === 1) this.createContextMenuSingle()
+            const selectedNum = this.$store.getters['sessionTree/selectedNodeNum']()
             // 多选时显示右键菜单
-            if (selectedNum > 1) this.createContextMenuMultiple()
-        },
-        /**
-         * 显示右键菜单前
-         */
-        handleBeforeShowMenu() {
-            const { id } = this.item
-            const selected = id in this.$store.state.sessionTree.selected
-            // 更新当前选择会话
-            if (!selected) this.$store.commit('sessionTree/SET_SELECTED', { [id]: this.item })
-            // 开启暂停失焦
-            this.$store.commit('sessionTree/STOP_BLUR', true)
-        },
-        /**
-         * 点击节点前
-         */
-        handleBeforeClick() {
-            const { selected } = this.$store.state.sessionTree
-
-            // 若未开启暂停失焦，且拖动列表存在项目
-            if (!this.$store.state.sessionTree.stopBlur && Object.keys(selected).length > 1) {
-                this.$store.commit('sessionTree/STOP_BLUR', true)
-                setTimeout(() => {
-                   if (!Object.keys(this.$store.state.sessionTree.dragList).length) {
-                       this.handleAfterClick()
-                   }
-                }, 100)
-            }
-        },
-        /**
-         * 点击节点后
-         */
-        handleAfterClick() {
-            // 若未开启暂停失焦，则代表为正常左键点击，被点击元素成为焦点
-            if (!this.$store.state.sessionTree.stopBlur) {
-                this.$store.commit('sessionTree/SET_SELECTED', { [this.item.id]: this.item })
-            }
-            // 关闭暂停失焦
-            this.$store.commit('sessionTree/STOP_BLUR', false)
+            if (selectedNum > 1 && this.item.id in this.$store.state.sessionTree.selectedNode) return this.createContextMenuMultiple()
+            // 单选时显示右键菜单
+            this.createContextMenuSingle()
         },
         /**
          * 点击节点
          */
         handleClick() {
-
+            this.$store.commit('sessionTree/SET_NODE_SELECTED', this.item)
+        },
+        /**
+         * 多选
+         */
+        handleClickMeta() {
+            console.log('meta click');
+            this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
         },
         /**
          * 节点聚焦
@@ -200,9 +166,6 @@ export default {
          * 节点失焦
          */
         handleBlur() {
-            // 若失焦为暂停状态
-            if (this.$store.state.sessionTree.stopBlur) return
-            this.$store.commit('sessionTree/SET_UNSELECTED_ALL')
         },
         /**
          * 双击节点
@@ -239,13 +202,15 @@ export default {
          */
         handleDragStart(event) {
             const { id } = this.item
-            const { selected } = this.$store.state.sessionTree
-
-            if (!selected[id]) this.$store.commit('sessionTree/SET_SELECTED', { [id]: this.item })
-
-            this.$store.commit('sessionTree/SET_DRAG_LIST', this.$store.state.sessionTree.selected)
+            const { selectedNode } = this.$store.state.sessionTree
+            // 若被拖动元素不在选中节点列表内，则更新选中节点列表
+            if (!selectedNode[id]) this.$store.commit('sessionTree/SET_NODE_SELECTED', this.item)
+            // 设置 Drag List
+            this.$store.commit('sessionTree/SET_DRAG_LIST', this.$store.state.sessionTree.selectedNode)
+            // 拖动元素
+            const dragEl = document.querySelector(`.session-list [data-node-id = "${this.item.id}"]`)
             // 拖动事件对象设置 Ghost 图像，内容为拖动对象 dom，x y 轴不进行偏移
-            event.dataTransfer.setDragImage(this.$refs[`tree-item-${id}`],0,0)
+            event.dataTransfer.setDragImage(dragEl,0,0)
         },
         /**
          * 拖动经过
@@ -253,9 +218,9 @@ export default {
          */
         handleDragOver(event) {
             const { id, type } = this.item
-            const { selected } = this.$store.state.sessionTree
+            const { selectedNode } = this.$store.state.sessionTree
             // 不允许拖动到自身
-            if (id in selected) return
+            if (id in selectedNode) return
             // 目录不允许拖动到自身子级内
             if (this.isDragItemChild(id)) return
             // 获取鼠标位于拖动经过项目的 Y 轴坐标
@@ -264,7 +229,7 @@ export default {
             const { clientHeight } = this.$refs[`tree-item-${id}`]
             // 上 - 位于 1/3 以上，视为将元素移动到经过目标的上方
             if (layerY <= clientHeight * (1/3)) {
-                if (this.index !== 0 && this.group[this.index - 1].id in selected) return
+                if (this.index !== 0 && this.group[this.index - 1].id in selectedNode) return
                 // 更新移动到该会话项目 ID 前
                 this.$store.commit('sessionTree/SET_DRAG_MOVE', id)
                 // 清除移入到该会话目录 ID 内
@@ -274,7 +239,7 @@ export default {
             // 下 - 位于 1/3 以下，视为将元素移动到经过目标的上方
             if (layerY >= clientHeight * (2/3)) {
                 // 拖到被拖动元素上一位的下方，不做响应
-                if (this.index !== this.group.length - 1 && this.group[this.index + 1].id in selected) return
+                if (this.index !== this.group.length - 1 && this.group[this.index + 1].id in selectedNode) return
                 // 拖到目录类型项目的下方不做响应，视为移动至目录内
                 if (type === 'dir') return
                 // 若经过项目不为当前会话所在目录的最后一位，则更新移动到下一个会话项目 ID 前
@@ -310,8 +275,6 @@ export default {
             this.handleDragCancel()
             // 清除拖动项目
             this.$store.commit('sessionTree/SET_DRAG_LIST', null)
-            // 关闭暂停失焦
-            this.$store.commit('sessionTree/STOP_BLUR', false)
         },
         /**
          * 拖动完成
@@ -348,7 +311,8 @@ export default {
          */
         handleRenameOpen() {
             this.$store.commit('sessionTree/RENAME_START', this.item)
-            setTimeout(() => this.$refs[`rename-input-${this.item.id}`].focus(), 100)
+            const inputEl = document.querySelector(`.session-list [data-node-id = "${this.item.id}"] .rename-input`)
+            setTimeout(() => inputEl.focus(), 100)
         },
         /**
          * 重命名结束
@@ -403,25 +367,14 @@ export default {
             // console.log('move focus ' + action)
         },
         /**
-         * 多选
-         */
-        handleMultipleSelectMeta() {
-            const { id } = this.item
-            const action = id in this.$store.state.sessionTree.selected ? 'remove' : 'add'
-
-            // 暂停失焦
-            this.$store.commit('sessionTree/STOP_BLUR', true)
-
-            if (action === 'remove') this.$store.commit('sessionTree/SET_SELECTED_REMOVE', id)
-            if (action === 'add')    this.$store.commit('sessionTree/SET_SELECTED_ADD', { [id]: this.item })
-        },
-        /**
          * 创建右键菜单（单选）
          */
         createContextMenuSingle() {
             const { id, type, name } = this.item
             const { remote } = this.$q.electron
             const menu = new remote.Menu()
+
+            this.$store.commit('sessionTree/SET_NODE_SELECTED', this.item)
 
             if (type === 'session') menu.append(new remote.MenuItem({
                 label: `连接会话 “${name}”`,
@@ -469,12 +422,7 @@ export default {
                 click: () => this.handleShowPoster(),
             }))
 
-            menu.popup({
-                callback: () => {
-                    this.$store.commit('sessionTree/STOP_BLUR', false)
-                    this.$refs[`tree-item-${id}`].focus()
-                }
-            })
+            menu.popup()
         },
         /**
          * 创建右键菜单（多选）
@@ -483,8 +431,10 @@ export default {
             const { id } = this.item
             const { remote } = this.$q.electron
             const menu = new remote.Menu()
-            const selectedItems = this.$store.state.sessionTree.selected
-            const selectedNum = Object.keys(selectedItems).length
+
+            this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
+
+            const selectedNum = this.$store.getters['sessionTree/selectedNodeNum']()
 
             menu.append(new remote.MenuItem({
                 label: `删除 (${selectedNum} 个项目)`,
@@ -494,19 +444,14 @@ export default {
                         detail: '文件夹下的会话将全部删除！',
                     })
                         .then(() => {
-                            Object.keys(selectedItems).forEach(id => {
-                                this.$store.commit('session/DELETE', id)
-                            })
+                            // this.forEach(id => {
+                            //     this.$store.commit('session/DELETE', id)
+                            // })
                         })
                 },
             }))
 
-            menu.popup({
-                callback: () => {
-                    this.$store.commit('sessionTree/STOP_BLUR', false)
-                    this.$refs[`tree-item-${id}`].focus()
-                }
-            })
+            menu.popup()
         },
     },
 }
@@ -527,7 +472,6 @@ export default {
     transition: transform .3s
 
 .separator
-    padding: 1px 0
     opacity: 0
     transition: all .3s
     hr
@@ -559,7 +503,9 @@ export default {
         transform: scale(.5)
     &:hover
         background: rgba($primary, .3)
-    &.active,&.rename
+    //&:focus,
+    &.active,
+    &.rename
         background: $primary
         color: #FFFFFF
         .session-icon,.session-site
