@@ -239,11 +239,16 @@ export default {
                 const nodeList = [...document.querySelectorAll('.session-list [data-node-id]')]
                 // 方向键 up
                 if (action === 'up') {
-                    const nodeEl = nodeList.pop()
-                    const nodeId = nodeEl.getAttribute('data-node-id')
-                    const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
-                    this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
-                    nodeEl.focus()
+                    for (let index = nodeList.length - 1; index !== 0; index -= 1) {
+                        const nodeEl = nodeList[index]
+                        if (nodeEl.offsetParent !== null) {
+                            const nodeId = nodeEl.getAttribute('data-node-id')
+                            const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
+                            this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
+                            nodeEl.focus()
+                            break
+                        }
+                    }
                 }
                 // 方向键 down
                 if (action === 'down') {
@@ -252,7 +257,6 @@ export default {
                     const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
                     this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
                     nodeEl.focus()
-                    // FIXME: 跳过目录子级
                 }
             }
         },

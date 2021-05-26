@@ -365,48 +365,46 @@ export default {
          */
         handleMoveFocus(action) {
             const nodeList = [...document.querySelectorAll('.session-list [data-node-id]')]
+            const { id, type } = this.item
             // 遍历所有节点
-            for (let index = 0; index < nodeList.length; index += 1) {
-                const nodeEl = nodeList[index]
-                const nodeId = nodeEl.getAttribute('data-node-id')
-                if (nodeId === this.item.id) {
-                    // 向上移动焦点
-                    if (action === 'up') {
-                        // 若当前为起始节点，则不移动焦点
-                        if (index === 0) return
-
-                        index -= 1
-
-                        while (nodeList[index].offsetParent === null) index -= 1
-
-                        const prevNodeEl   = nodeList[index]
-                        const prevNodeId   = prevNodeEl.getAttribute('data-node-id')
-                        const prevNodeItem = this.$store.getters['session/sessionItem'](prevNodeId)
-
-                        this.$store.commit('sessionTree/SET_NODE_SELECTED', prevNodeItem)
-                        prevNodeEl.focus()
+            let index = nodeList.findIndex(el => el.getAttribute('data-node-id') === id)
+            // 向上移动焦点
+            if (action === 'up') {
+                if (index === 0) return
+                index -= 1
+                for (index; index >= 0; index -= 1) {
+                    const nodeEl = nodeList[index]
+                    const nodeId   = nodeEl.getAttribute('data-node-id')
+                    const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
+                    const isHidden = nodeEl.offsetParent === null
+                    // 若节点不是隐藏状态
+                    if (!isHidden) {
+                        this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
+                        nodeEl.focus()
+                        return
                     }
-                    // 向下移动焦点
-                    if (action === 'down') {
-                        // 若当前为末尾节点，则不移动焦点
-                        index += 1
-                        if (index === nodeList.length) return
-                        // 若节点为目录，且为折叠状态，则移动焦点跳过目录子级
-                        if (!this.showItemChild) {
-                            while (this.item.children.find(child => child.id === nodeList[index].getAttribute('data-node-id'))) {
-                                index += 1
-                                if (index === nodeList.length) return
-                            }
-                        }
-
-                        const nextNodeEl = nodeList[index]
-                        const nextNodeId   = nextNodeEl.getAttribute('data-node-id')
-                        const nextNodeItem = this.$store.getters['session/sessionItem'](nextNodeId)
-
-                        this.$store.commit('sessionTree/SET_NODE_SELECTED', nextNodeItem)
-                        nextNodeEl.focus()
+                }
+            }
+            // 向下移动焦点
+            if (action === 'down') {
+                if (index === nodeList.length - 1) return
+                index += 1
+                for (index; index < nodeList.length; index += 1) {
+                    const nodeEl   = nodeList[index]
+                    const nodeId   = nodeEl.getAttribute('data-node-id')
+                    const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
+                    const isHidden = nodeEl.offsetParent === null
+                    const isChild  = type === 'dir'
+                        ? this.item.children.find(child => child.id === nodeId)
+                        : false
+                    // 满足以下条件获取焦点
+                    // 若当前为折叠状态目录，则移动焦点跳过目录子级
+                    // 若节点不是隐藏状态
+                    if ((!this.showItemChild && !isChild) || (this.showItemChild && !isHidden)) {
+                        this.$store.commit('sessionTree/SET_NODE_SELECTED', nodeItem)
+                        nodeEl.focus()
+                        return
                     }
-                    return
                 }
             }
         },
