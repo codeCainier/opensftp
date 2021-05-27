@@ -17,6 +17,7 @@
                            @input="searchSession"
                            @keydown.esc="showSearch = false"
                            @keydown.down="searchResFocus">
+                <!-- FIXME: ESC 后焦点恢复 -->
                 </div>
                 <q-space/>
                 <q-btn class="btn-control btn-search"
@@ -47,6 +48,7 @@
              @focus             = "selectedCancel"
              @contextmenu       = "showMenu"
              @keydown.meta.a    = "selectAll"
+             @keydown.meta.f    = "showSearch = true"
              @keydown.up.self   = "showFocus('up')"
              @keydown.down.self = "showFocus('down')">
             <!-- 过滤结果列表 -->
