@@ -95,3 +95,18 @@ export function sessionItem (state) {
         return sessionInfo
     }
 }
+
+export function isChildOf () {
+    return (childId, parentItem) => {
+        let isChild = false
+        function recursionCheck (group) {
+            for (let index = 0; index < group.length; index += 1) {
+                const item = group[index]
+                if (item.id === childId) return isChild = true
+                if (item.type === 'dir') recursionCheck(item.children)
+            }
+        }
+        recursionCheck(parentItem.children)
+        return isChild
+    }
+}

@@ -414,7 +414,7 @@ export default {
                     const nodeItem = this.$store.getters['session/sessionItem'](nodeId)
                     const isHidden = nodeEl.offsetParent === null
                     const isChild  = type === 'dir'
-                        ? this.item.children.find(child => child.id === nodeId)
+                        ? this.$store.getters["session/isChildOf"](nodeId, this.item)
                         : false
                     // 满足以下条件获取焦点
                     // 若当前为折叠状态目录，则移动焦点跳过目录子级
