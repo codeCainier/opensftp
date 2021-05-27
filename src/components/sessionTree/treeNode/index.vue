@@ -69,12 +69,26 @@
             </div>
             <!-- item 简介 -->
             <div class="session-site text-right ellipsis q-pr-sm">
-                <div v-if="item.type === 'session'">{{ $store.state.sessionTree.loading === item.id ? '正在连接...' : item.detail.host }}</div>
+                <div v-if="item.type === 'session'">
+                    <div v-if="$store.state.sessionTree.loading === item.id">
+                        <q-btn icon="close" flat size="sm" @click="handleLoginCancel">
+                            <q-tooltip>取消连接</q-tooltip>
+                        </q-btn>
+                    </div>
+                    <div v-else>{{ item.detail.host }}</div>
+                </div>
                 <div v-if="item.type === 'dir'">
                     <q-btn flat size="sm" @click="showItemChild = !showItemChild">
                         <q-icon name="ion-ios-arrow-back" class="icon" :class="{ open: showItemChild }"/>
                     </q-btn>
                 </div>
+            </div>
+            <!-- Loading Skeleton -->
+            <div v-if="$store.state.sessionTree.loading === item.id"
+                 class="absolute-top-left full-width full-height">
+                <q-skeleton type="rect"
+                            style="z-index: 2"
+                            class="full-height full-width no-border-radius"/>
             </div>
         </div>
         <q-slide-transition>
@@ -195,6 +209,11 @@ export default {
             if (action === 'open')  return this.showItemChild = true
             if (action === 'close') return this.showItemChild = false
             this.showItemChild = !this.showItemChild
+        },
+        /**
+         * 取消连接会话
+         */
+        handleLoginCancel() {
         },
         /**
          * 拖动开始
@@ -583,6 +602,7 @@ export default {
     font-size: .8rem
     color: #999999
     min-width: 120px
+    z-index: 10
     .icon
         font-size: 12px
         transition: all .3s

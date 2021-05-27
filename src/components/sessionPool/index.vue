@@ -188,8 +188,6 @@ export default {
                 },
             }))
 
-            menu.append(new remote.MenuItem({ type: 'separator' }))
-
             menu.popup()
         },
         // 寻找节点
