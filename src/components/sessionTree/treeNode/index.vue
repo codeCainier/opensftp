@@ -323,6 +323,7 @@ export default {
          * 显示节点卡片
          */
         handleShowPoster() {
+            if (this.item.type === 'dir') return
             this.$store.commit('sessionTree/SHOW_POSTER', this.item)
         },
         /**
