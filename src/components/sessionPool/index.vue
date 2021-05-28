@@ -15,7 +15,7 @@
                            placeholder="搜索会话"
                            spellcheck="false"
                            @input="searchSession"
-                           @keydown.esc="showSearch = false"
+                           @keydown.esc="handleToggleSearch(false)"
                            @keydown.down="searchResFocus">
                 <!-- FIXME: ESC 后焦点恢复 -->
                 </div>
@@ -24,7 +24,7 @@
                        :icon="showSearch ? 'close' : 'search'"
                        flat round
                        size="sm"
-                       @click="showSearch = !showSearch"/>
+                       @click="handleToggleSearch(!showSearch)"/>
                 <q-btn class="btn-control btn-add"
                        icon="add"
                        flat round
@@ -48,7 +48,7 @@
              @focus             = "selectedCancel"
              @contextmenu       = "showMenu"
              @keydown.meta.a    = "selectAll"
-             @keydown.meta.f    = "showSearch = true"
+             @keydown.meta.f    = "handleToggleSearch(true)"
              @keydown.up.self   = "showFocus('up')"
              @keydown.down.self = "showFocus('down')">
             <!-- 过滤结果列表 -->
@@ -227,7 +227,7 @@ export default {
         },
         // 取消选择
         selectedCancel() {
-            this.$store.commit('sessionTree/SET_NODE_SELECTED_ALL', {})
+            this.$store.commit('sessionTree/SET_NODE_SELECTED_CLEAR')
         },
         // 移动光标
         showFocus(action) {
@@ -259,6 +259,12 @@ export default {
                     nodeEl.focus()
                 }
             }
+        },
+        // 搜索模式开关
+        handleToggleSearch(action) {
+            this.showSearch = action
+            if (action) this.$store.commit('sessionTree/SET_NODE_SELECTED_CLEAR')
+            if (!action) setTimeout(() => this.showFocus('down'), 300)
         },
     },
     created() {

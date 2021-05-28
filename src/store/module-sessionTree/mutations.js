@@ -22,6 +22,11 @@ export function SET_NODE_SELECTED_ALL(state, nodes) {
     state.selectedNode = tools.clone(nodes)
 }
 
+export function SET_NODE_SELECTED_CLEAR(state) {
+    state.focusNode = null
+    state.selectedNode = {}
+}
+
 export function SET_LOADING(state, id) {
     state.loading = id
 }
