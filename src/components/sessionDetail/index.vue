@@ -26,7 +26,7 @@
                         <input type="text"
                                spellcheck="false"
                                class="form-input full-width"
-                               v-model="name" autofocus>
+                               v-model.trim="name" autofocus>
                     </div>
                 </div>
 
@@ -35,12 +35,12 @@
                     <div class="form-component full-width q-pl-sm">
                         <input type="text"
                                class="form-input full-width q-mr-sm"
-                               v-model="host"
+                               v-model.trim="host"
                                spellcheck="false"
                                placeholder="支持域名 / IPv4 / IPv6">
                         <input type="text"
                                class="form-input q-ml-sm" v
-                               v-model="port"
+                               v-model.trim="port"
                                style="width: 100px"
                                placeholder="22">
                     </div>
@@ -52,7 +52,7 @@
                         <input type="text"
                                class="form-input full-width"
                                spellcheck="false"
-                               v-model="username"
+                               v-model.trim="username"
                                placeholder="root">
                     </div>
                 </div>
@@ -70,7 +70,10 @@
                 <div class="form-row q-mb-sm" v-if="authMode === 'password'">
                     <div class="form-label">密码:</div>
                     <div class="form-component full-width q-pl-sm">
-                        <input type="password" class="form-input full-width q-mr-sm" v-model="password">
+                        <input type="password"
+                               class="form-input full-width q-mr-sm"
+                               v-model.trim="password"
+                               @keydown.enter="createQuick">
                     </div>
                 </div>
 
@@ -82,8 +85,7 @@
                                spellcheck="false"
                                class="form-input full-width q-mr-sm"
                                v-model="privateKey"
-                               placeholder="请选择 SSH Key 路径"
-                               @click="selectPrivateKey">
+                               placeholder="请选择 SSH Key 路径">
                         <button class="input-slot-btn q-ml-sm"
                                 type="button"
                                 v-ripple
@@ -101,7 +103,7 @@
                         <input type="text"
                                class="form-input full-width"
                                spellcheck="false"
-                               v-model="remotePath"
+                               v-model.trim="remotePath"
                                placeholder="/">
                     </div>
                 </div>
@@ -111,9 +113,11 @@
                 <div class="form-row q-mb-sm">
                     <div class="form-label">默认打开的本地目录:</div>
                     <div class="form-component full-width q-pl-sm">
-                        <input type="text" readonly class="form-input full-width q-mr-sm" v-model="localPath"
-                               spellcheck="false"
-                               @click="selectLocalPath">
+                        <input type="text"
+                               readonly
+                               class="form-input full-width q-mr-sm"
+                               v-model="localPath"
+                               spellcheck="false">
                         <button class="input-slot-btn q-ml-sm"
                                 type="button"
                                 v-ripple
@@ -250,6 +254,15 @@ export default {
                     [this.localPath] = res.filePaths
                 })
                 .catch(err => console.error(err))
+        },
+        createQuick() {
+            this.confirm({
+                message: '是否进行创建？',
+                confirm: () => this.confirm(),
+                cancel: () => {
+
+                },
+            })
         },
     },
 };

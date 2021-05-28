@@ -2,6 +2,8 @@
 
 > 基于 Electron 与 Vue 开发的 SFTP / SSH 跨平台客户端
 
+* GitHub: https://github.com/openSFTP/opensftp
+
 ## Status
 
 开发中

@@ -17,7 +17,6 @@
                            @input="searchSession"
                            @keydown.esc="handleToggleSearch(false)"
                            @keydown.down="searchResFocus">
-                <!-- FIXME: ESC 后焦点恢复 -->
                 </div>
                 <q-space/>
                 <q-btn class="btn-control btn-search"
