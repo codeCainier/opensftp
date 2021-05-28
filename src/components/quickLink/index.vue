@@ -72,7 +72,7 @@
 
                 this.loading = true
 
-                this.$store.dispatch('session/QUICK_LOGIN', {
+                this.$store.dispatch('session/LOGIN_QUICK', {
                     host,
                     port,
                     username,

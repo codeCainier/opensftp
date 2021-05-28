@@ -71,7 +71,7 @@
             <div class="session-site text-right ellipsis q-pr-sm">
                 <div v-if="item.type === 'session'">
                     <div v-if="$store.state.sessionTree.loading === item.id">
-                        <q-btn icon="close" flat size="sm" @click="handleLoginCancel">
+                        <q-btn icon="close" flat size="sm" @dblclick.stop="" @click="handleLoginCancel">
                             <q-tooltip>取消连接</q-tooltip>
                         </q-btn>
                     </div>
@@ -214,6 +214,7 @@ export default {
          * 取消连接会话
          */
         handleLoginCancel() {
+            this.$store.dispatch('session/EXIT', this.item.id)
         },
         /**
          * 拖动开始

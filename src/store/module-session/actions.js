@@ -2,13 +2,34 @@ import Connect from 'src/core/connect'
 import tools   from 'src/utils'
 
 /**
+ * 登录连接
+ * @param   {Object}    store
+ * @param   {Object}    store.state
+ * @param   {Function}  store.commit
+ * @param   {Object}    sessionInfo     会话信息
+ */
+export function LOGIN({ state, commit }, sessionInfo) {
+    const connect = new Connect(sessionInfo)
+    return new Promise((resolve, reject) => {
+        connect
+            .init()
+            .then(() => {
+                // 创建会话标签
+                commit('CONNECT', connect)
+                resolve()
+            })
+            .catch(err => reject(err))
+    })
+}
+
+/**
  * 快速连接
  * @param   {Object}    store
  * @param   {Object}    store.state
  * @param   {Function}  store.commit
  * @param   {Object}    sessionInfo     会话信息
  */
-export function QUICK_LOGIN({ state, commit, getters }, sessionInfo) {
+export function LOGIN_QUICK({ state, commit, getters }, sessionInfo) {
     const { host, port, username, password } = sessionInfo
 
     const connect = new Connect({
@@ -45,24 +66,14 @@ export function QUICK_LOGIN({ state, commit, getters }, sessionInfo) {
 }
 
 /**
- * 登录连接
+ * 取消连接
  * @param   {Object}    store
  * @param   {Object}    store.state
  * @param   {Function}  store.commit
- * @param   {Object}    sessionInfo     会话信息
+ * @param   {String}    sessionId       会话 ID
  */
-export function LOGIN({ state, commit }, sessionInfo) {
-    const connect = new Connect(sessionInfo)
-    return new Promise((resolve, reject) => {
-        connect
-            .init()
-            .then(() => {
-                // 创建会话标签
-                commit('CONNECT', connect)
-                resolve()
-            })
-            .catch(err => reject(err))
-    })
+export function LOGIN_CANCEL({ state, commit }, sessionId) {
+
 }
 
 /**
