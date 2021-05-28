@@ -210,3 +210,13 @@ export function MOVE(state, props) {
     recursionAdd(state.pool)
     LocalStorage.set('sessionPool', state.pool)
 }
+
+
+
+
+
+
+
+export function SESSION_CONNECT_ADD(state, id) {
+    state.connectedList.push(id)
+}

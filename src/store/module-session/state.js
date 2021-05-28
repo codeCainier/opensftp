@@ -7,6 +7,9 @@ const state = {
     conn: [],
     // 当前的 session 会话 - 连接 id
     active: '',
+
+    // 已连接会话
+    connectedList: [],
 }
 
 export default function () {

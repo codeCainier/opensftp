@@ -1,0 +1,34 @@
+<html>
+<script>
+    const { Client }              = require('ssh2')
+    const { ipcRenderer, remote } = require('electron')
+    const { BrowserWindow }       = remote
+
+    class Connect {
+        constructor(id, sessionInfo) {
+            this.id = id
+            this.sessionInfo = sessionInfo
+        }
+    }
+
+    let conn
+
+    ipcRenderer.on('connect-init', (event, params, fromWindowId) => {
+        const { id, sessionInfo } = params
+        conn = new Connect(id, sessionInfo)
+        // const conn = new Client()
+        // const fromWindow = BrowserWindow.fromId(fromWindowId)
+        //
+        // conn
+        //     .on('ready', () => {
+        //         fromWindow.webContents.send('connect-response-success', conn)
+        //         window.close()
+        //     })
+        //     .on('error', err => {
+        //         fromWindow.webContents.send('connect-response-error', err)
+        //         window.close()
+        //     })
+        //     .connect(params)
+    })
+</script>
+</html>
