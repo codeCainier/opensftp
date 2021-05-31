@@ -3,6 +3,8 @@ import electron from 'electron'
 
 /**
  * 弹窗组件
+ * @param   {String}    obj
+ * @param   {Object}    obj
  * @param   {String}    obj.message     提示消息
  * @param   {String}    obj.detail      详情
  * @param   {String}    obj.title       标题 未使用

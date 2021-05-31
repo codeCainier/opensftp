@@ -1,9 +1,10 @@
-import Connect  from 'src/core/connect'
-import tools    from 'src/utils'
-import electron from 'electron'
-import { uid }  from 'quasar'
-import path from "path";
-import {sessionInfo} from "src/store/module-session/getters";
+import Connect   from 'src/core/connect'
+import tools     from 'src/utils'
+import { alert } from 'src/utils/dialog'
+import router    from 'src/router'
+import electron  from 'electron'
+import { uid }   from 'quasar'
+import path      from 'path'
 
 /**
  * 登录连接
@@ -107,9 +108,6 @@ export function EXIT({ state, commit }, id) {
     })
 }
 
-
-
-
 class Session {
     constructor(sessionInfo) {
         // 会话信息
@@ -133,6 +131,7 @@ class Session {
         return new Promise(async (resolve, reject) => {
             // 加载 connect 文件
             await this.win.loadURL(path.join('file://', __statics, 'statics', 'html', 'connect.html'))
+            // 通知初始化
             this.win.webContents.send('connect-init', {
                 action: 'init',
                 params: {
@@ -140,8 +139,12 @@ class Session {
                     sessionInfo: this.sessionInfo,
                 },
             }, this.winId)
-            // TODO: 若存在延迟则等会话进程响应初始化成功后再 resolve
-            resolve()
+            // 接收初始化状态
+            electron.ipcRenderer.on(`connect-back-${this.id}`, (event, props) => {
+                const { action } = props
+                if (action === 'success') resolve()
+                if (action === 'error')   reject()
+            })
         })
     }
 
@@ -150,25 +153,45 @@ class Session {
         const processNameBack = `connect-back-${this.id}`
         return new Promise((resolve, reject) => {
             this.win.webContents.send(processNameSend, { action, params }, this.winId)
-            electron.ipcRenderer.on(processNameBack, (event, data) => {
-                resolve(data)
+            electron.ipcRenderer.on(processNameBack, (event, props) => {
+                const { action, data } = props
+                if (action === 'success') resolve(data)
+                if (action === 'error')   reject(data)
             })
         })
     }
 }
 
-export async function SESSION_CONNECT({ state, commit }, sessionInfo) {
+export async function CONNECT({ state, commit }, sessionItem) {
+    const sessionId   = sessionItem.id
+    const sessionInfo = sessionItem.detail
     // 创建会话对象
     const conn = new Session(sessionInfo)
-    // vuex 写入会话连接 ID
-    commit('SESSION_CONNECT_ADD', conn.id)
-    // 连接初始化
-    await conn.init()
+    // vuex 正在连接会话列表 push
+    commit('CONNECTING_ADD', { sessionId, conn })
     // 发起认证
-    conn.send({
-        action: 'auth',
-    })
-        .then(() => {
+    try {
+        // 连接初始化
+        await conn.init()
+        // 发起认证
+        await conn.send('auth')
+        // 认证成功 vuex 已连接会话列表 push
+        commit('CONNECTED_ADD', conn.id)
+        // 跳转路由
+        // TODO
+        await router.push('/session')
+    } catch (err) {
+        // 认证失败 给出提示
+        await alert(err)
+    }
+    // Finally vuex 正在连接会话列表 remove
+    commit('CONNECTING_DEL', sessionId)
+}
 
-        })
+export function CONNECT_CANCEL({ state, commit }, sessionId) {
+    const { conn } = state.connectingList.find(item => item.sessionId === sessionId)
+    // 关闭会话连接
+    conn.send('cancel')
+    // Finally vuex 正在连接会话列表 remove
+    commit('CONNECTING_DEL', sessionId)
 }

@@ -193,12 +193,7 @@ export default {
          * 连接会话
          */
         handleLogin() {
-            const { id } = this.item
-            this.$store.commit('sessionTree/SET_LOADING', id)
-            this.$store.dispatch('session/LOGIN', this.item)
-                .then(() => this.$router.push({ path: '/session' }))
-                .catch(err => this.alert(err))
-                .finally(() => this.$store.commit('sessionTree/SET_LOADING', null))
+            this.$store.dispatch('session/CONNECT', this.item)
         },
         /**
          * 控制目录
@@ -214,7 +209,7 @@ export default {
          * 取消连接会话
          */
         handleLoginCancel() {
-            this.$store.dispatch('session/EXIT', this.item.id)
+            this.$store.dispatch('session/CONNECT_CANCEL', this.item.id)
         },
         /**
          * 拖动开始

@@ -8,7 +8,9 @@ const state = {
     // 当前的 session 会话 - 连接 id
     active: '',
 
-    // 已连接会话
+    // 正在连接的会话列表
+    connectingList: [],
+    // 已连接会话列表
     connectedList: [],
 }
 

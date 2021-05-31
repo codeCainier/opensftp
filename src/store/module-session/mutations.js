@@ -214,9 +214,36 @@ export function MOVE(state, props) {
 
 
 
+/**
+ * 新增正在连接中的会话
+ */
+export function CONNECTING_ADD(state, props) {
+    state.connectingList.push(props)
+}
 
+/**
+ * 移除正在连接中的会话
+ *   1. 连接成功
+ *   2. 连接失败
+ *   3. 取消连接
+ */
+export function CONNECTING_DEL(state, sessionId) {
+    const index = state.connectingList.findIndex(item => item.sessionId === sessionId)
+    state.connectingList.splice(index, 1)
+}
 
+/**
+ * 新增已连接的会话
+ */
+export function CONNECTED_ADD(state, connectId) {
+    state.connectedList.push(connectId)
+}
 
-export function SESSION_CONNECT_ADD(state, id) {
-    state.connectedList.push(id)
+/**
+ * 移除已连接的会话
+ */
+export function CONNECTED_DEL(state, id) {
+    const index = state.connectedList.findIndex(itemId => itemId === id)
+    state.connectedList.splice(index, 1)
+
 }
