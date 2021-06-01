@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const path = require('path')
 
 /*
  * This file runs in a Node context (it's NOT transpiled by Babel), so use only
@@ -68,7 +69,18 @@ module.exports = function (ctx) {
             // extractCSS: false,
 
             // https://quasar.dev/quasar-cli/handling-webpack
-            extendWebpack(cfg) {},
+            extendWebpack(cfg) {
+                const template = path.join(__dirname, 'src', 'connect.template.html')
+
+                cfg.plugins.push(
+                    new HtmlWebpackPlugin({
+                        template: template,
+                        filename: 'connect.html',
+                        inject: true,
+                        minify: false,
+                    })
+                );
+            },
         },
 
         // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-devServer
@@ -194,17 +206,6 @@ module.exports = function (ctx) {
             extendWebpack(cfg) {
                 // do something with Electron main process Webpack cfg
                 // chainWebpack also available besides this extendWebpack
-                cfg.plugins.push(
-                    new HtmlWebpackPlugin({
-                        template: `${__dirname}/src/index2.template.html`,
-                        filename: 'index2.html',
-                        chunks: 'all',
-                        // ctx: ctx,
-                        // process: { env: env },
-                        // productName: 'PageTitle',
-                        // productDescription: 'PageDescription'
-                    })
-                );
             }
         }
     }
