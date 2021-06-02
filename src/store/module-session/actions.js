@@ -173,11 +173,13 @@ export function EXIT({ state, commit }, id) {
 }
 
 
-
-
-
-
-
+/**
+ * 登录连接
+ * @param   {Object}    store
+ * @param   {Object}    store.state
+ * @param   {Function}  store.commit
+ * @param   {Object}    sessionItem     会话信息对象
+ */
 export async function CONNECT({ state, commit }, sessionItem) {
     const sessionId   = sessionItem.id
     const sessionInfo = sessionItem.detail
@@ -206,8 +208,7 @@ export async function CONNECT({ state, commit }, sessionItem) {
 }
 
 export function CONNECT_CANCEL({ state, commit }, sessionId) {
-    // TODO
-    const { conn } = state.connectingList.find(item => item.sessionId === sessionId)
+    const conn = state.connectingList.find(item => item.sessionId === sessionId)
     // vuex 正在连接会话列表 remove
     commit('CONNECTING_DEL', sessionId)
     // 关闭会话连接

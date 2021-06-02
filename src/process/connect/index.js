@@ -54,7 +54,7 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             resBody.message = '操作成功'
 
             if (action === 'auth')              resBody.data = await conn.auth(sessionInfo)
-            if (action === 'exit')              resBody.data = await conn.exit()
+            // if (action === 'exit')              resBody.data = await conn.exit()
             if (action === 'shell')             resBody.data = await conn.shell(window, options)
             if (action === 'download')          resBody.data = await conn.download(remotePath, localPath, progress)
             if (action === 'upload')            resBody.data = await conn.upload(localPath, remotePath, progress)
