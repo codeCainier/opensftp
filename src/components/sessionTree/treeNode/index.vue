@@ -70,7 +70,7 @@
             <!-- item 简介 -->
             <div class="session-site text-right ellipsis q-pr-sm">
                 <div v-if="item.type === 'session'">
-                    <div v-if="$store.state.sessionTree.loading === item.id">
+                    <div v-if="isConnecting()">
                         <q-btn icon="close" flat size="sm" @dblclick.stop="" @click="handleLoginCancel">
                             <q-tooltip>取消连接</q-tooltip>
                         </q-btn>
@@ -84,7 +84,7 @@
                 </div>
             </div>
             <!-- Loading Skeleton -->
-            <div v-if="$store.state.sessionTree.loading === item.id"
+            <div v-if="isConnecting()"
                  class="absolute-top-left full-width full-height">
                 <q-skeleton type="rect"
                             style="z-index: 2"
@@ -145,6 +145,9 @@ export default {
                 }
             }
         },
+        isConnecting() {
+            return () => Boolean(this.$store.state.session.connectingList.find(item => item.sessionId === this.item.id))
+        }
     },
     watch: {
     },
@@ -193,6 +196,7 @@ export default {
          * 连接会话
          */
         handleLogin() {
+            // this.$store.dispatch('session/CONNECT', this.item)
             this.$store.dispatch('session/CONNECT', this.item)
         },
         /**

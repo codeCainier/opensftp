@@ -6,6 +6,70 @@ import electron  from 'electron'
 import { uid }   from 'quasar'
 import path      from 'path'
 
+class SessionConnect {
+    constructor(sessionId) {
+        // 会话 ID
+        this.id = uid()
+        // 会话信息 ID
+        this.sessionId = sessionId
+        // 当前窗口 ID
+        this.winId = electron.remote.BrowserWindow.getFocusedWindow().id
+        // 使用创建新窗口方法，创建会话进程
+        this.win = new electron.remote.BrowserWindow({
+            show   : true,
+            width  : 300,
+            height : 300,
+            webPreferences: {
+                nodeIntegration: true,
+            },
+        })
+        // connect html 路径
+        this.loadUrlPath = process.env.NODE_ENV === 'development'
+            ? path.join(location.origin, 'connect.html')
+            : location.origin + path.join(path.dirname(location.pathname), 'connect.html')
+    }
+
+    async init() {
+        return new Promise(async (resolve, reject) => {
+            // 加载 connect 文件
+            await this.win.loadURL(this.loadUrlPath)
+            // 通知进程进行初始化
+            this.win.webContents.send('connect-init-req', this.id, this.winId)
+            // 监听进程初始化完成 (一次性)
+            electron.ipcRenderer.once('connect-init-res', () => resolve())
+        })
+    }
+
+    send(action, params) {
+        // 请求频道名称
+        const reqChannelName = 'req-' + this.id
+        // 响应频道名称
+        const resChannelName = 'res-' + this.id
+        const mid = uid()
+        const reqData = {
+            head: { mid, action },
+            body: { ...params },
+        }
+
+        return new Promise((resolve, reject) => {
+            // 向请求频道发送信息
+            this.win.webContents.send(reqChannelName, reqData, this.winId)
+            // 监听来自响应频道的响应消息
+            electron.ipcRenderer.on(resChannelName, listener)
+            // 监听器
+            function listener(event, resData) {
+                // 若消息 ID 不一致则不做处理
+                if (resData.head.mid !== mid) return
+                // 解构赋值
+                const { type, data, message } = resData.body
+                // 根据处理状态进行操作
+                if (type === 'success') resolve(data)
+                if (type === 'error')   reject(message)
+            }
+        })
+    }
+}
+
 /**
  * 登录连接
  * @param   {Object}    store
@@ -108,77 +172,30 @@ export function EXIT({ state, commit }, id) {
     })
 }
 
-class Session {
-    constructor(sessionInfo) {
-        // 会话信息
-        this.sessionInfo = sessionInfo
-        // 会话 ID
-        this.id = uid()
-        // 当前窗口 ID
-        this.winId = electron.remote.BrowserWindow.getFocusedWindow().id
-        // 使用创建新窗口方法，创建会话进程
-        this.win = new electron.remote.BrowserWindow({
-            show   : true,
-            width  : 300,
-            height : 300,
-            webPreferences: {
-                nodeIntegration: true,
-            },
-        })
-    }
 
-    async init() {
-        return new Promise(async (resolve, reject) => {
-            // 加载 connect 文件
-            await this.win.loadURL(path.join('file://', __statics, 'statics', 'html', 'connect.html'))
-            // 通知初始化
-            this.win.webContents.send('connect-init', {
-                action: 'init',
-                params: {
-                    id: this.id,
-                    sessionInfo: this.sessionInfo,
-                },
-            }, this.winId)
-            // 接收初始化状态
-            electron.ipcRenderer.on(`connect-back-${this.id}`, (event, props) => {
-                const { action } = props
-                if (action === 'success') resolve()
-                if (action === 'error')   reject()
-            })
-        })
-    }
 
-    send(action, params) {
-        const processNameSend = `connect-send-${this.id}`
-        const processNameBack = `connect-back-${this.id}`
-        return new Promise((resolve, reject) => {
-            this.win.webContents.send(processNameSend, { action, params }, this.winId)
-            electron.ipcRenderer.on(processNameBack, (event, props) => {
-                const { action, data } = props
-                if (action === 'success') resolve(data)
-                if (action === 'error')   reject(data)
-            })
-        })
-    }
-}
+
+
+
 
 export async function CONNECT({ state, commit }, sessionItem) {
     const sessionId   = sessionItem.id
     const sessionInfo = sessionItem.detail
     // 创建会话对象
-    const conn = new Session(sessionInfo)
+    const conn = new SessionConnect(sessionId)
     // vuex 正在连接会话列表 push
-    commit('CONNECTING_ADD', { sessionId, conn })
+    commit('CONNECTING_ADD', conn)
     // 发起认证
     try {
         // 连接初始化
         await conn.init()
         // 发起认证
-        await conn.send('auth')
+        await conn.send('auth', { sessionInfo })
         // 认证成功 vuex 已连接会话列表 push
-        commit('CONNECTED_ADD', conn.id)
-        // 跳转路由
-        // TODO
+        commit('CONNECTED_ADD', conn)
+        // 设置为活跃会话
+        commit('SET_ACTIVE', conn.id)
+        // 跳转路由 TODO
         await router.push('/session')
     } catch (err) {
         // 认证失败 给出提示
@@ -189,9 +206,29 @@ export async function CONNECT({ state, commit }, sessionItem) {
 }
 
 export function CONNECT_CANCEL({ state, commit }, sessionId) {
+    // TODO
     const { conn } = state.connectingList.find(item => item.sessionId === sessionId)
-    // 关闭会话连接
-    conn.send('cancel')
-    // Finally vuex 正在连接会话列表 remove
+    // vuex 正在连接会话列表 remove
     commit('CONNECTING_DEL', sessionId)
+    // 关闭会话连接
+    conn.win.close()
+}
+
+export async function CONNECT_EXIT({ state, commit }, conn) {
+    // 获取要关闭的连接在 connectedList 中所处的位置
+    const index  = state.connectedList.findIndex(item => item.id === conn.id)
+
+    // vuex 已连接会话列表 remove
+    commit('CONNECTED_DEL', conn.id)
+
+    // 若关闭的连接是当前活跃标签，且已连接会话数量不为 0，则更换活跃标签
+    if (conn.id === state.active && state.connectedList.length !== 0) commit('SET_ACTIVE', state.connectedList[index].id)
+    // 若关闭的连接是当前活跃标签，且已连接会话数量为 0，则回到首页
+    if (conn.id === state.active && state.connectedList.length === 0) {
+        commit('SET_ACTIVE', null)
+        await router.push('/')
+    }
+
+    // 关闭会话连接
+    conn.win.close()
 }

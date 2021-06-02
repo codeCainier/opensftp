@@ -217,8 +217,8 @@ export function MOVE(state, props) {
 /**
  * 新增正在连接中的会话
  */
-export function CONNECTING_ADD(state, props) {
-    state.connectingList.push(props)
+export function CONNECTING_ADD(state, conn) {
+    state.connectingList.push(conn)
 }
 
 /**
@@ -228,22 +228,21 @@ export function CONNECTING_ADD(state, props) {
  *   3. 取消连接
  */
 export function CONNECTING_DEL(state, sessionId) {
-    const index = state.connectingList.findIndex(item => item.sessionId === sessionId)
+    const index = state.connectingList.findIndex(conn => conn.sessionId === sessionId)
     state.connectingList.splice(index, 1)
 }
 
 /**
  * 新增已连接的会话
  */
-export function CONNECTED_ADD(state, connectId) {
-    state.connectedList.push(connectId)
+export function CONNECTED_ADD(state, conn) {
+    state.connectedList.push(conn)
 }
 
 /**
  * 移除已连接的会话
  */
-export function CONNECTED_DEL(state, id) {
-    const index = state.connectedList.findIndex(itemId => itemId === id)
+export function CONNECTED_DEL(state, connectId) {
+    const index = state.connectedList.findIndex(conn => conn.id === connectId)
     state.connectedList.splice(index, 1)
-
 }

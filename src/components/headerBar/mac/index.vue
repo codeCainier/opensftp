@@ -4,12 +4,12 @@
         <q-btn dense flat round icon="lens" size="8.5px" color="yellow" @click="minimize"/>
         <q-btn dense flat round icon="lens" size="8.5px" color="green"  @click="maximize"/>
         <!-- 返回主页按钮 -->
-        <q-btn v-if="$store.state.session.conn.length"
+        <q-btn v-if="$store.state.session.connectedList.length"
                icon="home" flat
                class="no-border-radius"
                @click="backHome"/>
         <!-- 会话标签列表 -->
-        <session-tag v-if="$store.state.session.conn.length"/>
+        <session-tag v-if="$store.state.session.connectedList.length"/>
         <q-space/>
         <!-- 切换深色浅色模式 -->
         <dark-toggle/>
