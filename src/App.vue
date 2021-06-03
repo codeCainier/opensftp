@@ -7,7 +7,6 @@
 </template>
 
 <script>
-    import electron from 'electron'
     import path from 'path'
     import connect from 'src/process/connect'
 

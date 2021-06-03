@@ -9,14 +9,21 @@ export default {
      * @param   {Object}    item    文件对象
      */
     removeFile(action, item) {
-        const mode = action === 'remote' ? 'rmRemote' : 'rmLocal'
-        // TODO: 弹出删除对话框时，文件 Focus 状态应使用 class 补充
+        let mode, pathName
+
+        if (action === 'local') {
+            mode = 'localRm'
+            pathName = path.posix.join(this.pwd, item.name)
+        }
+        if (action === 'remote') {
+            mode = 'remoteRm'
+            pathName = path.join(this.pwd, item.name)
+        }
+
         this.confirm(`您确定要删除 ${item.name} 吗？注意，删除无法恢复！`)
             .then(() => {
                 this.loading = true
-                this.connect[mode](action === 'remote'
-                    ? path.posix.join(this.pwd, item.name)
-                    : path.join(this.pwd, item.name))
+                this.conn.send(mode, { pathName })
                     .then(() => this.getFileList('.'))
                     .catch(err => this.alert(err))
                     .finally(() => this.loading = false)
@@ -134,30 +141,30 @@ export default {
      * 移动文件
      * @method
      * @param   {String}    action       local || remote
-     * @param   {String}    oldPath      文件移动前地址
-     * @param   {String}    newPath      文件移动后地址
+     * @param   {String}    pathOld      文件移动前地址
+     * @param   {String}    pathNew      文件移动后地址
      */
-    mvFile(action, oldPath, newPath) {
+    mvFile(action, pathOld, pathNew) {
         let sep
 
         if (action === 'local')  sep = path.sep
         if (action === 'remote') sep = '/'
 
         // 新地址不能在旧地址内 (地址末尾需要拼接分隔符，防止出现名称相似问题)
-        if ((newPath + sep).startsWith(oldPath + sep)) return
+        if ((pathNew + sep).startsWith(pathOld + sep)) return
 
         this.loading = true
 
         let mode
 
-        if (action === 'local')  mode = 'renameLocal'
-        if (action === 'remote') mode = 'renameRemote'
+        if (action === 'local')  mode = 'localRename'
+        if (action === 'remote') mode = 'remoteRename'
 
-        this.checkOverwrite(action, newPath)
+        this.checkOverwrite(action, pathNew)
             // 确认覆盖或无需覆盖
             .then(() => {
                 this.loading = true
-                this.connect[mode](oldPath, newPath)
+                this.conn.send(mode, { pathOld, pathNew })
                     .then(() => this.getFileList('.'))
                     .catch(err => this.alert(err))
                     .finally(() => this.loading = false)
@@ -169,25 +176,24 @@ export default {
      * 检查是否需要覆盖
      * @method
      * @param   {String}    action       local || remote
-     * @param   {String}    pathname     文件地址
+     * @param   {String}    pathName     文件地址
      */
-    checkOverwrite(action, pathname) {
+    checkOverwrite(action, pathName) {
         this.loading = true
 
-        let statMode
-        let rmMode
+        let statMode, rmMode
 
         if (action === 'local')  {
-            statMode = 'statLocal'
-            rmMode   = 'rmLocal'
+            statMode = 'localStat'
+            rmMode   = 'localRm'
         }
         if (action === 'remote') {
-            statMode = 'statRemote'
-            rmMode   = 'rmRemote'
+            statMode = 'remoteStat'
+            rmMode   = 'remoteRm'
         }
 
         return new Promise((resolve, reject) => {
-            this.connect[statMode](pathname)
+            this.conn.send(statMode, { pathName })
                 .then(stats => {
                     const isDir = stats.isDirectory()
 
@@ -209,7 +215,7 @@ export default {
                         persistent: true
                     }).onOk(data => {
                         if (data === 'rm') {
-                            this.connect[rmMode](pathname)
+                            this.conn.send(rmMode, { pathName })
                                 .then(() => resolve())
                                 .catch(() => reject())
                         }
@@ -266,19 +272,17 @@ export default {
         // 若当前目录存在同名文件，则进行递归，同名文件数量后缀 + 1
         if (this.findItemFromList({ name: defaultName })) return this.createFile(action, type, existNum + 1)
 
-        let mode
-        let join
-        let message
+        let mode, join, message
 
         if (action === 'local') {
-            if (type === 'file') mode = 'writeFileLocal'
-            if (type === 'dir')  mode = 'mkdirLocal'
+            if (type === 'file') mode = 'localWriteFile'
+            if (type === 'dir')  mode = 'localMkdir'
             join = path.join
         }
 
         if (action === 'remote') {
-            if (type === 'file') mode = 'writeFileRemote'
-            if (type === 'dir')  mode = 'mkdirRemote'
+            if (type === 'file') mode = 'remoteWriteFile'
+            if (type === 'dir')  mode = 'remoteMkdir'
             join = path.posix.join
         }
 
@@ -299,13 +303,15 @@ export default {
         }).onOk(data => {
             // 若未输入文件名称，则使用默认名称
             if (!data) data = defaultName
+            // 判断输入的文件名称是否已存在
+            const isExist = Boolean(this.findItemFromList({ name: data }))
             // 输入的文件名称已存在，则给出提示
-            if (this.findItemFromList({ name: data })) return this.confirm(`已存在 ${data}`)
+            if (isExist) return this.confirm(`已存在 ${data}`)
                 .then(() => this.createFile(action, type))
             // Loading
             this.loading = true
             // 创建文件
-            this.connect[mode](join(this.pwd, data))
+            this.conn.send(mode, { pathName: join(this.pwd, data) })
                 .then(() => this.getFileList('.', null, data))
                 .catch(err => this.alert(err))
                 .finally(() => this.loading = false)
@@ -334,15 +340,19 @@ export default {
         this.checkOverwrite(action === 'download' ? 'local' : 'remote', distPath)
             .then(async () => {
                 const id     = uid()
-                const connId = this.connectId
+                const connId = this.conn.id
                 const dir    = path.parse(distPath).dir
                 const name   = path.basename(fromPath)
                 // 创建任务
                 this.$store.commit('transfer/TASK_INIT', { id, connId, dir, name, action })
                 // 开始传输
-                await this.connect[action](fromPath, distPath, (pathname, saved, total) => {
-                    // 更新任务
-                    this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
+                await this.conn.send(action, {
+                    localPath : action === 'download' ? distPath : fromPath,
+                    remotePath: action === 'download' ? fromPath : distPath,
+                    progress  : (pathname, saved, total) => {
+                        // 更新任务
+                        this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
+                    },
                 })
                 // 完成传输
                 this.$store.commit('transfer/TASK_FINISH', id)
@@ -394,10 +404,16 @@ export default {
      * @param   {Object}    editorPath  编辑器对象
      */
     async editFile(action, item, editorPath) {
-        const remotePath = path.posix.join(this.pwd, item.name)
-        await this.connect.editRemoteFile(remotePath, editorPath, () => {
-            this.notify(`文件 ${item.name} 的修改已生效`)
-        })
+        if (action === 'remote') {
+            const remotePath = path.posix.join(this.pwd, item.name)
+            await this.conn.send('remoteEditFile', {
+                remotePath,
+                editorPath,
+                callback: () => {
+                    this.notify(`文件 ${item.name} 的修改已生效`)
+                }
+            })
+        }
     },
     /**
      * 刷新目录

@@ -157,8 +157,7 @@ export default {
     name: 'SFTPRemote',
     props: {
         pwdLocal: String,
-        connectId: String,
-        connect: Object,
+        conn: Object,
     },
     data() {
         return {
@@ -252,7 +251,10 @@ export default {
             }
             // 重命名
             this.loading = true
-            this.connect.renameRemote(path.posix.join(this.pwd, this.renameItem.name), path.posix.join(this.pwd, this.renameItem.newName))
+            this.conn.send('remoteRename', {
+                pathOld: path.posix.join(this.pwd, this.renameItem.name),
+                pathNew: path.posix.join(this.pwd, this.renameItem.newName),
+            })
                 .then(() => {
                     this.getFileList('.', null, this.renameItem.newName)
                 })
@@ -267,7 +269,7 @@ export default {
 
             const cwd = pathName || path.posix.join(this.pwd, dirname)
 
-            this.connect.listRemote(cwd)
+            this.conn.send('remoteList', { cwd })
                 .then(async list => {
                     // 更新最后访问目录
                     this.pwd = cwd
@@ -315,7 +317,9 @@ export default {
     },
     created() {
         this.createContainerMenu('remote')
-        this.pwd = this.connect.sessionInfo.detail.remotePath
+        this.pwd = this.$store.getters['session/sessionInfo']({
+            id: this.conn.sessionId,
+        }).detail.remotePath
         this.getFileList('.')
     },
 }

@@ -175,9 +175,6 @@ export function EXIT({ state, commit }, id) {
 
 /**
  * 登录连接
- * @param   {Object}    store
- * @param   {Object}    store.state
- * @param   {Function}  store.commit
  * @param   {Object}    sessionItem     会话信息对象
  */
 export async function CONNECT({ state, commit }, sessionItem) {
@@ -197,14 +194,21 @@ export async function CONNECT({ state, commit }, sessionItem) {
         commit('CONNECTED_ADD', conn)
         // 设置为活跃会话
         commit('SET_ACTIVE', conn.id)
-        // 跳转路由 TODO
-        await router.push('/session')
+        // vuex 正在连接会话列表 remove
+        commit('CONNECTING_DEL', sessionId)
+        // 若没有在正在连接的会话，则跳转路由
+        if (state.connectingList.length === 0) {
+            // 跳转路由
+            if (router.app.$route.path !== '/session') await router.push('/session')
+        }
     } catch (err) {
         // 认证失败 给出提示
         await alert(err)
+        // 关闭会话连接
+        conn.win.close()
+        // vuex 正在连接会话列表 remove
+        commit('CONNECTING_DEL', sessionId)
     }
-    // Finally vuex 正在连接会话列表 remove
-    commit('CONNECTING_DEL', sessionId)
 }
 
 export function CONNECT_CANCEL({ state, commit }, sessionId) {
@@ -216,20 +220,38 @@ export function CONNECT_CANCEL({ state, commit }, sessionId) {
 }
 
 export async function CONNECT_EXIT({ state, commit }, conn) {
+    const { id } = conn
     // 获取要关闭的连接在 connectedList 中所处的位置
-    const index  = state.connectedList.findIndex(item => item.id === conn.id)
+    const index  = state.connectedList.findIndex(item => item.id === id)
 
     // vuex 已连接会话列表 remove
     commit('CONNECTED_DEL', conn.id)
-
-    // 若关闭的连接是当前活跃标签，且已连接会话数量不为 0，则更换活跃标签
-    if (conn.id === state.active && state.connectedList.length !== 0) commit('SET_ACTIVE', state.connectedList[index].id)
-    // 若关闭的连接是当前活跃标签，且已连接会话数量为 0，则回到首页
-    if (conn.id === state.active && state.connectedList.length === 0) {
-        commit('SET_ACTIVE', null)
-        await router.push('/')
-    }
-
     // 关闭会话连接
     conn.win.close()
+
+    // 若关闭的连接是当前活跃标签，且已连接会话数量不为 0，则更换活跃标签
+    if (id === state.active && state.connectedList.length !== 0) {
+        try {
+            commit('SET_ACTIVE', state.connectedList[index].id)
+        } catch (err) {
+            commit('SET_ACTIVE', state.connectedList[index - 1].id)
+        }
+    }
+    // 若关闭的连接是当前活跃标签，且已连接会话数量为 0，则回到首页
+    if (id === state.active && state.connectedList.length === 0) {
+        commit('SET_ACTIVE', null)
+        if (router.app.$route.path !== '/') await router.push('/')
+    }
+}
+
+/**
+ * 关闭所有已连接会话
+ */
+export async function CONNECT_EXIT_ALL({ state, commit }) {
+    // 关闭所有会话连接
+    state.connectedList.forEach(conn => conn.win.close())
+    // vuex 已连接会话列表清空
+    commit('CONNECTED_DEL_ALL')
+    // 回到首页
+    if (router.app.$route.path !== '/') await router.push('/')
 }

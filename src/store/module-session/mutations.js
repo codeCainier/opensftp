@@ -246,3 +246,10 @@ export function CONNECTED_DEL(state, connectId) {
     const index = state.connectedList.findIndex(conn => conn.id === connectId)
     state.connectedList.splice(index, 1)
 }
+
+/**
+ * 移除已连接的所有会话
+ */
+export function CONNECTED_DEL_ALL(state) {
+    state.connectedList = []
+}

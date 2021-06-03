@@ -151,7 +151,7 @@
                 menu.append(new remote.MenuItem({
                     label: '关闭所有会话',
                     click: () => {
-                        this.alert('功能开发中')
+                        this.$store.dispatch('session/CONNECT_EXIT_ALL')
                     },
                 }))
 
