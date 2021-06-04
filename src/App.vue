@@ -9,6 +9,7 @@
 <script>
     import path from 'path'
     import connect from 'src/process/connect'
+    import { remote } from 'electron'
 
     export default {
         name: 'App',
@@ -17,6 +18,19 @@
                 // 是否为主渲染进程
                 isMainRenderProcess: true,
             }
+        },
+        methods: {
+            // 关闭所有会话连接
+            closeAllConnect() {
+                const closeAllConnect = event => {
+                    const { connectingList, connectedList } = this.$store.state.session
+                    connectingList.forEach(item => item.close())
+                    connectedList.forEach(item => item.close())
+                    window.removeEventListener('beforeunload', closeAllConnect);
+                }
+                window.addEventListener('beforeunload', closeAllConnect);
+                if (remote.BrowserWindow.getAllWindows().length !== 1) this.alert('窗口错误')
+            },
         },
         beforeCreate() {
             this.$router.push({ path: '/' })
@@ -32,6 +46,10 @@
             // TODO: 要做到主渲染进程刷新时，关闭所有后期开启的 window
         },
         mounted() {
+            // IMPORTANT! 注意，生命周期中的代码若不加以判断，所有渲染进程中都会执行
+            if (this.isMainRenderProcess) {
+                this.closeAllConnect()
+            }
         },
     }
 </script>

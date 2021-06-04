@@ -12,13 +12,7 @@ class ConnectProcessWindow extends Connect {
         this.win   = BrowserWindow.fromId(this.winId)
     }
 
-    send(resBody) {
-        const resData = {
-            head: {
-                mid: this.mid,
-            },
-            body: resBody,
-        }
+    send(resData) {
         this.win.webContents.send('res-' + this.id, resData, this.winId)
     }
 }
@@ -45,43 +39,51 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             editorPath,
             callback,
         } = reqData.body
-        const resBody = {}
-
-        conn.mid = mid
-
-        try {
-            resBody.type = 'success'
-            resBody.message = '操作成功'
-
-            if (action === 'auth')              resBody.data = await conn.auth(sessionInfo)
-            if (action === 'shell')             resBody.data = await conn.shell(window, options)
-            if (action === 'download')          resBody.data = await conn.download(remotePath, localPath, progress)
-            if (action === 'upload')            resBody.data = await conn.upload(localPath, remotePath, progress)
-
-            if (action === 'remoteList')        resBody.data = await conn.remoteList(cwd)
-            if (action === 'remoteRm')          resBody.data = await conn.remoteRm(pathName)
-            if (action === 'remoteMkdir')       resBody.data = await conn.remoteMkdir(pathName)
-            if (action === 'remoteRename')      resBody.data = await conn.remoteRename(pathOld, pathNew)
-            if (action === 'remoteStat')        resBody.data = await conn.remoteStat(pathName)
-            if (action === 'remoteWriteFile')   resBody.data = await conn.remoteWriteFile(pathName)
-            if (action === 'remoteEditFile')    resBody.data = await conn.remoteEditFile(remotePath, editorPath, callback)
-
-            if (action === 'localList')         resBody.data = await conn.localList(cwd)
-            if (action === 'localRm')           resBody.data = await conn.localRm(pathName)
-            if (action === 'localMkdir')        resBody.data = await conn.localMkdir(pathName)
-            if (action === 'localRename')       resBody.data = await conn.localRename(pathOld, pathNew)
-            if (action === 'localStat')         resBody.data = await conn.localStat(pathName)
-            if (action === 'localWriteFile')    resBody.data = await conn.localWriteFile(pathName)
-
-            // if (action === 'exit')              resBody.data = await conn.exit()
-
-        } catch (err) {
-            resBody.type = 'error'
-            resBody.data = null
-            resBody.message = err
+        const resData = {
+            head: { mid },
+            body: {
+                // 默认为 error 状态
+                type: 'error',
+                // 默认没有响应 data
+                data: null,
+                // 默认状态消息
+                message: '响应未处理',
+            },
         }
 
-        conn.send(resBody)
+        try {
+            resData.body.type = 'success'
+            resData.body.message = '操作成功'
+
+            if (action === 'auth')              resData.body.data = await conn.auth(sessionInfo)
+            if (action === 'shell')             resData.body.data = await conn.shell(window, options)
+            if (action === 'download')          resData.body.data = await conn.download(remotePath, localPath, progress)
+            if (action === 'upload')            resData.body.data = await conn.upload(localPath, remotePath, progress)
+
+            if (action === 'remoteList')        resData.body.data = await conn.remoteList(cwd)
+            if (action === 'remoteRm')          resData.body.data = await conn.remoteRm(pathName)
+            if (action === 'remoteMkdir')       resData.body.data = await conn.remoteMkdir(pathName)
+            if (action === 'remoteRename')      resData.body.data = await conn.remoteRename(pathOld, pathNew)
+            if (action === 'remoteStat')        resData.body.data = await conn.remoteStat(pathName)
+            if (action === 'remoteWriteFile')   resData.body.data = await conn.remoteWriteFile(pathName)
+            if (action === 'remoteEditFile')    resData.body.data = await conn.remoteEditFile(remotePath, editorPath, callback)
+
+            if (action === 'localList')         resData.body.data = await conn.localList(cwd)
+            if (action === 'localRm')           resData.body.data = await conn.localRm(pathName)
+            if (action === 'localMkdir')        resData.body.data = await conn.localMkdir(pathName)
+            if (action === 'localRename')       resData.body.data = await conn.localRename(pathOld, pathNew)
+            if (action === 'localStat')         resData.body.data = await conn.localStat(pathName)
+            if (action === 'localWriteFile')    resData.body.data = await conn.localWriteFile(pathName)
+
+            // if (action === 'exit')              resData.body.data = await conn.exit()
+
+        } catch (err) {
+            resData.body.type = 'error'
+            resData.body.data = null
+            resData.body.message = err
+        }
+
+        conn.send(resData)
     })
 })
 

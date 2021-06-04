@@ -3,11 +3,11 @@
         <!-- 会话标签 -->
         <q-btn v-for="conn in $store.state.session.connectedList"
                :key="conn.id"
-               :color="$store.state.session.active === conn.id ? 'teal-7' : 'blue-10'"
+               :color="isActive(conn.id) ? 'teal-7' : 'blue-10'"
                class="no-border-radius"
                style="margin-right: 1px"
                unelevated no-caps
-               @click="changeTag(conn)"
+               @click="connectChange(conn)"
                @contextmenu="showMenu(conn)">
             <!-- 会话信息 -->
             <q-tooltip :offset="[0, 10]">
@@ -19,7 +19,7 @@
             <!-- 会话名称 -->
             <div class="label q-mx-sm ellipsis" style="width: 100px; font-size: .85rem">{{ sessionName(conn.sessionId) }}</div>
             <!-- 关闭按钮 -->
-            <q-btn flat round size="xs" icon="close" @click="closeTag(conn)"/>
+            <q-btn flat round size="xs" icon="close" @click="connectClose(conn)"/>
             <!-- 当会话连接存在传输任务时 -->
             <q-skeleton v-if="taskList(conn.id).length"
                         type="rect"
@@ -76,9 +76,11 @@
             }
         },
         computed: {
+            // 传输任务列表
             taskList() {
                 return id => this.$store.getters['transfer/CONNECT_TRANSFER'](id)
             },
+            // 传输进度标签
             progressLabel() {
                 return task => {
                     const filename = path.basename(task.transferring.pathname)
@@ -88,6 +90,7 @@
                     return `${text} ${filename}`
                 }
             },
+            // 传输进度百分比格式化
             percentFormat() {
                 return num => (num * 100).toFixed(0) + '%'
             },
@@ -101,17 +104,24 @@
                     const { username, host, port } = this.$store.getters['session/sessionInfo']({ id: sessionId }).detail
                     return `${username}@${host}:${port}`
                 }
-            }
+            },
+            // 会话是否为活跃状态
+            isActive() {
+                return id => this.$store.state.session.active === id && this.$route.path === '/session'
+            },
         },
         methods: {
-            closeTag(conn) {
+            // 关闭会话连接
+            connectClose(conn) {
                 this.$store.dispatch('session/CONNECT_EXIT', conn)
             },
-            changeTag(conn) {
-                if (this.$store.state.session.active === conn.id) return this.$store.commit('sftp/CLOSE_TERM')
+            // 更换会话连接
+            connectChange(conn) {
+                if (this.isActive(conn.id)) return this.$store.commit('sftp/CLOSE_TERM')
                 this.$store.commit('session/SET_ACTIVE', conn.id)
                 if (this.$route.path !== '/session') this.$router.push({ path: '/session' })
             },
+            // 传输速度格式化，放在 methods 里为了节流
             speedFormat(speed) {
                 return this.tools.formatFlow(speed)
             },
@@ -131,7 +141,7 @@
 
                 menu.append(new remote.MenuItem({
                     label: '关闭会话',
-                    click: () => this.closeTag(conn),
+                    click: () => this.connectClose(conn),
                 }))
 
                 menu.append(new remote.MenuItem({
@@ -159,6 +169,7 @@
             },
         },
         created() {
+            // 速度格式化节流
             this.speedFormat = throttle(this.speedFormat, 1000)
         },
     };

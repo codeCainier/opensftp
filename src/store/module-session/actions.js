@@ -14,9 +14,15 @@ class SessionConnect {
         this.sessionId = sessionId
         // 当前窗口 ID
         this.winId = electron.remote.BrowserWindow.getFocusedWindow().id
+        // 请求频道名称
+        this.reqChannelName = 'req-' + this.id
+        // 响应频道名称
+        this.resChannelName = 'res-' + this.id
         // 使用创建新窗口方法，创建会话进程
         this.win = new electron.remote.BrowserWindow({
-            show   : true,
+            show   : false,
+            // TODO: 参数必要性讨论
+            parent : this.winId,
             width  : 300,
             height : 300,
             webPreferences: {
@@ -27,6 +33,8 @@ class SessionConnect {
         this.loadUrlPath = process.env.NODE_ENV === 'development'
             ? path.join(location.origin, 'connect.html')
             : location.origin + path.join(path.dirname(location.pathname), 'connect.html')
+        // data Map
+        this.dataMap = new Map()
     }
 
     async init() {
@@ -37,36 +45,63 @@ class SessionConnect {
             this.win.webContents.send('connect-init-req', this.id, this.winId)
             // 监听进程初始化完成 (一次性)
             electron.ipcRenderer.once('connect-init-res', () => resolve())
+            // 监听来自响应频道的响应消息
+            electron.ipcRenderer.on(this.resChannelName,  (event, response) => {
+                const { mid } = response.head
+                const { request } = this.dataMap.get(mid)
+                // data Map 写入响应
+                this.dataMap.set(mid, {
+                    ...{ request },
+                    ...{ response },
+                })
+            })
         })
     }
 
     send(action, params) {
-        // 请求频道名称
-        const reqChannelName = 'req-' + this.id
-        // 响应频道名称
-        const resChannelName = 'res-' + this.id
         const mid = uid()
-        const reqData = {
-            head: { mid, action },
+        const request = {
+            head: {
+                mid,
+                action,
+                time: Date.now(),
+            },
             body: { ...params },
         }
-
         return new Promise((resolve, reject) => {
+            // data Map 写入请求
+            this.dataMap.set(mid, {
+                request,
+            })
             // 向请求频道发送信息
-            this.win.webContents.send(reqChannelName, reqData, this.winId)
+            this.win.webContents.send(this.reqChannelName, request, this.winId)
             // 监听来自响应频道的响应消息
-            electron.ipcRenderer.on(resChannelName, listener)
-            // 监听器
-            function listener(event, resData) {
-                // 若消息 ID 不一致则不做处理
-                if (resData.head.mid !== mid) return
-                // 解构赋值
-                const { type, data, message } = resData.body
-                // 根据处理状态进行操作
-                if (type === 'success') resolve(data)
-                if (type === 'error')   reject(message)
-            }
+            const timer = setInterval(() => {
+                // 查询是否接到响应
+                const { response } = this.dataMap.get(mid)
+                // 若接到响应
+                if (response) {
+                    const { type, data, message } = response.body
+                    clearInterval(timer)
+                    this.dataMap.delete(mid)
+                    if (type === 'success') resolve(data)
+                    if (type === 'error')   reject(message)
+                }
+                // TODO: 系统设置可配置 - 监听来自响应频道的响应消息
+            }, 100)
+            // 10s 超时
+            setTimeout(() => {
+                clearInterval(timer)
+                this.dataMap.delete(mid)
+                reject('Timeout')
+                // TODO: 系统设置可配置 - 超时时间，慎重
+            }, 10000)
         })
+    }
+
+    close() {
+        // 关闭 win 窗口
+        this.win.close()
     }
 }
 
@@ -173,6 +208,8 @@ export function EXIT({ state, commit }, id) {
 }
 
 
+
+
 /**
  * 登录连接
  * @param   {Object}    sessionItem     会话信息对象
@@ -205,7 +242,7 @@ export async function CONNECT({ state, commit }, sessionItem) {
         // 认证失败 给出提示
         await alert(err)
         // 关闭会话连接
-        conn.win.close()
+        conn.close()
         // vuex 正在连接会话列表 remove
         commit('CONNECTING_DEL', sessionId)
     }
@@ -216,7 +253,7 @@ export function CONNECT_CANCEL({ state, commit }, sessionId) {
     // vuex 正在连接会话列表 remove
     commit('CONNECTING_DEL', sessionId)
     // 关闭会话连接
-    conn.win.close()
+    conn.close()
 }
 
 export async function CONNECT_EXIT({ state, commit }, conn) {
@@ -227,7 +264,7 @@ export async function CONNECT_EXIT({ state, commit }, conn) {
     // vuex 已连接会话列表 remove
     commit('CONNECTED_DEL', conn.id)
     // 关闭会话连接
-    conn.win.close()
+    conn.close()
 
     // 若关闭的连接是当前活跃标签，且已连接会话数量不为 0，则更换活跃标签
     if (id === state.active && state.connectedList.length !== 0) {
@@ -249,7 +286,7 @@ export async function CONNECT_EXIT({ state, commit }, conn) {
  */
 export async function CONNECT_EXIT_ALL({ state, commit }) {
     // 关闭所有会话连接
-    state.connectedList.forEach(conn => conn.win.close())
+    state.connectedList.forEach(conn => conn.close())
     // vuex 已连接会话列表清空
     commit('CONNECTED_DEL_ALL')
     // 回到首页
