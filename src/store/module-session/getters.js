@@ -32,10 +32,12 @@ export function sessionInfo (state) {
                 if (item.type === 'session') {
                     let condMatchNum = 0
                     Object.keys(cond).forEach(field => {
-                        if (field === 'id'       && item.id === cond.id)                    condMatchNum += 1
-                        if (field === 'host'     && item.detail.host === cond.host)         condMatchNum += 1
-                        if (field === 'port'     && item.detail.port === cond.port)         condMatchNum += 1
-                        if (field === 'username' && item.detail.username === cond.username) condMatchNum += 1
+                        const condMatch = (field === 'id' && item.id === cond.id)
+                        || (field === 'host' && item.detail.host === cond.host)
+                        || (field === 'port' && item.detail.port === cond.port)
+                        || (field === 'username' && item.detail.username === cond.username)
+                        || (field === 'password' && item.detail.password === tools.aesEncode(cond.password))
+                        if (condMatch) condMatchNum += 1
                     })
                     if (condMatchNum === Object.keys(cond).length) return info = item
                 }

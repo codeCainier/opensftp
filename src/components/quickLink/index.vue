@@ -72,14 +72,12 @@
 
                 this.loading = true
 
-                this.$store.dispatch('session/LOGIN_QUICK', {
+                this.$store.dispatch('session/CONNECT_QUICK', {
                     host,
                     port,
                     username,
                     password,
                 })
-                    .then(() => this.$router.push({ path: '/session' }))
-                    .catch(err => this.alert(err))
                     .finally(() => this.loading = false)
             },
         },

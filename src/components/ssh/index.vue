@@ -9,7 +9,7 @@
                @keydown.ctrl.u="cmd = ''"
                @keydown.enter="openTerminal(cmd)">
         <q-space/>
-        <terminal ref="terminal" :connect="connect"/>
+        <terminal ref="terminal" :conn="conn"/>
     </div>
 </template>
 
@@ -22,7 +22,7 @@
             }
         },
         props: {
-            connect: Object,
+            conn: Object,
         },
         methods: {
             openTerminal(cmd) {

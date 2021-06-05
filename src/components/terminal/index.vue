@@ -15,16 +15,22 @@
     import { AttachAddon } from 'xterm-addon-attach'
     import { Unicode11Addon } from 'xterm-addon-unicode11'
     import 'xterm/css/xterm.css'
+    import electron from 'electron'
 
     export default {
         name: 'Terminal',
         props: {
-            connect: Object,
+            conn: Object,
         },
         data() {
             return {
                 show: false,
                 term: '',
+                // SSH 请求频道名称
+                reqChannelName: `req-ssh-${this.conn.id}`,
+                // SSH 响应频道名称
+                resChannelName: `res-ssh-${this.conn.id}`,
+
                 option: {
                     // 鼠标右键选择
                     rightClickSelectsWord: true,
@@ -91,23 +97,36 @@
         methods: {
             // SSH 初始化
             async sshLogin() {
-                const sshWindow = {
-                    /** The number of rows (default: `24`). */
-                    rows: this.option.rows,
-                    /** The number of columns (default: `80`). */
-                    cols: this.option.cols,
-                    /** The height in pixels (default: `480`). */
-                    height: 480,
-                    /** The width in pixels (default: `640`). */
-                    width: 640,
-                    /** The value to use for $TERM (default: `'vt100'`) */
-                    term: this.term,
-                }
-                this.ssh = await this.connect.shell(sshWindow)
+                // const sshWindow = {
+                //     /** The number of rows (default: `24`). */
+                //     rows: this.option.rows,
+                //     /** The number of columns (default: `80`). */
+                //     cols: this.option.cols,
+                //     /** The height in pixels (default: `480`). */
+                //     height: 480,
+                //     /** The width in pixels (default: `640`). */
+                //     width: 640,
+                //     /** The value to use for $TERM (default: `'vt100'`) */
+                //     term: this.term,
+                // }
+                // this.ssh = await this.conn.shell(sshWindow)
+                // this.ssh = await this.conn.send('shell', { sshWindow })
+                // this.ssh.on('data', data => this.term.write(data))
 
-                this.ssh.on('data', data => this.term.write(data))
                 // 监听 Terminal 内容
-                this.term.onData(data => this.ssh.write(data))
+                this.term.onData(data => {
+                    // 发送至 SSH 进行写入
+                    this.send(data)
+                })
+                // 监听来自 SSH 的 响应消息
+                electron.ipcRenderer.on(this.resChannelName,  (event, data) => {
+                    this.term.write(data)
+                })
+            },
+            // SSH 发送
+            send(data) {
+                // 发送至 SSH 进行写入
+                this.conn.win.webContents.send(this.reqChannelName, data, this.conn.winId)
             },
             // Terminal 初始化
             init() {
@@ -178,9 +197,8 @@
                 this.show = true
                 setTimeout(() => {
                     this.term.focus()
-                    if (cmd) {
-                        this.ssh.write(cmd + '\n')
-                    }
+                    // 发送至 SSH 进行写入
+                    if (cmd) this.send(cmd + '\n')
                 }, 300)
             },
         },

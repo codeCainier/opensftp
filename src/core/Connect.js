@@ -14,6 +14,7 @@ class Connect {
         this.sessionInfo = tools.clone(sessionInfo)
         await this.initConn()
         await this.initSFTP()
+        await this.initSSH()
     }
 
     exit() {
@@ -54,7 +55,7 @@ class Connect {
         })
     }
 
-    shell(window, options) {
+    initSSH(window, options) {
         return new Promise((resolve, reject) => {
             this.conn.shell(window, options, (err, stream) => {
                 if (err) return reject(err)
@@ -70,7 +71,7 @@ class Connect {
      * @param   {String}    localPath       本地路径
      * @param   {Function}  progress        完成 size
      */
-    async download(remotePath, localPath, progress = () => {}) {
+    async download(remotePath, localPath, progress) {
         const stats = await this.remoteStat(remotePath)
         const idDir = stats.isDirectory()
 
@@ -113,7 +114,7 @@ class Connect {
         }
     }
 
-    async upload(localPath, remotePath, progress = () => {}) {
+    async upload(localPath, remotePath, progress) {
         const stats = await this.localStat(localPath)
         const idDir = stats.isDirectory()
 
@@ -234,6 +235,16 @@ class Connect {
         })
     }
 
+    remoteExist(pathName) {
+        return new Promise((resolve, reject) => {
+            this.remoteStat(pathName)
+                .then(stats => {
+                    resolve({ isDir: stats.isDirectory() })
+                })
+                .catch(() => reject())
+        })
+    }
+
     /**
      * 远程 创建文件
      * @method
@@ -290,6 +301,16 @@ class Connect {
                 if (err) return reject(err)
                 resolve(stats)
             })
+        })
+    }
+
+    localExist(pathName) {
+        return new Promise((resolve, reject) => {
+            this.localStat(pathName)
+                .then(stats => {
+                    resolve({ isDir: stats.isDirectory() })
+                })
+                .catch(() => reject())
         })
     }
 

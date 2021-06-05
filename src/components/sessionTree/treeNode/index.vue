@@ -196,7 +196,6 @@ export default {
          * 连接会话
          */
         handleLogin() {
-            // this.$store.dispatch('session/CONNECT', this.item)
             this.$store.dispatch('session/CONNECT', this.item)
         },
         /**

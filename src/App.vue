@@ -29,7 +29,10 @@
                     window.removeEventListener('beforeunload', closeAllConnect);
                 }
                 window.addEventListener('beforeunload', closeAllConnect);
-                if (remote.BrowserWindow.getAllWindows().length !== 1) this.alert('窗口错误')
+                if (remote.BrowserWindow.getAllWindows().length !== 1) this.alert('窗口错误，点击刷新窗口')
+                    .then(() => {
+                        location.reload()
+                    })
             },
         },
         beforeCreate() {

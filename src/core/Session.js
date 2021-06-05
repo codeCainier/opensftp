@@ -1,5 +1,6 @@
 import { uid } from 'quasar'
 import path from 'path'
+import {clear} from "core-js/internals/task";
 
 export default {
     /**
@@ -184,24 +185,22 @@ export default {
         let statMode, rmMode
 
         if (action === 'local')  {
-            statMode = 'localStat'
+            statMode = 'localExist'
             rmMode   = 'localRm'
         }
         if (action === 'remote') {
-            statMode = 'remoteStat'
+            statMode = 'remoteExist'
             rmMode   = 'remoteRm'
         }
 
         return new Promise((resolve, reject) => {
             this.conn.send(statMode, { pathName })
                 .then(stats => {
-                    const isDir = stats.isDirectory()
-
-                    if (!isDir) this.confirm('文件已存在，是否进行覆盖？')
+                    if (!stats.isDir) this.confirm('文件已存在，是否进行覆盖？')
                         .then(() => resolve())
                         .catch(() => reject())
 
-                    if (isDir) this.$q.dialog({
+                    if (stats.isDir) this.$q.dialog({
                         message: '目录已存在，请选择覆盖模式',
                         options: {
                             type: 'radio',
@@ -338,28 +337,39 @@ export default {
     transmit(action, fromPath, distPath) {
         // 检查文件是否已存在
         this.checkOverwrite(action === 'download' ? 'local' : 'remote', distPath)
-            .then(async () => {
+            .then(() => {
                 const id     = uid()
                 const connId = this.conn.id
                 const dir    = path.parse(distPath).dir
                 const name   = path.basename(fromPath)
                 // 创建任务
                 this.$store.commit('transfer/TASK_INIT', { id, connId, dir, name, action })
+                // 检查传输进度
+                // TODO: 思考进度检查时间间隔是否允许配置
+                const progressTimer = setInterval(() => {
+                    this.conn.send('progress', { progressId: id })
+                        .then(progress => {
+                            if (!progress) return
+                            const { pathname, saved, total } = progress
+                            // 更新任务
+                            this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
+                        })
+                        .catch(() => clearInterval(progressTimer))
+                }, 100)
                 // 开始传输
-                await this.conn.send(action, {
+                this.conn.send(action, {
+                    progressId: id,
                     localPath : action === 'download' ? distPath : fromPath,
                     remotePath: action === 'download' ? fromPath : distPath,
-                    progress  : (pathname, saved, total) => {
-                        // 更新任务
-                        this.$store.commit('transfer/TASK_UPDATE', { id, pathname, saved, total })
-                    },
                 })
-                // 完成传输
-                this.$store.commit('transfer/TASK_FINISH', id)
-                // 通知提示
-                this.notify(this.$store.getters['transfer/TRANSMIT_INFO'](id))
+                    .then(() => {
+                        // 完成传输
+                        this.$store.commit('transfer/TASK_FINISH', id)
+                        // 通知提示
+                        this.notify(this.$store.getters['transfer/TRANSMIT_INFO'](id))
+                    })
+                    .finally(() => clearInterval(progressTimer))
             })
-            .catch(() => {})
     },
     /**
      * 目录排序

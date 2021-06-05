@@ -1,6 +1,6 @@
 import { ipcRenderer } from 'electron'
-import Connect from 'src/core/Connect'
 import { remote } from 'electron'
+import Connect  from 'src/core/Connect'
 
 const { BrowserWindow } = remote
 
@@ -10,6 +10,23 @@ class ConnectProcessWindow extends Connect {
         this.id    = connectId
         this.winId = winId
         this.win   = BrowserWindow.fromId(this.winId)
+
+        this.progressMap = new Map()
+    }
+
+    sshListener() {
+        // SSH 请求频道名称
+        const reqChannelName = `req-ssh-${this.id}`
+        // SSH 响应频道名称
+        const resChannelName = `res-ssh-${this.id}`
+        // 监听 SSH 响应，发送给 Terminal
+        this.ssh.on('data', data => {
+            this.win.webContents.send(resChannelName, data, this.winId)
+        })
+        // 监听 Terminal 写入
+        ipcRenderer.on(reqChannelName, async (event, data) => {
+            this.ssh.write(data)
+        })
     }
 
     send(resData) {
@@ -26,19 +43,20 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
     ipcRenderer.on('req-' + conn.id, async (event, reqData) => {
         const { mid, action } = reqData.head
         const {
+            progressId,
             sessionInfo,
             cwd,
             window,
             options,
             remotePath,
             localPath,
-            progress,
             pathName,
             pathOld,
             pathNew,
             editorPath,
             callback,
         } = reqData.body
+        // 默认响应数据
         const resData = {
             head: { mid },
             body: {
@@ -50,21 +68,31 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
                 message: '响应未处理',
             },
         }
+        // 传输进度
+        const transmitProgress = (pathname, saved, total) => {
+            conn.progressMap.set(progressId, { pathname, saved, total })
+        }
 
         try {
             resData.body.type = 'success'
             resData.body.message = '操作成功'
 
-            if (action === 'auth')              resData.body.data = await conn.auth(sessionInfo)
+            if (action === 'auth') {
+                resData.body.data = await conn.auth(sessionInfo)
+                conn.sshListener()
+            }
+
             if (action === 'shell')             resData.body.data = await conn.shell(window, options)
-            if (action === 'download')          resData.body.data = await conn.download(remotePath, localPath, progress)
-            if (action === 'upload')            resData.body.data = await conn.upload(localPath, remotePath, progress)
+            if (action === 'download')          resData.body.data = await conn.download(remotePath, localPath, transmitProgress)
+            if (action === 'upload')            resData.body.data = await conn.upload(localPath, remotePath, transmitProgress)
+
+            if (action === 'progress')          resData.body.data = conn.progressMap.get(progressId)
 
             if (action === 'remoteList')        resData.body.data = await conn.remoteList(cwd)
             if (action === 'remoteRm')          resData.body.data = await conn.remoteRm(pathName)
             if (action === 'remoteMkdir')       resData.body.data = await conn.remoteMkdir(pathName)
             if (action === 'remoteRename')      resData.body.data = await conn.remoteRename(pathOld, pathNew)
-            if (action === 'remoteStat')        resData.body.data = await conn.remoteStat(pathName)
+            if (action === 'remoteExist')       resData.body.data = await conn.remoteExist(pathName)
             if (action === 'remoteWriteFile')   resData.body.data = await conn.remoteWriteFile(pathName)
             if (action === 'remoteEditFile')    resData.body.data = await conn.remoteEditFile(remotePath, editorPath, callback)
 
@@ -72,7 +100,7 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             if (action === 'localRm')           resData.body.data = await conn.localRm(pathName)
             if (action === 'localMkdir')        resData.body.data = await conn.localMkdir(pathName)
             if (action === 'localRename')       resData.body.data = await conn.localRename(pathOld, pathNew)
-            if (action === 'localStat')         resData.body.data = await conn.localStat(pathName)
+            if (action === 'localExist')        resData.body.data = await conn.localExist(pathName)
             if (action === 'localWriteFile')    resData.body.data = await conn.localWriteFile(pathName)
 
             // if (action === 'exit')              resData.body.data = await conn.exit()

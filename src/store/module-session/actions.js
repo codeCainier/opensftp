@@ -1,10 +1,9 @@
-import Connect   from 'src/core/connect'
-import tools     from 'src/utils'
-import { alert } from 'src/utils/dialog'
-import router    from 'src/router'
-import electron  from 'electron'
-import { uid }   from 'quasar'
-import path      from 'path'
+import tools                from 'src/utils'
+import { alert, confirm }   from 'src/utils/dialog'
+import router               from 'src/router'
+import electron             from 'electron'
+import { uid }              from 'quasar'
+import path                 from 'path'
 
 class SessionConnect {
     constructor(sessionId) {
@@ -21,7 +20,7 @@ class SessionConnect {
         // 使用创建新窗口方法，创建会话进程
         this.win = new electron.remote.BrowserWindow({
             show   : false,
-            // TODO: 参数必要性讨论
+            // TODO: parent 参数必要性需讨论
             parent : this.winId,
             width  : 300,
             height : 300,
@@ -33,8 +32,16 @@ class SessionConnect {
         this.loadUrlPath = process.env.NODE_ENV === 'development'
             ? path.join(location.origin, 'connect.html')
             : location.origin + path.join(path.dirname(location.pathname), 'connect.html')
+        // 开发模式开启 DevTools
+        this.win.webContents.openDevTools()
         // data Map
         this.dataMap = new Map()
+        // 长连接动作
+        this.keepAction = [
+            'auth',
+            'download',
+            'upload',
+        ]
     }
 
     async init() {
@@ -69,10 +76,8 @@ class SessionConnect {
             body: { ...params },
         }
         return new Promise((resolve, reject) => {
-            // data Map 写入请求
-            this.dataMap.set(mid, {
-                request,
-            })
+            // data Map 写入请求与进度回调
+            this.dataMap.set(mid, { request })
             // 向请求频道发送信息
             this.win.webContents.send(this.reqChannelName, request, this.winId)
             // 监听来自响应频道的响应消息
@@ -84,18 +89,20 @@ class SessionConnect {
                     const { type, data, message } = response.body
                     clearInterval(timer)
                     this.dataMap.delete(mid)
-                    if (type === 'success') resolve(data)
-                    if (type === 'error')   reject(message)
+                    if (type === 'success')  resolve(data)
+                    if (type === 'error')    reject(message)
                 }
                 // TODO: 系统设置可配置 - 监听来自响应频道的响应消息
             }, 100)
-            // 10s 超时
-            setTimeout(() => {
-                clearInterval(timer)
-                this.dataMap.delete(mid)
-                reject('Timeout')
-                // TODO: 系统设置可配置 - 超时时间，慎重
-            }, 10000)
+            // 为非 download / upload 等长请求，设置 10s 超时
+            if (!this.keepAction.includes(action)) {
+                setTimeout(() => {
+                    clearInterval(timer)
+                    this.dataMap.delete(mid)
+                    reject('Timeout')
+                    // TODO: 系统设置可配置 - 超时时间，慎重
+                }, 10000)
+            }
         })
     }
 
@@ -106,148 +113,97 @@ class SessionConnect {
 }
 
 /**
- * 登录连接
- * @param   {Object}    store
- * @param   {Object}    store.state
- * @param   {Function}  store.commit
- * @param   {Object}    sessionInfo     会话信息
- */
-export function LOGIN({ state, commit }, sessionInfo) {
-    const connect = new Connect(sessionInfo)
-    return new Promise((resolve, reject) => {
-        connect
-            .init()
-            .then(() => {
-                // 创建会话标签
-                commit('CONNECT', connect)
-                resolve()
-            })
-            .catch(err => reject(err))
-    })
-}
-
-/**
- * 快速连接
- * @param   {Object}    store
- * @param   {Object}    store.state
- * @param   {Function}  store.commit
- * @param   {Object}    sessionInfo     会话信息
- */
-export function LOGIN_QUICK({ state, commit, getters }, sessionInfo) {
-    const { host, port, username, password } = sessionInfo
-
-    const connect = new Connect({
-        detail: {
-            host,
-            port,
-            username,
-            password: tools.aesEncode(password),
-            authMode: 'password',
-        }
-    })
-
-    return new Promise((resolve, reject) => {
-        connect
-            .init()
-            .then(() => {
-                // 若会话池不存在会话信息，则保存会话信息
-                if (!getters.sessionInfo({ host, port, username })) commit('CREATE_SESSION', {
-                    name: host,
-                    host,
-                    port,
-                    username,
-                    password,
-                    authMode: 'password',
-                })
-                // 更新 connect 对象中会话信息
-                connect.sessionInfo = tools.clone(getters.sessionInfo({ host, port, username }))
-                // 使用会话信息创建会话标签
-                commit('CONNECT', connect)
-                resolve()
-            })
-            .catch(err => reject(err))
-    })
-}
-
-/**
- * 取消连接
- * @param   {Object}    store
- * @param   {Object}    store.state
- * @param   {Function}  store.commit
- * @param   {String}    sessionId       会话 ID
- */
-export function LOGIN_CANCEL({ state, commit }, sessionId) {
-
-}
-
-/**
- * 断开连接
- * @param   {Object}    store
- * @param   {Object}    store.state
- * @param   {Function}  store.commit
- * @param   {String}    id              会话连接 ID
- */
-export function EXIT({ state, commit }, id) {
-    const index  = state.conn.findIndex(item => item.id === id)
-    let nextId
-
-    return new Promise((resolve, reject) => {
-        try {
-            commit('END', id)
-
-            if (state.conn.length && index === state.conn.length) nextId = state.conn[index - 1].id
-            if (state.conn.length && index !== state.conn.length) nextId = state.conn[index].id
-            if (!state.conn.length) nextId = null
-
-            commit('SET_ACTIVE', nextId)
-            resolve()
-        } catch (err) {
-            reject(err)
-        }
-    })
-}
-
-
-
-
-/**
- * 登录连接
+ * 会话建立连接
  * @param   {Object}    sessionItem     会话信息对象
  */
-export async function CONNECT({ state, commit }, sessionItem) {
-    const sessionId   = sessionItem.id
-    const sessionInfo = sessionItem.detail
-    // 创建会话对象
-    const conn = new SessionConnect(sessionId)
-    // vuex 正在连接会话列表 push
-    commit('CONNECTING_ADD', conn)
-    // 发起认证
-    try {
-        // 连接初始化
-        await conn.init()
+export function CONNECT({ state, commit }, sessionItem) {
+    return new Promise(async (resolve, reject) => {
+        const sessionId   = sessionItem.id
+        const sessionInfo = sessionItem.detail
+        // 创建会话对象
+        const conn = new SessionConnect(sessionId)
+        // vuex 正在连接会话列表 push
+        commit('CONNECTING_ADD', conn)
         // 发起认证
-        await conn.send('auth', { sessionInfo })
-        // 认证成功 vuex 已连接会话列表 push
-        commit('CONNECTED_ADD', conn)
-        // 设置为活跃会话
-        commit('SET_ACTIVE', conn.id)
-        // vuex 正在连接会话列表 remove
-        commit('CONNECTING_DEL', sessionId)
-        // 若没有在正在连接的会话，则跳转路由
-        if (state.connectingList.length === 0) {
-            // 跳转路由
-            if (router.app.$route.path !== '/session') await router.push('/session')
+        try {
+            // 连接初始化
+            await conn.init()
+            // 发起认证
+            await conn.send('auth', { sessionInfo })
+            // 认证成功 vuex 已连接会话列表 push
+            commit('CONNECTED_ADD', conn)
+            // 设置为活跃会话
+            commit('SET_ACTIVE', conn.id)
+            // vuex 正在连接会话列表 remove
+            commit('CONNECTING_DEL', sessionId)
+            // 若没有在正在连接的会话，则跳转路由
+            if (state.connectingList.length === 0) {
+                // 跳转路由
+                if (router.app.$route.path !== '/session') await router.push('/session')
+            }
+            resolve()
+        } catch (err) {
+            // 认证失败 给出提示
+            await alert(err)
+            // 关闭会话连接
+            conn.close()
+            // vuex 正在连接会话列表 remove
+            commit('CONNECTING_DEL', sessionId)
+            reject()
         }
-    } catch (err) {
-        // 认证失败 给出提示
-        await alert(err)
-        // 关闭会话连接
-        conn.close()
-        // vuex 正在连接会话列表 remove
-        commit('CONNECTING_DEL', sessionId)
-    }
+    })
 }
 
+/**
+ * 会话快速建立连接
+ * @param   {Object}    sessionInfo             会话连接信息
+ * @param   {String}    sessionInfo.host        地址
+ * @param   {String}    sessionInfo.port        端口
+ * @param   {String}    sessionInfo.username    用户
+ * @param   {String}    sessionInfo.password    密码
+ */
+export function CONNECT_QUICK({ state, commit, getters }, sessionInfo) {
+    return new Promise((resolve, reject) => {
+        const { host, port, username, password } = sessionInfo
+        const homePath = path.join(electron.remote.app.getPath('home'))
+        const iconPath = 'statics/icons/server-icons/default.svg'
+        const existSession = getters['sessionInfo'](sessionInfo)
+        const sessionItem = existSession || {
+            id         : uid(),
+            type       : 'session',
+            name       : host,
+            icon       : iconPath,
+            detail     : {
+                host       : host,
+                port       : port,
+                username   : username,
+                password   : tools.aesEncode(password),
+                privateKey : '',
+                authMode   : 'password',
+                localPath  : homePath,
+                remotePath : '/',
+            },
+            createTime : Date.now(),
+            updateTime : Date.now(),
+        }
+
+        // 若不存在相同会话，则进行创建
+        if (!existSession) commit('CREATE_SESSION_QUICK', sessionItem)
+
+        CONNECT({ state, commit }, sessionItem)
+            .then(() => resolve())
+            .catch(() => {
+                // TODO: 若开启 - 快速连接会话 - 连接失败不保存会话功能
+                // commit('DELETE', sessionItem.id)
+                reject()
+            })
+    })
+}
+
+/**
+ * 会话取消连接（正在连接会话）
+ * @param   {Object}    sessionItem     会话信息对象
+ */
 export function CONNECT_CANCEL({ state, commit }, sessionId) {
     const conn = state.connectingList.find(item => item.sessionId === sessionId)
     // vuex 正在连接会话列表 remove
@@ -256,6 +212,10 @@ export function CONNECT_CANCEL({ state, commit }, sessionId) {
     conn.close()
 }
 
+/**
+ * 会话断开连接（已连接会话）
+ * @param   {Object}    sessionItem     会话信息对象
+ */
 export async function CONNECT_EXIT({ state, commit }, conn) {
     const { id } = conn
     // 获取要关闭的连接在 connectedList 中所处的位置

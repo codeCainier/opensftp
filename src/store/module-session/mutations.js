@@ -1,12 +1,8 @@
-import { LocalStorage, uid } from 'quasar'
-import tools from 'src/utils'
-import electron from 'electron'
-import path from 'path'
+import { LocalStorage, uid }    from 'quasar'
+import tools                    from 'src/utils'
 
 /**
  * 创建会话
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.id            节点 ID
  * @param   {String}    props.name          节点名称
  * @param   {String}    props.icon          节点图标
@@ -20,28 +16,35 @@ import path from 'path'
  * @param   {String}    props.remotePath    默认的 Remote 目录
  */
 export function CREATE_SESSION(state, props) {
-    const homePath = path.join(electron.remote.app.getPath('home'))
-    const iconPath = 'statics/icons/server-icons/default.svg'
     const nodeInfo = {
-        id         : props.id || uid(),                         // 节点 ID
+        id         : props.id,                                  // 节点 ID
         type       : 'session',                                 // 节点类型 session || dir
         name       : props.name,                                // 节点名称
-        icon       : props.icon || iconPath,                    // 节点图标
+        icon       : props.icon,                                // 节点图标
         detail     : {
             host       : props.host,                            // 地址
             port       : props.port,                            // 端口
             username   : props.username,                        // 账号
-            password   : tools.aesEncode(props.password) || '', // 密码
-            privateKey : props.privateKey || '',                // SSH Key
-            authMode   : props.authMode   || 'password',        // 默认的认证方式  password || sshKey
-            localPath  : props.localPath  || homePath,          // 默认的 Local 目录
-            remotePath : props.remotePath || '/',               // 默认的 Remote 目录
+            password   : tools.aesEncode(props.password),       // 密码
+            privateKey : props.privateKey,                      // SSH Key
+            authMode   : props.authMode,                        // 默认的认证方式  password || sshKey
+            localPath  : props.localPath,                       // 默认的 Local 目录
+            remotePath : props.remotePath,                      // 默认的 Remote 目录
         },
         createTime : Date.now(),                                // 创建时间
         updateTime : Date.now(),                                // 更新时间
     }
 
     state.pool.splice(0, 0, nodeInfo)
+    LocalStorage.set('sessionPool', state.pool)
+}
+
+/**
+ * 快速创建会话
+ * @param   {String}    props.sessionItem   会话项目
+ */
+export function CREATE_SESSION_QUICK(state, sessionItem) {
+    state.pool.splice(0, 0, sessionItem)
     LocalStorage.set('sessionPool', state.pool)
 }
 

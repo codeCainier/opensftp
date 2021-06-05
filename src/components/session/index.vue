@@ -16,7 +16,7 @@
                         @refresh-local="$refs.local.getFileList('.')"/>
             </template>
         </q-splitter>
-        <!--<ssh :conn="conn"/>-->
+        <ssh :conn="conn"/>
     </div>
 </template>
 

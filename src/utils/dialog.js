@@ -3,21 +3,21 @@ import electron from 'electron'
 
 /**
  * 弹窗组件
- * @param   {String}    obj
- * @param   {Object}    obj
- * @param   {String}    obj.message     提示消息
- * @param   {String}    obj.detail      详情
- * @param   {String}    obj.title       标题 未使用
- * @param   {String}    obj.textConfirm 确认文字
- * @param   {String}    obj.checkbox    勾选文字
+ * @param   {String}    props               直接传入提示消息
+ * @param   {Object}    props               传入参数对象
+ * @param   {String}    props.message       提示消息
+ * @param   {String}    props.detail        详情
+ * @param   {String}    props.title         标题 未使用
+ * @param   {String}    props.textConfirm   确认文字
+ * @param   {String}    props.checkbox      勾选文字
  */
-export function alert (obj) {
-    if (typeof obj === 'string') obj = {
-        message: obj,
+export function alert (props) {
+    if (typeof props === 'string') props = {
+        message: props,
     }
 
-    if (typeof obj === 'object' && !obj.message) obj = {
-        message: JSON.stringify(obj)
+    if (typeof props === 'object' && !props.message) props = {
+        message: JSON.stringify(props)
     }
 
     return new Promise((resolve, reject) => {
@@ -25,11 +25,11 @@ export function alert (obj) {
             // type: '',
             // icon: '',
             // title: '',
-            message: obj.message,
-            detail: obj.detail,
-            buttons: [obj.textConfirm || '好'],
-            checkboxLabel: obj.checkbox,
-            defaultId: 0,
+            message         : props.message,
+            detail          : props.detail,
+            buttons         : [props.textConfirm || '好'],
+            checkboxLabel   : props.checkbox,
+            defaultId       : 0,
         })
             .then(res => resolve(res))
             .catch(err => console.error(err))
@@ -38,16 +38,18 @@ export function alert (obj) {
 
 /**
  * 确认框组件
- * @param   {String}    obj.message     提示消息
- * @param   {String}    obj.detail      详情
- * @param   {String}    obj.title       标题 未使用
- * @param   {String}    obj.textConfirm 确认文字
- * @param   {String}    obj.textCancel  取消文字
- * @param   {String}    obj.checkbox    勾选文字
+ * @param   {String}    props               直接传入提示消息
+ * @param   {Object}    props               传入参数对象
+ * @param   {String}    props.message       提示消息
+ * @param   {String}    props.detail        详情
+ * @param   {String}    props.title         标题 未使用
+ * @param   {String}    props.textConfirm   确认文字
+ * @param   {String}    props.textCancel    取消文字
+ * @param   {String}    props.checkbox      勾选文字
  */
-export function confirm (obj) {
-    if (typeof obj === 'string') obj = {
-        message: obj,
+export function confirm (props) {
+    if (typeof props === 'string') props = {
+        message: props,
     }
 
     return new Promise((resolve, reject) => {
@@ -55,12 +57,12 @@ export function confirm (obj) {
             // type: '',
             // icon: '',
             // title: '',
-            message: obj.message,
-            detail: obj.detail,
-            buttons: [obj.textConfirm || '好', obj.textCancel || '取消'],
-            checkboxLabel: obj.checkbox,
-            defaultId: 0,
-            cancelId: 1,
+            message         : props.message,
+            detail          : props.detail,
+            buttons         : [props.textConfirm || '好', props.textCancel || '取消'],
+            checkboxLabel   : props.checkbox,
+            defaultId       : 0,
+            cancelId        : 1,
         })
             .then(res => {
                 // 确认回调
