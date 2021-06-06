@@ -14,6 +14,11 @@ class ConnectProcessWindow extends Connect {
         this.progressMap = new Map()
     }
 
+    async remoteSSHInit(termWindow) {
+        await this.initSSH(termWindow)
+        await this.sshListener()
+    }
+
     sshListener() {
         // SSH 请求频道名称
         const reqChannelName = `req-ssh-${this.id}`
@@ -46,8 +51,7 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             progressId,
             sessionInfo,
             cwd,
-            window,
-            options,
+            termWindow,
             remotePath,
             localPath,
             pathName,
@@ -77,12 +81,8 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             resData.body.type = 'success'
             resData.body.message = '操作成功'
 
-            if (action === 'auth') {
-                resData.body.data = await conn.auth(sessionInfo)
-                conn.sshListener()
-            }
-
-            if (action === 'shell')             resData.body.data = await conn.shell(window, options)
+            if (action === 'auth')              resData.body.data = await conn.auth(sessionInfo)
+            if (action === 'remoteSSHInit')     resData.body.data = await conn.remoteSSHInit(termWindow)
             if (action === 'download')          resData.body.data = await conn.download(remotePath, localPath, transmitProgress)
             if (action === 'upload')            resData.body.data = await conn.upload(localPath, remotePath, transmitProgress)
 
@@ -103,6 +103,7 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             if (action === 'localExist')        resData.body.data = await conn.localExist(pathName)
             if (action === 'localWriteFile')    resData.body.data = await conn.localWriteFile(pathName)
 
+            // TODO: 目前关闭会话方案为直接关闭会话线程，有无可能存在的问题需进行一步发现
             // if (action === 'exit')              resData.body.data = await conn.exit()
 
         } catch (err) {

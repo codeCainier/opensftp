@@ -95,8 +95,8 @@
             },
         },
         methods: {
-            // SSH 初始化
-            async sshLogin() {
+            // SSH 监听
+            sshListen() {
                 // const sshWindow = {
                 //     /** The number of rows (default: `24`). */
                 //     rows: this.option.rows,
@@ -166,7 +166,16 @@
                 window.addEventListener('resize', () => this.termResize())
 
                 this.term = term
-                this.sshLogin()
+
+                this.conn.send('remoteSSHInit', {
+                    termWindow: {
+                        /** The number of rows (default: `24`). */
+                        rows: this.option.rows,
+                        /** The number of columns (default: `80`). */
+                        cols: this.option.cols,
+                    },
+                })
+                    .then(() => this.sshListen())
             },
             // Terminal Focus 事件
             listenerTermFocus() {
