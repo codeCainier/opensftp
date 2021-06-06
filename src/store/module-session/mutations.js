@@ -50,8 +50,6 @@ export function CREATE_SESSION_QUICK(state, sessionItem) {
 
 /**
  * 创建文件夹
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.id        节点 ID
  * @param   {String}    props.name      节点名称
  */
@@ -72,8 +70,6 @@ export function CREATE_DIR(state, props) {
 
 /**
  * 更新会话
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.id                    会话信息 ID
  * @param   {Object}    props.updateItem            更新项目
  */
@@ -113,7 +109,6 @@ export function UPDATE(state, props) {
 
 /**
  * 删除节点
- * @param   {Object}    state
  * @param   {String}    id      节点 ID
  */
 export function DELETE(state, id) {
@@ -134,39 +129,7 @@ export function DELETE(state, id) {
 }
 
 /**
- * 连接会话
- * @param   {Object}    state
- * @param   {Object}    connect     会话连接对象
- */
-export function CONNECT(state, connect) {
-    const id = uid()
-    state.conn.push({
-        id,
-        connect,
-    })
-    // 设置会话标签为活跃状态
-    state.active = id
-}
-
-/**
- * 终止会话
- * @param   {Object}    state
- * @param   {String}    id      会话连接 ID
- */
-export function END(state, id) {
-    state.conn.forEach((item, index) => {
-        if (item.id === id) {
-            item.connect.sftp.end()
-            item.connect.ssh.end()
-            item.connect.conn.end()
-            state.conn.splice(index, 1)
-        }
-    })
-}
-
-/**
  * 更换当前会话
- * @param   {Object}    state
  * @param   {String}    id      会话连接 ID
  */
 export function SET_ACTIVE(state, id) {
@@ -175,8 +138,6 @@ export function SET_ACTIVE(state, id) {
 
 /**
  * 移动会话
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.action    移动行为    move || into
  * @param   {String}    props.target    被移动的元素 ID
  * @param   {String}    props.position  要移动到位置的后一位元素的 ID
@@ -213,9 +174,6 @@ export function MOVE(state, props) {
     recursionAdd(state.pool)
     LocalStorage.set('sessionPool', state.pool)
 }
-
-
-
 
 /**
  * 新增正在连接中的会话

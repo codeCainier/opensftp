@@ -252,13 +252,22 @@ export default {
                 .catch(err => console.error(err))
         },
         createQuick() {
-            this.confirm({
-                message: '是否进行创建？',
-                confirm: () => this.confirm(),
-                cancel: () => {
-
-                },
-            })
+            // 创建模式
+            if (!this.updateItem) {
+                this.confirm({
+                    message: '是否进行创建？',
+                    confirm: () => this.create(),
+                    cancel: () => {},
+                })
+            }
+            // 编辑模式
+            if (this.updateItem) {
+                this.confirm({
+                    message: '是否保存编辑？',
+                    confirm: () => this.update(),
+                    cancel: () => {},
+                })
+            }
         },
     },
 };

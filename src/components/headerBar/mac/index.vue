@@ -30,11 +30,6 @@ export default {
         'header-menu': headerMenu,
         'dark-toggle': darkToggle,
     },
-    watch: {
-        '$store.state.session.conn': function (newVal) {
-            if (!newVal.length) this.backHome()
-        },
-    },
     methods: {
         minimize() {
             this.$q.electron.remote.BrowserWindow.getFocusedWindow().minimize()
