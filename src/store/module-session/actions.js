@@ -32,7 +32,7 @@ class SessionConnect {
         this.loadUrlPath = process.env.NODE_ENV === 'development'
             ? path.join(location.origin, 'connect.html')
             : location.origin + path.join(path.dirname(location.pathname), 'connect.html')
-        // 开发模式开启 DevTools
+        // TODO: 开发模式开启 DevTools
         // this.win.webContents.openDevTools()
         // data Map
         this.dataMap = new Map()

@@ -2,7 +2,9 @@
     <q-card class="terminal-container fixed-top-left full-height full-width"
             :class="{ active: show }"
             :style="terminalStyle()">
-        <div ref="terminal" class="full-height overflow-hidden q-pa-sm"></div>
+        <div class="full-height q-pa-sm">
+            <div ref="terminal" class="full-height overflow-hidden"></div>
+        </div>
     </q-card>
 </template>
 
@@ -65,7 +67,6 @@
         },
         watch: {
             show(newVal) {
-                if (!newVal) this.termClose()
             },
             '$store.state.sftp.closeTermListener': function () {
                 this.show = false
@@ -93,26 +94,22 @@
                     return style
                 }
             },
+            termWindow() {
+                return () => ({
+                    /** The number of rows (default: `24`). */
+                    rows: this.termSize().rows,
+                    /** The number of columns (default: `80`). */
+                    cols: this.termSize().cols,
+                    /** The height in pixels (default: `480`). */
+                    height: this.$refs.terminal.offsetHeight,
+                    /** The width in pixels (default: `640`). */
+                    width: this.$refs.terminal.offsetWidth,
+                })
+            }
         },
         methods: {
             // SSH 监听
             sshListen() {
-                // const sshWindow = {
-                //     /** The number of rows (default: `24`). */
-                //     rows: this.option.rows,
-                //     /** The number of columns (default: `80`). */
-                //     cols: this.option.cols,
-                //     /** The height in pixels (default: `480`). */
-                //     height: 480,
-                //     /** The width in pixels (default: `640`). */
-                //     width: 640,
-                //     /** The value to use for $TERM (default: `'vt100'`) */
-                //     term: this.term,
-                // }
-                // this.ssh = await this.conn.shell(sshWindow)
-                // this.ssh = await this.conn.send('shell', { sshWindow })
-                // this.ssh.on('data', data => this.term.write(data))
-
                 // 监听 Terminal 内容
                 this.term.onData(data => {
                     // 发送至 SSH 进行写入
@@ -130,29 +127,25 @@
             },
             // Terminal 初始化
             init() {
-                // 计算 rows & cols
-                const { rows, cols }  = this.termSize()
-
-                this.option.rows = rows
-                this.option.cols = cols
-
                 // Terminal 实例化
                 const term            = new Terminal(this.option)
-                // 为 xterm 提供终端的尺寸适合包含元素功能
-                const fitAddon        = new FitAddon()
                 // 为 xterm 提供搜索缓冲区功能
                 const searchAddon     = new SearchAddon()
                 // 为 xterm 提供 Unicode 版本 11 规则
                 const unicode11Addon  = new Unicode11Addon()
+                // 为 xterm 提供终端的尺寸适合包含元素功能
+                this.fitAddon         = new FitAddon()
 
+                term.loadAddon(this.fitAddon)
                 term.loadAddon(unicode11Addon)
-                term.loadAddon(fitAddon)
                 term.loadAddon(searchAddon)
 
                 // 设置 Unicode 版本为 11
                 term.unicode.activeVersion = '11'
 
+                // 载入 DOM
                 term.open(this.$refs.terminal)
+
                 // 监听 Terminal Focus
                 term.textarea.addEventListener('focus', this.listenerTermFocus)
                 // 监听 Terminal Blur
@@ -163,19 +156,15 @@
                 term.onSelectionChange(this.listenerTermSelection)
 
                 // 监听 Window 窗口 Resize
-                window.addEventListener('resize', () => this.termResize())
+                window.addEventListener('resize', this.termResize)
 
-                this.term = term
-
-                this.conn.send('remoteSSHInit', {
-                    termWindow: {
-                        /** The number of rows (default: `24`). */
-                        rows: this.option.rows,
-                        /** The number of columns (default: `80`). */
-                        cols: this.option.cols,
-                    },
+                this.$nextTick(() => {
+                    this.term = term
+                    // 适应窗口大小
+                    this.fitAddon.fit()
+                    this.conn.send('sshTermInit', { termWindow: this.termWindow() })
+                        .then(() => this.sshListen())
                 })
-                    .then(() => this.sshListen())
             },
             // Terminal Focus 事件
             listenerTermFocus() {
@@ -192,14 +181,13 @@
             // Terminal Resize 事件
             termResize() {
                 this.$nextTick(() => {
-                    const { rows, cols }  = this.termSize()
-                    this.term.resize(cols, rows)
+                    try {
+                        this.fitAddon.fit()
+                    } catch (e) {
+                        // 在其他路由触发 Window Resize 事件
+                    }
+                    this.conn.send('sshTermResize', { termWindow: this.termWindow() })
                 })
-            },
-            // Terminal Close 事件
-            termClose() {
-                // 移除 Window 窗口 Resize 监听
-                window.removeEventListener('resize', () => this.termResize())
             },
             // Terminal Dialog Open
             open(cmd) {
@@ -223,7 +211,8 @@
         beforeDestroy() {
         },
         destroyed() {
-            this.termClose()
+            // 移除 Window 窗口 Resize 监听
+            window.removeEventListener('resize', this.termResize)
         },
     }
 </script>

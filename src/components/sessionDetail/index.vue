@@ -370,5 +370,4 @@ export default {
                 background: $primary
             &:active
                 background: $primary
-    .card-footer
 </style>

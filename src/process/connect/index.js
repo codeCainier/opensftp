@@ -10,28 +10,34 @@ class ConnectProcessWindow extends Connect {
         this.id    = connectId
         this.winId = winId
         this.win   = BrowserWindow.fromId(this.winId)
-
+        // SSH 请求频道名称
+        this.sshReqChannelName = `req-ssh-${this.id}`
+        // SSH 响应频道名称
+        this.sshResChannelName = `res-ssh-${this.id}`
+        // 进度 Map
         this.progressMap = new Map()
     }
 
-    async remoteSSHInit(termWindow) {
+    async sshTermInit(termWindow) {
         await this.initSSH(termWindow)
-        await this.sshListener()
+        await this.sshListener('init')
     }
 
-    sshListener() {
-        // SSH 请求频道名称
-        const reqChannelName = `req-ssh-${this.id}`
-        // SSH 响应频道名称
-        const resChannelName = `res-ssh-${this.id}`
+    sshListener(action) {
         // 监听 SSH 响应，发送给 Terminal
         this.ssh.on('data', data => {
-            this.win.webContents.send(resChannelName, data, this.winId)
+            this.win.webContents.send(this.sshResChannelName, data, this.winId)
         })
-        // 监听 Terminal 写入
-        ipcRenderer.on(reqChannelName, async (event, data) => {
-            this.ssh.write(data)
-        })
+        // 初始化时监听 Terminal 写入
+        if (action === 'init') {
+            // 监听 Terminal 写入
+            ipcRenderer.on(this.sshReqChannelName, (event, data) => this.ssh.write(data))
+        }
+    }
+
+    async sshTermResize(termWindow) {
+        const { rows, cols, height, width } = termWindow
+        this.ssh.setWindow(rows, cols, height, width)
     }
 
     send(resData) {
@@ -82,7 +88,8 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             resData.body.message = '操作成功'
 
             if (action === 'auth')              resData.body.data = await conn.auth(sessionInfo)
-            if (action === 'remoteSSHInit')     resData.body.data = await conn.remoteSSHInit(termWindow)
+            if (action === 'sshTermInit')       resData.body.data = await conn.sshTermInit(termWindow)
+            if (action === 'sshTermResize')     resData.body.data = await conn.sshTermResize(termWindow)
             if (action === 'download')          resData.body.data = await conn.download(remotePath, localPath, transmitProgress)
             if (action === 'upload')            resData.body.data = await conn.upload(localPath, remotePath, transmitProgress)
 
