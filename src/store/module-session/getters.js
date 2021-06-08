@@ -6,9 +6,18 @@ export function sessionPool (state) {
     }
 }
 
+/**
+ * 获取会话数量
+ */
 export function sessionNodeNum (state) {
-    // TODO: 传入指定目录节点 ID，返回目录节点下会话子节点的数量
+    /**
+     * @param   {String}    id          目录 ID
+     * @return  {Number}                目录下会话数量，若未传入目录 ID，则为全部会话数量
+     */
     return id => {
+        const dirItem = id
+            ? sessionInfo(state)({ id })
+            : state.pool
         let num = 0
         function recursionCount(group) {
             for (let index = 0; index < group.length; index += 1) {
@@ -17,7 +26,7 @@ export function sessionNodeNum (state) {
                 if (item.type === 'dir') recursionCount(item.children)
             }
         }
-        recursionCount(state.pool)
+        recursionCount(dirItem)
         return num
     }
 }
@@ -98,7 +107,15 @@ export function sessionItem (state) {
     }
 }
 
+/**
+ * 判断节点关系
+ */
 export function isChildOf () {
+    /**
+     * @param   {String}    childId     节点 ID
+     * @param   {Object}    parentItem  节点对象
+     * @return  {Boolean}               节点是否为另一节点的子节点
+     */
     return (childId, parentItem) => {
         let isChild = false
         function recursionCheck (group) {

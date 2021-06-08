@@ -25,6 +25,7 @@ class SessionConnect {
             width  : 300,
             height : 300,
             webPreferences: {
+                // FIXME: 校验安全度
                 nodeIntegration: true,
             },
         })

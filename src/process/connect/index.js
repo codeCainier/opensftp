@@ -63,8 +63,7 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             pathName,
             pathOld,
             pathNew,
-            editorPath,
-            callback,
+            editorCMD,
         } = reqData.body
         // 默认响应数据
         const resData = {
@@ -101,7 +100,7 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
             if (action === 'remoteRename')      resData.body.data = await conn.remoteRename(pathOld, pathNew)
             if (action === 'remoteExist')       resData.body.data = await conn.remoteExist(pathName)
             if (action === 'remoteWriteFile')   resData.body.data = await conn.remoteWriteFile(pathName)
-            if (action === 'remoteEditFile')    resData.body.data = await conn.remoteEditFile(remotePath, editorPath, callback)
+            if (action === 'remoteEditFile')    resData.body.data = await conn.remoteEditFile(remotePath, editorCMD)
 
             if (action === 'localList')         resData.body.data = await conn.localList(cwd)
             if (action === 'localRm')           resData.body.data = await conn.localRm(pathName)

@@ -1,33 +1,21 @@
-import { Platform } from 'quasar'
 import fs from 'fs'
 import path from 'path'
 
-let system = ''
-
-if (Platform.is.win)   system = 'win'
-if (Platform.is.mac)   system = 'mac'
-if (Platform.is.linux) system = 'linux'
-
 /**
- * 设置编辑器路径
- * @param   {Object}    store
- * @param   {Object}    store.state
- * @param   {Function}  store.commit
- * @param   {Object}    props
+ * Windows 设置编辑器路径
  * @param   {String}    props.editorName    编辑器名称
- * @param   {String}    props.editorDir     编辑器存放路径
+ * @param   {String}    props.editorPath    编辑器安装目录
  */
-export function SET_EDITOR_PATH ({ state, commit }, { editorName, editorDir }) {
-    const binPath = state[editorName].binPath[system]
-    const fullPath = path.join(editorDir, binPath)
+export function SET_PATH ({ state, commit }, { editorName, editorPath }) {
+    const editor = state.list[editorName]
+    const { winBinPath } = editor
+    const winFullPath = path.join(editorPath, winBinPath)
 
     return new Promise((resolve, reject) => {
-        fs.stat(fullPath, (err, stats) => {
-            if (err) return reject(err)
-            commit('SET', {
-                editorName,
-                editorPath: fullPath,
-            })
+        fs.stat(winFullPath, err => {
+            if (err) return reject()
+            // vuex 更改编辑器状态
+            commit('SET_PATH', { editorName, editorPath })
             resolve()
         })
     })

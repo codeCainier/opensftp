@@ -3,6 +3,7 @@ import fs       from 'fs'
 import { exec } from'child_process'
 import { uid, debounce } from 'quasar'
 import tools    from 'src/utils'
+import notify   from 'src/utils/notify'
 
 const { Client } = require('ssh2')
 
@@ -71,7 +72,7 @@ class Connect {
      * @param   {String}    localPath       本地路径
      * @param   {Function}  progress        完成 size
      */
-    async download(remotePath, localPath, progress) {
+    async download(remotePath, localPath, progress = () => {}) {
         const stats = await this.remoteStat(remotePath)
         const idDir = stats.isDirectory()
 
@@ -114,7 +115,7 @@ class Connect {
         }
     }
 
-    async upload(localPath, remotePath, progress) {
+    async upload(localPath, remotePath, progress = () => {}) {
         const stats = await this.localStat(localPath)
         const idDir = stats.isDirectory()
 
@@ -397,11 +398,11 @@ class Connect {
         return list
     }
 
-    async remoteEditFile(remotePath, editorPath, callback = () => {}) {
+    async remoteEditFile(remotePath, editorCMD) {
         const filename  = path.basename(remotePath)
         const cacheDir  = path.join(__statics, '../cache', uid())
         const localPath = path.join(cacheDir, filename)
-        const cmd       = `${editorPath.replace(/ /g, '\\ ')} ${localPath}`
+        const cmd       = `${editorCMD} "${localPath}"`
         await this.localMkdir(cacheDir)
         await this.download(remotePath, localPath)
         return new Promise((resolve, reject) => {
@@ -410,10 +411,11 @@ class Connect {
                 const watcher = fs.watch(localPath)
                 const changeCallback = async (eventType, filename) => {
                     await this.upload(localPath, remotePath)
-                    callback()
+                    notify(`文件 ${filename} 的修改已生效`)
                 }
                 // 1000ms 防抖
                 watcher.on('change', debounce(changeCallback, 1000))
+                resolve()
             })
         })
     }

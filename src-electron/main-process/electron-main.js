@@ -38,6 +38,7 @@ function createWindow() {
         webPreferences: {
             // Change from /quasar.conf.js > electron > nodeIntegration;
             // More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration
+            // FIXME: 校验安全度
             nodeIntegration: process.env.QUASAR_NODE_INTEGRATION,
             nodeIntegrationInWorker: process.env.QUASAR_NODE_INTEGRATION,
 

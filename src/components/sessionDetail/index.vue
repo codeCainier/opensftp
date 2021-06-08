@@ -70,10 +70,15 @@
                 <div class="form-row q-mb-sm" v-if="authMode === 'password'">
                     <div class="form-label">密码:</div>
                     <div class="form-component full-width q-pl-sm">
-                        <input type="password"
+                        <input :type="showPassword ? 'text' : 'password'"
                                class="form-input full-width q-mr-sm"
                                v-model.trim="password"
                                @keydown.enter="createQuick">
+                        <button type="button" class="input-append-btn"
+                                v-show="password && enableShowPassword"
+                                @click="showPassword = !showPassword">
+                            <q-icon :name="showPassword ? 'visibility_off' : 'visibility'" class="cursor-pointer"/>
+                        </button>
                     </div>
                 </div>
 
@@ -148,24 +153,26 @@ export default {
     name: 'SessionDetail',
     data() {
         return {
-            show        : false,
-            updateItem  : null,
-            authMode    : 'password',
-            name        : '',
-            icon        : './statics/icons/server-icons/default.svg',
-            host        : '',
-            port        : '22',
-            username    : 'root',
-            password    : '',
-            privateKey  : path.join(this.$q.electron.remote.app.getPath('home'), '.ssh', 'id_rsa.pub'),
-            remotePath  : '/',
-            localPath   : path.join(this.$q.electron.remote.app.getPath('home')),
+            show                : false,
+            updateItem          : null,
+            authMode            : 'password',
+            name                : '',
+            icon                : './statics/icons/server-icons/default.svg',
+            host                : '',
+            port                : '22',
+            username            : 'root',
+            password            : '',
+            privateKey          : path.join(this.$q.electron.remote.app.getPath('home'), '.ssh', 'id_rsa.pub'),
+            remotePath          : '/',
+            localPath           : path.join(this.$q.electron.remote.app.getPath('home')),
+            showPassword        : false,
+            enableShowPassword  : true,
         }
     },
     watch: {
         show(newVal) {
             if (!newVal) this.$emit('close')
-        }
+        },
     },
     methods: {
         open(item) {
@@ -286,6 +293,9 @@ export default {
             color: $dark
         .input-slot-btn
             background: rgba($primary ,.8)
+        .input-append-btn
+            &:hover
+                color: $dark
     .card-footer
         background: #EEEEEE
         border-top: 1px solid #DDDDDD
@@ -302,6 +312,9 @@ export default {
             color: #FFFFFF
         .input-slot-btn
             background: rgba($primary ,.3)
+        .input-append-btn
+            &:hover
+                color: #FFFFFF
     .card-footer
         background: #282828
         border-top: 1px solid #000000
@@ -370,4 +383,15 @@ export default {
                 background: $primary
             &:active
                 background: $primary
+        .input-append-btn
+            position: absolute
+            right: 0
+            top: 0
+            height: 100%
+            outline: none
+            background: none
+            border: 0
+            padding: 0 10px
+            color: $grey
+            transition: all .3s
 </style>

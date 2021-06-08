@@ -44,6 +44,7 @@
                 </q-avatar>
             </q-btn>
             <!-- item 名称 -->
+            <!-- TODO: 超出显示 ... -->
             <div class="session-name full-width">
                 <div v-show="sessionTree.renameItem.id !== item.id" class="text-name">{{ item.name }}</div>
                 <input v-model="sessionTree.renameItem.name"
@@ -172,7 +173,9 @@ export default {
          * 多选
          */
         handleClickMeta() {
-            this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
+            this.item.id in this.$store.state.sessionTree.selectedNode
+                ? this.$store.commit('sessionTree/SET_NODE_SELECTED_DEL', this.item)
+                : this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
         },
         /**
          * 节点聚焦
@@ -495,7 +498,23 @@ export default {
 
             this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
 
-            const selectedNum = this.$store.getters['sessionTree/selectedNodeNum']()
+            const { selectedNode }   = this.$store.state.sessionTree
+            const selectedNum        = this.$store.getters['sessionTree/selectedNodeNum']()
+            const selectedSession    = Object.values(selectedNode).filter(item => item.type === 'session')
+            const selectedDirNum     = Object.values(selectedNode).filter(item => item.type === 'dir').length
+
+            if (selectedDirNum === 0) {
+                menu.append(new remote.MenuItem({
+                    label: `连接 (${selectedSession.length} 个会话)`,
+                    click: () => () => {
+                        selectedSession.forEach(item => {
+                            this.$store.dispatch('session/CONNECT', item)
+                        })
+                    },
+                }))
+            }
+
+            menu.append(new remote.MenuItem({ type: 'separator' }))
 
             menu.append(new remote.MenuItem({
                 label: `删除 (${selectedNum} 个项目)`,
@@ -505,9 +524,9 @@ export default {
                         detail: '文件夹下的会话将全部删除！',
                     })
                         .then(() => {
-                            // this.forEach(id => {
-                            //     this.$store.commit('session/DELETE', id)
-                            // })
+                            selectedNode.forEach(item => {
+                                this.$store.commit('session/DELETE', item.id)
+                            })
                         })
                 },
             }))
@@ -592,6 +611,9 @@ export default {
 .session-name
     padding: 5px 0
     line-height: 26px
+    white-space: nowrap
+    overflow: hidden
+    text-overflow: ellipsis
     .text-name
         padding: 0 2px
     input

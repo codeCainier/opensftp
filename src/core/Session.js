@@ -1,6 +1,5 @@
 import { uid } from 'quasar'
 import path from 'path'
-import {clear} from "core-js/internals/task";
 
 export default {
     /**
@@ -411,18 +410,13 @@ export default {
      * @method
      * @param   {String}    action      remote || local
      * @param   {Object}    item        编辑文件对象
-     * @param   {Object}    editorPath  编辑器对象
+     * @param   {Object}    editor      编辑器对象
      */
-    async editFile(action, item, editorPath) {
+    async editFile(action, item, editor) {
         if (action === 'remote') {
+            const editorCMD = this.$store.getters['editor/START_CMD'](editor)
             const remotePath = path.posix.join(this.pwd, item.name)
-            await this.conn.send('remoteEditFile', {
-                remotePath,
-                editorPath,
-                callback: () => {
-                    this.notify(`文件 ${item.name} 的修改已生效`)
-                }
-            })
+            await this.conn.send('remoteEditFile', { remotePath, editorCMD })
         }
     },
     /**
@@ -532,7 +526,7 @@ export default {
             }))
 
             // if (action === 'remote') fileMenu.append(new remote.MenuItem({
-            //     label: '在集成终端中打开',
+            //     label: '在系统终端中打开',
             //     click: () => {
             //     },
             // }))
@@ -558,11 +552,12 @@ export default {
             // FIXME: 暂时只做了 Remote 端编辑功能
             if (action === 'remote') {
                 const editorList = []
-                this.$store.getters["editor/EDITOR_LIST"]().forEach(editor => {
+                this.$store.getters['editor/INSTALLED']().forEach(editor => {
                     editorList.push({
                         label: editor.name,
                         click: async () => {
-                            await this.editFile(action, item, editor.path)
+                            this.$store.commit('editor/EDITOR_USE', editor.name)
+                            await this.editFile(action, item, editor)
                         },
                     })
                 })
