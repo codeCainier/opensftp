@@ -399,22 +399,46 @@ class Connect {
     }
 
     async remoteEditFile(remotePath, editorCMD) {
+        // 文件名称
         const filename  = path.basename(remotePath)
-        const cacheDir  = path.join(__statics, '../cache', uid())
+        // 缓存目录
+        const cacheDir  = path.join(global.__statics, '../cache/remoteEdit', uid())
+        // 远程文件下载到本地后的所在目录
         const localPath = path.join(cacheDir, filename)
+        // 编辑器启动命令
         const cmd       = `${editorCMD} "${localPath}"`
+        // 环境缓存目录
         await this.localMkdir(cacheDir)
+        // 下载要编辑的文件
+        // TODO: 应有进度反馈
         await this.download(remotePath, localPath)
         return new Promise((resolve, reject) => {
+            // 执行编辑器启动命令，使用指定编辑器编辑文件
             exec(cmd, (error, stdout, stderr) => {
                 if (error) return reject(error)
+                // 开始监听远程文件下载到本地后的所在目录
                 const watcher = fs.watch(localPath)
-                const changeCallback = async (eventType, filename) => {
+                // 监听回调, 1s 防抖
+                const changeCallback = debounce(async (eventType, filename) => {
+                    // 上传编辑后的文件
                     await this.upload(localPath, remotePath)
+                    // 上传完成后给出提示
                     notify(`文件 ${filename} 的修改已生效`)
-                }
-                // 1000ms 防抖
-                watcher.on('change', debounce(changeCallback, 1000))
+                }, 1000)
+                // 文件发生变化时，执行回调
+                watcher.on('change', changeCallback)
+                resolve()
+            })
+        })
+    }
+
+    async localEditFile(localPath, editorCMD) {
+        // 编辑器启动命令
+        const cmd = `${editorCMD} "${localPath}"`
+        return new Promise((resolve, reject) => {
+            // 执行编辑器启动命令，使用指定编辑器编辑文件
+            exec(cmd, (error, stdout, stderr) => {
+                if (error) return reject(error)
                 resolve()
             })
         })

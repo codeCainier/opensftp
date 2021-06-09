@@ -1,14 +1,14 @@
 <template>
-    <q-menu content-class="bg-aero" ref="menu">
+    <q-menu ref="menu" content-class="bg-aero">
         <q-list dense style="min-width: 150px">
-            <q-item clickable v-close-popup @click="emitHandle('rename')">
+            <q-item v-close-popup clickable @click="emitHandle('rename')">
                 <q-item-section>帮助</q-item-section>
                 <q-item-section side>
                     <q-item-label caption>F1</q-item-label>
                 </q-item-section>
             </q-item>
             <q-separator/>
-            <q-item clickable v-close-popup @click="emitHandle('showAttr')">
+            <q-item v-close-popup clickable @click="emitHandle('showAttr')">
                 <q-item-section>关于</q-item-section>
                 <q-item-section side>
                     <q-item-label caption>A</q-item-label>

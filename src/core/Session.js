@@ -413,8 +413,17 @@ export default {
      * @param   {Object}    editor      编辑器对象
      */
     async editFile(action, item, editor) {
+        // 启动编辑器命令
+        const editorCMD = this.$store.getters['editor/START_CMD'](editor)
+        // 编辑器使用次数 +1
+        this.$store.commit('editor/EDITOR_USE', editor.name)
+        // 编辑本地文件
+        if (action === 'local') {
+            const localPath = path.posix.join(this.pwd, item.name)
+            await this.conn.send('localEditFile', { localPath, editorCMD })
+        }
+        // 编辑远程文件
         if (action === 'remote') {
-            const editorCMD = this.$store.getters['editor/START_CMD'](editor)
             const remotePath = path.posix.join(this.pwd, item.name)
             await this.conn.send('remoteEditFile', { remotePath, editorCMD })
         }
@@ -483,7 +492,7 @@ export default {
             }))
 
             if (action === 'local' && item.type === '-') fileMenu.append(new remote.MenuItem({
-                label: '打开',
+                label: '使用默认方式打开',
                 click: () => {
                     this.openFileByDefault(item)
                 },
@@ -549,16 +558,12 @@ export default {
                 },
             }))
 
-            // FIXME: 暂时只做了 Remote 端编辑功能
-            if (action === 'remote') {
+            if (item.type === '-') {
                 const editorList = []
                 this.$store.getters['editor/INSTALLED']().forEach(editor => {
                     editorList.push({
                         label: editor.name,
-                        click: async () => {
-                            this.$store.commit('editor/EDITOR_USE', editor.name)
-                            await this.editFile(action, item, editor)
-                        },
+                        click: async () => await this.editFile(action, item, editor),
                     })
                 })
                 fileMenu.append(new remote.MenuItem({

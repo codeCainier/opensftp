@@ -1,7 +1,7 @@
 <template>
     <div class="full-height q-pa-md flex flex-center relative-position">
         <div class="container text-center">
-            <svg-quickLink class="illustration"/>
+            <img class="illustration" src="~/assets/svg/quickLink.svg" alt="">
             <q-input v-model.trim="host" label="地址" autofocus spellcheck="false">
                 <template v-slot:after>
                     <q-input v-model.trim="port" label="端口"
@@ -33,13 +33,8 @@
 </template>
 
 <script>
-    import svgQuickLink from 'src/components/svg/quickLink'
-
     export default {
         name: 'QuickLink',
-        components: {
-            'svg-quickLink': svgQuickLink
-        },
         data() {
             return {
                 loading: false,

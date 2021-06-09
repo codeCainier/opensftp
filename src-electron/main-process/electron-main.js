@@ -5,8 +5,6 @@ import {
     nativeTheme
 } from 'electron'
 
-const os = require('os');
-
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
         require('fs').unlinkSync(require('path').join(app.getPath('userData'), 'DevTools Extensions'))
@@ -17,6 +15,7 @@ try {
  * Set `__statics` path to static files in production;
  * The reason we are setting it here is that the path needs to be evaluated at runtime
  */
+// FIXME: 实测即使在新创建 Quasar Electron 项目中，也会出现时而有效时而无效的情况
 if (process.env.PROD) {
     global.__statics = __dirname
 }
@@ -48,9 +47,7 @@ function createWindow() {
     })
 
     mainWindow.loadURL(process.env.APP_URL)
-        .then(() => {
-
-        })
+        .then()
 
     mainWindow.on('closed', () => {
         mainWindow = null

@@ -10,7 +10,7 @@ export default async item => {
     // 文件后缀
     const extname = path.extname(item.name)
     // 缓存目录
-    const cacheDir = path.join(__statics, '../cache')
+    const cacheDir = path.join(global.__statics, '../cache')
     // 临时缓存文件
     const cacheFile = path.join(cacheDir, `temp${extname}`)
     // 创建缓存目录
