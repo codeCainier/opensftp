@@ -160,7 +160,7 @@ export default {
         if (action === 'local')  mode = 'localRename'
         if (action === 'remote') mode = 'remoteRename'
 
-        this.checkOverwrite(action, pathNew)
+        this.checkOverwrite(action, pathOld, pathNew)
             // 确认覆盖或无需覆盖
             .then(() => {
                 this.loading = true
@@ -176,30 +176,35 @@ export default {
      * 检查是否需要覆盖
      * @method
      * @param   {String}    action       local || remote
-     * @param   {String}    pathName     文件地址
+     * @param   {String}    fromPath     起始路径
+     * @param   {String}    distPath     目标路径
      */
-    checkOverwrite(action, pathName) {
+    checkOverwrite(action, fromPath, distPath) {
         this.loading = true
 
-        let statMode, rmMode
+        let fromStatMode, distStatMode, rmMode
 
         if (action === 'local')  {
-            statMode = 'localExist'
+            fromStatMode = 'remoteExist'
+            distStatMode = 'localExist'
             rmMode   = 'localRm'
         }
         if (action === 'remote') {
-            statMode = 'remoteExist'
+            fromStatMode = 'localExist'
+            distStatMode = 'remoteExist'
             rmMode   = 'remoteRm'
         }
 
-        return new Promise((resolve, reject) => {
-            this.conn.send(statMode, { pathName })
-                .then(stats => {
-                    if (!stats.isDir) this.confirm('文件已存在，是否进行覆盖？')
+        return new Promise(async (resolve, reject) => {
+            const distFileStats = await this.conn.send(fromStatMode, { pathName: fromPath })
+
+            this.conn.send(distStatMode, { pathName: distPath })
+                .then(fromFileStats => {
+                    if (!fromFileStats.isDir || !distFileStats.isDir) return this.confirm('文件已存在，是否进行覆盖？')
                         .then(() => resolve())
                         .catch(() => reject())
 
-                    if (stats.isDir) this.$q.dialog({
+                    if (fromFileStats.isDir) this.$q.dialog({
                         message: '目录已存在，请选择覆盖模式',
                         options: {
                             type: 'radio',
@@ -213,7 +218,7 @@ export default {
                         persistent: true
                     }).onOk(data => {
                         if (data === 'rm') {
-                            this.conn.send(rmMode, { pathName })
+                            this.conn.send(rmMode, { pathName: distPath })
                                 .then(() => resolve())
                                 .catch(() => reject())
                         }
@@ -335,7 +340,7 @@ export default {
      */
     transmit(action, fromPath, distPath) {
         // 检查文件是否已存在
-        this.checkOverwrite(action === 'download' ? 'local' : 'remote', distPath)
+        this.checkOverwrite(action === 'download' ? 'local' : 'remote', fromPath, distPath)
             .then(() => {
                 const id     = uid()
                 const connId = this.conn.id
@@ -552,18 +557,27 @@ export default {
                     // 目标路径
                     const distPath = action === 'local'
                         ? path.posix.join(this.pwdRemote, item.name)
-                        : path.join(this.pwdRemote, item.name)
+                        : path.join(this.pwdLocal, item.name)
                     // 调用传输
                     this.transmit(action === 'local' ? 'upload' : 'download', fromPath, distPath)
                 },
             }))
 
+            // TODO: 根据后缀过滤不可编辑文件
+            // 不可编辑文件
+            // exe / jpg / dmg / zip / rar / 7z / tar / tgz / mp3 ......
+            // 可编辑文件
+            // conf / js / php / css / go / json / md
             if (item.type === '-') {
                 const editorList = []
                 this.$store.getters['editor/INSTALLED']().forEach(editor => {
                     editorList.push({
                         label: editor.name,
-                        click: async () => await this.editFile(action, item, editor),
+                        click: async () => {
+                            // TODO: 提示优化
+                            if (item.size > 10 * 1024 ** 2) return this.alert('大于 10MB 文件请离线编辑')
+                            await this.editFile(action, item, editor)
+                        }
                     })
                 })
                 fileMenu.append(new remote.MenuItem({

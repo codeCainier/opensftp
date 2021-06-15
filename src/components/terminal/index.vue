@@ -155,15 +155,26 @@
                 // 监听 Terminal Selection Change
                 term.onSelectionChange(this.listenerTermSelection)
 
+                // Welcome
+                const sessionInfo = this.$store.getters['session/sessionInfo']({ id: this.conn.sessionId })
+                const { host, port } = sessionInfo.detail
+
+                term.writeln(`Welcome to use Open SFTP   ^.^`)
+                term.writeln(`Connecting to ${host}:${port}`)
+
                 // 监听 Window 窗口 Resize
                 window.addEventListener('resize', this.termResize)
 
-                this.$nextTick(() => {
+                this.$nextTick(async () => {
                     this.term = term
                     // 适应窗口大小
                     this.fitAddon.fit()
-                    this.conn.send('sshTermInit', { termWindow: this.termWindow() })
-                        .then(() => this.sshListen())
+                    // 初始化 SSH Terminal
+                    await this.conn.send('sshTermInit', { termWindow: this.termWindow() })
+                    // 初始化连接成功
+                    this.term.writeln('[SUCCESS]')
+                    // 监听 SSH 与 Terminal
+                    this.sshListen()
                 })
             },
             // Terminal Focus 事件

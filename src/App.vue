@@ -12,11 +12,7 @@ import connect from 'src/process/connect'
 import { remote } from 'electron'
 import fs from 'fs'
 
-// FIXME: 生产环境中，SFTP 远程列表，右键点击文件 - 下载到本地目录报错，开发环境正常
-// FIXME: 本地向远程上传文件，若远程存在同名目录，不需要询问覆盖模式
-// FIXME: 文件在线编辑时，对文件进行大小校验
 // FIXME: 本地删除大目录时，可能出现处理时间过长导致进程间 timeout 情况
-
 
 // FIXME: 新创建的 Quasar Electron 项目，开发环境中，__statics 有值，但 F12 Console __statics 为空
 if (process.env.NODE_ENV === 'development') global.__statics = __statics
