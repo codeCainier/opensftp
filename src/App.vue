@@ -13,6 +13,15 @@ import { remote } from 'electron'
 import fs from 'fs'
 
 // FIXME: 本地删除大目录时，可能出现处理时间过长导致进程间 timeout 情况
+// FIXME: Confirm 组件取消回调 Promise 报错
+// FIXME: 苹果 App 开发者不受信任问题
+// FIXME: SSH 连接后，默认信息展示
+// FIXME: SSH cat 命令结尾换行问题
+// FIXME: SSH 切换输入法导致的字符重复问题
+// FIXME: Session 断开重连
+
+// TODO: Transmit 中断功能
+// TODO: windows 安装路径选择
 
 // FIXME: 新创建的 Quasar Electron 项目，开发环境中，__statics 有值，但 F12 Console __statics 为空
 if (process.env.NODE_ENV === 'development') global.__statics = __statics
