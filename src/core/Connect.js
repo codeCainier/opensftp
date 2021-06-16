@@ -423,7 +423,6 @@ class Connect {
                     // 上传编辑后的文件
                     await this.upload(localPath, remotePath)
                     // 上传完成后给出提示
-                    notify(`已生效`)
                     notify(`文件 ${filename} 的修改已生效`)
                 }, 1000)
                 // 文件发生变化时，执行回调

@@ -19,6 +19,10 @@ import fs from 'fs'
 // FIXME: SSH cat 命令结尾换行问题
 // FIXME: SSH 切换输入法导致的字符重复问题
 // FIXME: Session 断开重连
+// FIXME: Header 双击全屏
+// FIXME: Header 窗口控制按钮样式
+// FIXME: Header 半透明毛玻璃
+// FIXME: Header Home 按钮优化
 
 // TODO: Transmit 中断功能
 // TODO: windows 安装路径选择
