@@ -11,7 +11,7 @@ script:
     - quasar build -m electron
 deploy:
     provider: releases
-    api_key: GH_TOKEN
+    api_key: "${GH_TOKEN}"
     file: "dist"
     skip_cleanup: true
     on:
