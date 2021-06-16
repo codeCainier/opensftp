@@ -30,10 +30,10 @@
                        size="sm">
                     <q-menu content-class="bg-transparent">
                         <q-list class="bg-aero" dense style="min-width: 120px">
-                            <q-item clickable v-close-popup @click="createSession">
+                            <q-item v-close-popup clickable @click="createSession">
                                 <q-item-section>新建会话</q-item-section>
                             </q-item>
-                            <q-item clickable v-close-popup @click="createSessionDir">
+                            <q-item v-close-popup clickable @click="createSessionDir">
                                 <q-item-section>新建文件夹</q-item-section>
                             </q-item>
                         </q-list>

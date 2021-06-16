@@ -1,6 +1,6 @@
 {
     "name": "opensftp",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "基于 Electron 与 Vue 开发的 SFTP / SSH 跨平台客户端",
     "productName": "OpenSFTP",
     "author": "xingrong.dev@gmail.com",
@@ -32,7 +32,8 @@
         "electron-builder": "^22.10.5",
         "electron-debug": "^3.0.1",
         "electron-devtools-installer": "^3.0.0",
-        "electron-rebuild": "^2.3.5"
+        "electron-rebuild": "^2.3.5",
+        "html-webpack-plugin": "^4.5.2"
     },
     "browserslist": [
         "last 10 Chrome versions",

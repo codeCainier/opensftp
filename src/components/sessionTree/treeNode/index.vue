@@ -44,6 +44,7 @@
                 </q-avatar>
             </q-btn>
             <!-- item 名称 -->
+            <!-- TODO: 超出显示 ... -->
             <div class="session-name full-width">
                 <div v-show="sessionTree.renameItem.id !== item.id" class="text-name">{{ item.name }}</div>
                 <input v-model="sessionTree.renameItem.name"
@@ -70,7 +71,7 @@
             <!-- item 简介 -->
             <div class="session-site text-right ellipsis q-pr-sm">
                 <div v-if="item.type === 'session'">
-                    <div v-if="$store.state.sessionTree.loading === item.id">
+                    <div v-if="isConnecting()">
                         <q-btn icon="close" flat size="sm" @dblclick.stop="" @click="handleLoginCancel">
                             <q-tooltip>取消连接</q-tooltip>
                         </q-btn>
@@ -84,7 +85,7 @@
                 </div>
             </div>
             <!-- Loading Skeleton -->
-            <div v-if="$store.state.sessionTree.loading === item.id"
+            <div v-if="isConnecting()"
                  class="absolute-top-left full-width full-height">
                 <q-skeleton type="rect"
                             style="z-index: 2"
@@ -145,6 +146,9 @@ export default {
                 }
             }
         },
+        isConnecting() {
+            return () => Boolean(this.$store.state.session.connectingList.find(item => item.sessionId === this.item.id))
+        }
     },
     watch: {
     },
@@ -169,7 +173,9 @@ export default {
          * 多选
          */
         handleClickMeta() {
-            this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
+            this.item.id in this.$store.state.sessionTree.selectedNode
+                ? this.$store.commit('sessionTree/SET_NODE_SELECTED_DEL', this.item)
+                : this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
         },
         /**
          * 节点聚焦
@@ -193,12 +199,7 @@ export default {
          * 连接会话
          */
         handleLogin() {
-            const { id } = this.item
-            this.$store.commit('sessionTree/SET_LOADING', id)
-            this.$store.dispatch('session/LOGIN', this.item)
-                .then(() => this.$router.push({ path: '/session' }))
-                .catch(err => this.alert(err))
-                .finally(() => this.$store.commit('sessionTree/SET_LOADING', null))
+            this.$store.dispatch('session/CONNECT', this.item)
         },
         /**
          * 控制目录
@@ -214,7 +215,7 @@ export default {
          * 取消连接会话
          */
         handleLoginCancel() {
-            this.$store.dispatch('session/EXIT', this.item.id)
+            this.$store.dispatch('session/CONNECT_CANCEL', this.item.id)
         },
         /**
          * 拖动开始
@@ -497,7 +498,23 @@ export default {
 
             this.$store.commit('sessionTree/SET_NODE_SELECTED_ADD', this.item)
 
-            const selectedNum = this.$store.getters['sessionTree/selectedNodeNum']()
+            const { selectedNode }   = this.$store.state.sessionTree
+            const selectedNum        = this.$store.getters['sessionTree/selectedNodeNum']()
+            const selectedSession    = Object.values(selectedNode).filter(item => item.type === 'session')
+            const selectedDirNum     = Object.values(selectedNode).filter(item => item.type === 'dir').length
+
+            if (selectedDirNum === 0) {
+                menu.append(new remote.MenuItem({
+                    label: `连接 (${selectedSession.length} 个会话)`,
+                    click: () => () => {
+                        selectedSession.forEach(item => {
+                            this.$store.dispatch('session/CONNECT', item)
+                        })
+                    },
+                }))
+            }
+
+            menu.append(new remote.MenuItem({ type: 'separator' }))
 
             menu.append(new remote.MenuItem({
                 label: `删除 (${selectedNum} 个项目)`,
@@ -507,9 +524,9 @@ export default {
                         detail: '文件夹下的会话将全部删除！',
                     })
                         .then(() => {
-                            // this.forEach(id => {
-                            //     this.$store.commit('session/DELETE', id)
-                            // })
+                            selectedNode.forEach(item => {
+                                this.$store.commit('session/DELETE', item.id)
+                            })
                         })
                 },
             }))
@@ -594,6 +611,9 @@ export default {
 .session-name
     padding: 5px 0
     line-height: 26px
+    white-space: nowrap
+    overflow: hidden
+    text-overflow: ellipsis
     .text-name
         padding: 0 2px
     input

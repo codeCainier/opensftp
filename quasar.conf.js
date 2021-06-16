@@ -1,3 +1,6 @@
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const path = require('path')
+
 /*
  * This file runs in a Node context (it's NOT transpiled by Babel), so use only
  * the ES6 features that are supported by your Node version. https://node.green/
@@ -6,7 +9,7 @@
 // Configuration for your app
 // https://quasar.dev/quasar-cli/quasar-conf-js
 
-module.exports = function ( /* ctx */ ) {
+module.exports = function (ctx) {
     return {
         // https://quasar.dev/quasar-cli/supporting-ts
         supportTS: false,
@@ -66,7 +69,18 @@ module.exports = function ( /* ctx */ ) {
             // extractCSS: false,
 
             // https://quasar.dev/quasar-cli/handling-webpack
-            extendWebpack(cfg) {},
+            extendWebpack(cfg) {
+                const template = path.join(__dirname, 'src', 'connect.template.html')
+
+                cfg.plugins.push(
+                    new HtmlWebpackPlugin({
+                        template: template,
+                        filename: 'connect.html',
+                        inject: true,
+                        minify: false,
+                    })
+                );
+            },
         },
 
         // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-devServer
@@ -189,7 +203,7 @@ module.exports = function ( /* ctx */ ) {
             // More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration
             nodeIntegration: true,
 
-            extendWebpack( /* cfg */ ) {
+            extendWebpack(cfg) {
                 // do something with Electron main process Webpack cfg
                 // chainWebpack also available besides this extendWebpack
             }

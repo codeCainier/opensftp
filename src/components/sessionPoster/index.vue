@@ -133,7 +133,7 @@ export default {
         // 将会话复制到命令行
         copyToTerminal() {
             const { host, port, username } = this.sessionInfo.detail
-            const cmd = `ssh ${username}@${host} -p ${port}\n`
+            const cmd = `ssh ${username}@${host} -p ${port}\r`
             copyToClipboard(cmd)
                 .then(() => {
                     this.notify.success('复制成功，在命令行粘贴以执行')

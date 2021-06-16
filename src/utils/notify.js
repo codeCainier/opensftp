@@ -3,9 +3,7 @@ import { Notify } from 'quasar'
 const notify = (props) => {
     const title    = props.title || ''
     const message  = typeof props === 'string' ? props : props.message
-    const callback = props.callback || function () {
-
-    }
+    const callback = props.callback || function () {}
 
     const myNotification = new Notification(title, {
         body: message

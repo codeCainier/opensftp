@@ -1,10 +1,9 @@
 <template>
     <div class="full-height relative-position">
-        <session v-for="item in $store.state.session.conn"
-                 v-show="item.id === $store.state.session.active"
-                 :key="item.id"
-                 :connectId="item.id"
-                 :connect="item.connect"/>
+        <session v-for="conn in $store.state.session.connectedList"
+                 v-show="conn.id === $store.state.session.active"
+                 :key="conn.id"
+                 :conn="conn"/>
         <div class="module-background" :style="moduleBg()"></div>
     </div>
 </template>

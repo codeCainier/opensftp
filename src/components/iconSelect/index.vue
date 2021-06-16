@@ -44,7 +44,7 @@ export default {
     },
     data() {
         return {
-            iconList: fs.readdirSync(path.join(__statics, 'statics/icons/server-icons')),
+            iconList: fs.readdirSync(path.join(global.__statics, 'statics/icons/server-icons')),
             filterVal: '',
             filterList: [],
         }

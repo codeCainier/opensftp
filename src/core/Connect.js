@@ -3,17 +3,19 @@ import fs       from 'fs'
 import { exec } from'child_process'
 import { uid, debounce } from 'quasar'
 import tools    from 'src/utils'
+import notify   from 'src/utils/notify'
 
 const { Client } = require('ssh2')
 
 class Connect {
-    constructor(sessionInfo) {
-        this.sessionInfo = tools.clone(sessionInfo)
+    constructor() {
     }
 
-    async init() {
+    async auth(sessionInfo) {
+        this.sessionInfo = tools.clone(sessionInfo)
         await this.initConn()
         await this.initSFTP()
+        await this.initSSH()
     }
 
     exit() {
@@ -22,9 +24,9 @@ class Connect {
     }
 
     initConn() {
-        const { host, port, username, authMode } = this.sessionInfo.detail
-        const password   = authMode === 'password' ? tools.aesDecode(this.sessionInfo.detail.password)   : ''
-        const privateKey = authMode === 'sshKey'   ? fs.readFileSync(this.sessionInfo.detail.privateKey) : ''
+        const { host, port, username, authMode } = this.sessionInfo
+        const password   = authMode === 'password' ? tools.aesDecode(this.sessionInfo.password)   : ''
+        const privateKey = authMode === 'sshKey'   ? fs.readFileSync(this.sessionInfo.privateKey) : ''
 
         return new Promise((resolve, reject) => {
             const conn = new Client()
@@ -54,7 +56,7 @@ class Connect {
         })
     }
 
-    shell(window, options) {
+    initSSH(window, options) {
         return new Promise((resolve, reject) => {
             this.conn.shell(window, options, (err, stream) => {
                 if (err) return reject(err)
@@ -71,7 +73,7 @@ class Connect {
      * @param   {Function}  progress        完成 size
      */
     async download(remotePath, localPath, progress = () => {}) {
-        const stats = await this.statRemote(remotePath)
+        const stats = await this.remoteStat(remotePath)
         const idDir = stats.isDirectory()
 
         if (!idDir) return this.downloadFile(remotePath, localPath, progress)
@@ -93,9 +95,9 @@ class Connect {
     }
 
     async downloadDir(remotePath, localPath, progress) {
-        const fileList = await this.listRemote(remotePath)
+        const fileList = await this.remoteList(remotePath)
 
-        await this.mkdirLocal(localPath)
+        await this.localMkdir(localPath)
 
         for (const file of fileList) {
 
@@ -114,7 +116,7 @@ class Connect {
     }
 
     async upload(localPath, remotePath, progress = () => {}) {
-        const stats = await this.statLocal(localPath)
+        const stats = await this.localStat(localPath)
         const idDir = stats.isDirectory()
 
         if (!idDir) return this.uploadFile(localPath, remotePath, progress)
@@ -136,9 +138,9 @@ class Connect {
     }
 
     async uploadDir(localPath, remotePath, progress) {
-        const fileList = await this.listLocal(localPath)
+        const fileList = await this.localList(localPath)
 
-        await this.mkdirRemote(remotePath)
+        await this.remoteMkdir(remotePath)
 
         for (const file of fileList) {
 
@@ -161,7 +163,7 @@ class Connect {
      * @method
      * @param   {String}    cwd     远程目录地址
      */
-    listRemote(cwd) {
+    remoteList(cwd) {
         return new Promise((resolve, reject) => {
             this.sftp.readdir(cwd, (err, list) => {
                 if (err) return reject(err)
@@ -175,7 +177,7 @@ class Connect {
      * @method
      * @param   {String}    pathName     要删除的文件地址
      */
-    rmRemote(pathName) {
+    remoteRm(pathName) {
         return new Promise((resolve, reject) => {
             const cmd = `rm -rf "${pathName}"`
             this.conn.exec(cmd, (err, stream) => {
@@ -193,10 +195,10 @@ class Connect {
      * @method
      * @param   {String}    pathName     要创建的目录地址
      */
-    async mkdirRemote(pathName) {
+    async remoteMkdir(pathName) {
         return new Promise((resolve, reject) => {
             // 若目录已存在，则跳过创建
-            this.statRemote(pathName)
+            this.remoteStat(pathName)
                 .then(() => resolve())
                 .catch(() => this.sftp.mkdir(pathName, err => {
                     if (err) reject(err)
@@ -211,7 +213,7 @@ class Connect {
      * @param   {String}    pathOld      重命名前的文件地址
      * @param   {String}    pathNew      重命名后的文件地址
      */
-    renameRemote(pathOld, pathNew) {
+    remoteRename(pathOld, pathNew) {
         return new Promise((resolve, reject) => {
             this.sftp.rename(pathOld, pathNew, err => {
                 if (err) return reject(err)
@@ -225,7 +227,7 @@ class Connect {
      * @method
      * @param   {String}    pathName     要查询状态的文件地址
      */
-    statRemote(pathName) {
+    remoteStat(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.stat(pathName, (err, stats) => {
                 if (err) return reject(err)
@@ -234,12 +236,22 @@ class Connect {
         })
     }
 
+    remoteExist(pathName) {
+        return new Promise((resolve, reject) => {
+            this.remoteStat(pathName)
+                .then(stats => {
+                    resolve({ isDir: stats.isDirectory() })
+                })
+                .catch(() => reject())
+        })
+    }
+
     /**
      * 远程 创建文件
      * @method
      * @param   {String}    pathName     要创建的文件地址
      */
-    writeFileRemote(pathName) {
+    remoteWriteFile(pathName) {
         return new Promise((resolve, reject) => {
             this.sftp.writeFile(pathName, '', 'utf-8', err => {
                 if (err) return reject(err)
@@ -248,7 +260,7 @@ class Connect {
         })
     }
 
-    listLocal(cwd) {
+    localList(cwd) {
         return new Promise((resolve, reject) => {
             fs.readdir(cwd, (err, list) => {
                 if (err) return reject(err)
@@ -257,7 +269,7 @@ class Connect {
         })
     }
 
-    rmLocal(pathName) {
+    localRm(pathName) {
         return new Promise((resolve, reject) => {
             fs.rmdir(pathName, { recursive: true }, err => {
                 if (err) return reject(err)
@@ -266,7 +278,7 @@ class Connect {
         })
     }
 
-    mkdirLocal(pathName) {
+    localMkdir(pathName) {
         return new Promise((resolve, reject) => {
             fs.mkdir(pathName, { recursive: true }, err => {
                 if (err) return reject(err)
@@ -275,16 +287,16 @@ class Connect {
         })
     }
 
-    renameLocal(pathOld, PathNew) {
+    localRename(pathOld, pathNew) {
         return new Promise((resolve, reject) => {
-            fs.rename(pathOld, PathNew, err => {
+            fs.rename(pathOld, pathNew, err => {
                 if (err) return reject(err)
                 resolve()
             })
         })
     }
 
-    statLocal(pathName) {
+    localStat(pathName) {
         return new Promise((resolve, reject) => {
             fs.stat(pathName, (err, stats) => {
                 if (err) return reject(err)
@@ -293,7 +305,17 @@ class Connect {
         })
     }
 
-    writeFileLocal(pathName) {
+    localExist(pathName) {
+        return new Promise((resolve, reject) => {
+            this.localStat(pathName)
+                .then(stats => {
+                    resolve({ isDir: stats.isDirectory() })
+                })
+                .catch(() => reject())
+        })
+    }
+
+    localWriteFile(pathName) {
         return new Promise((resolve, reject) => {
             fs.writeFile(pathName, '', 'utf-8', err => {
                 if (err) return reject(err)
@@ -376,23 +398,48 @@ class Connect {
         return list
     }
 
-    async editRemoteFile(remotePath, editorPath, callback = () => {}) {
+    async remoteEditFile(remotePath, editorCMD) {
+        // 文件名称
         const filename  = path.basename(remotePath)
-        const cacheDir  = path.join(__statics, '../cache', uid())
+        // 缓存目录
+        const cacheDir  = path.join(global.__statics, '../cache/remoteEdit', uid())
+        // 远程文件下载到本地后的所在目录
         const localPath = path.join(cacheDir, filename)
-        const cmd       = `${editorPath.replace(/ /g, '\\ ')} ${localPath}`
-        await this.mkdirLocal(cacheDir)
+        // 编辑器启动命令
+        const cmd       = `${editorCMD} "${localPath}"`
+        // 环境缓存目录
+        await this.localMkdir(cacheDir)
+        // 下载要编辑的文件
+        // TODO: 应有进度反馈
         await this.download(remotePath, localPath)
         return new Promise((resolve, reject) => {
+            // 执行编辑器启动命令，使用指定编辑器编辑文件
             exec(cmd, (error, stdout, stderr) => {
                 if (error) return reject(error)
+                // 开始监听远程文件下载到本地后的所在目录
                 const watcher = fs.watch(localPath)
-                const changeCallback = async (eventType, filename) => {
+                // 监听回调, 1s 防抖
+                const changeCallback = debounce(async (eventType, filename) => {
+                    // 上传编辑后的文件
                     await this.upload(localPath, remotePath)
-                    callback()
-                }
-                // 1000ms 防抖
-                watcher.on('change', debounce(changeCallback, 1000))
+                    // 上传完成后给出提示
+                    notify(`文件 ${filename} 的修改已生效`)
+                }, 1000)
+                // 文件发生变化时，执行回调
+                watcher.on('change', changeCallback)
+                resolve()
+            })
+        })
+    }
+
+    async localEditFile(localPath, editorCMD) {
+        // 编辑器启动命令
+        const cmd = `${editorCMD} "${localPath}"`
+        return new Promise((resolve, reject) => {
+            // 执行编辑器启动命令，使用指定编辑器编辑文件
+            exec(cmd, (error, stdout, stderr) => {
+                if (error) return reject(error)
+                resolve()
             })
         })
     }

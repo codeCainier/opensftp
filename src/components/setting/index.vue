@@ -77,8 +77,7 @@
                             </div>
                         </q-tab-panel>
 
-                        <q-tab-panel class="full-height" name="sftp">
-                        </q-tab-panel>
+                        <q-tab-panel class="full-height" name="sftp"></q-tab-panel>
 
                         <q-tab-panel class="full-height" name="ssh">
                             <div class="title-main q-my-md">SSH Terminal 设置</div>

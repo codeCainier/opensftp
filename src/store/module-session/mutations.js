@@ -1,12 +1,8 @@
-import { LocalStorage, uid } from 'quasar'
-import tools from 'src/utils'
-import electron from 'electron'
-import path from 'path'
+import { LocalStorage, uid }    from 'quasar'
+import tools                    from 'src/utils'
 
 /**
  * 创建会话
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.id            节点 ID
  * @param   {String}    props.name          节点名称
  * @param   {String}    props.icon          节点图标
@@ -20,22 +16,20 @@ import path from 'path'
  * @param   {String}    props.remotePath    默认的 Remote 目录
  */
 export function CREATE_SESSION(state, props) {
-    const homePath = path.join(electron.remote.app.getPath('home'))
-    const iconPath = 'statics/icons/server-icons/default.svg'
     const nodeInfo = {
-        id         : props.id || uid(),                         // 节点 ID
+        id         : props.id,                                  // 节点 ID
         type       : 'session',                                 // 节点类型 session || dir
         name       : props.name,                                // 节点名称
-        icon       : props.icon || iconPath,                    // 节点图标
+        icon       : props.icon,                                // 节点图标
         detail     : {
             host       : props.host,                            // 地址
             port       : props.port,                            // 端口
             username   : props.username,                        // 账号
-            password   : tools.aesEncode(props.password) || '', // 密码
-            privateKey : props.privateKey || '',                // SSH Key
-            authMode   : props.authMode   || 'password',        // 默认的认证方式  password || sshKey
-            localPath  : props.localPath  || homePath,          // 默认的 Local 目录
-            remotePath : props.remotePath || '/',               // 默认的 Remote 目录
+            password   : tools.aesEncode(props.password),       // 密码
+            privateKey : props.privateKey,                      // SSH Key
+            authMode   : props.authMode,                        // 默认的认证方式  password || sshKey
+            localPath  : props.localPath,                       // 默认的 Local 目录
+            remotePath : props.remotePath,                      // 默认的 Remote 目录
         },
         createTime : Date.now(),                                // 创建时间
         updateTime : Date.now(),                                // 更新时间
@@ -46,9 +40,16 @@ export function CREATE_SESSION(state, props) {
 }
 
 /**
+ * 快速创建会话
+ * @param   {String}    props.sessionItem   会话项目
+ */
+export function CREATE_SESSION_QUICK(state, sessionItem) {
+    state.pool.splice(0, 0, sessionItem)
+    LocalStorage.set('sessionPool', state.pool)
+}
+
+/**
  * 创建文件夹
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.id        节点 ID
  * @param   {String}    props.name      节点名称
  */
@@ -69,8 +70,6 @@ export function CREATE_DIR(state, props) {
 
 /**
  * 更新会话
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.id                    会话信息 ID
  * @param   {Object}    props.updateItem            更新项目
  */
@@ -110,7 +109,6 @@ export function UPDATE(state, props) {
 
 /**
  * 删除节点
- * @param   {Object}    state
  * @param   {String}    id      节点 ID
  */
 export function DELETE(state, id) {
@@ -131,39 +129,7 @@ export function DELETE(state, id) {
 }
 
 /**
- * 连接会话
- * @param   {Object}    state
- * @param   {Object}    connect     会话连接对象
- */
-export function CONNECT(state, connect) {
-    const id = uid()
-    state.conn.push({
-        id,
-        connect,
-    })
-    // 设置会话标签为活跃状态
-    state.active = id
-}
-
-/**
- * 终止会话
- * @param   {Object}    state
- * @param   {String}    id      会话连接 ID
- */
-export function END(state, id) {
-    state.conn.forEach((item, index) => {
-        if (item.id === id) {
-            item.connect.sftp.end()
-            item.connect.ssh.end()
-            item.connect.conn.end()
-            state.conn.splice(index, 1)
-        }
-    })
-}
-
-/**
  * 更换当前会话
- * @param   {Object}    state
  * @param   {String}    id      会话连接 ID
  */
 export function SET_ACTIVE(state, id) {
@@ -172,8 +138,6 @@ export function SET_ACTIVE(state, id) {
 
 /**
  * 移动会话
- * @param   {Object}    state
- * @param   {Object}    props
  * @param   {String}    props.action    移动行为    move || into
  * @param   {String}    props.target    被移动的元素 ID
  * @param   {String}    props.position  要移动到位置的后一位元素的 ID
@@ -209,4 +173,44 @@ export function MOVE(state, props) {
     recursionDel(state.pool)
     recursionAdd(state.pool)
     LocalStorage.set('sessionPool', state.pool)
+}
+
+/**
+ * 新增正在连接中的会话
+ */
+export function CONNECTING_ADD(state, conn) {
+    state.connectingList.push(conn)
+}
+
+/**
+ * 移除正在连接中的会话
+ *   1. 连接成功
+ *   2. 连接失败
+ *   3. 取消连接
+ */
+export function CONNECTING_DEL(state, sessionId) {
+    const index = state.connectingList.findIndex(conn => conn.sessionId === sessionId)
+    state.connectingList.splice(index, 1)
+}
+
+/**
+ * 新增已连接的会话
+ */
+export function CONNECTED_ADD(state, conn) {
+    state.connectedList.push(conn)
+}
+
+/**
+ * 移除已连接的会话
+ */
+export function CONNECTED_DEL(state, connectId) {
+    const index = state.connectedList.findIndex(conn => conn.id === connectId)
+    state.connectedList.splice(index, 1)
+}
+
+/**
+ * 移除已连接的所有会话
+ */
+export function CONNECTED_DEL_ALL(state) {
+    state.connectedList = []
 }

@@ -3,22 +3,20 @@
         <q-splitter class="sftp full-height overflow-hidden" v-model="splitterModel">
             <template v-slot:before>
                 <local ref="local"
-                       :connectId="connectId"
-                       :connect="connect"
+                       :conn="conn"
                        :pwdRemote="state.pwdRemote"
                        @update-pwd="pwd => state.pwdLocal = pwd"
                        @refresh-remote="$refs.remote.getFileList('.')"/>
             </template>
             <template v-slot:after>
                 <remote ref="remote"
-                        :connectId="connectId"
-                        :connect="connect"
+                        :conn="conn"
                         :pwdLocal="state.pwdLocal"
                         @update-pwd="pwd => state.pwdRemote = pwd"
                         @refresh-local="$refs.local.getFileList('.')"/>
             </template>
         </q-splitter>
-        <ssh :connect="connect"/>
+        <ssh :conn="conn"/>
     </div>
 </template>
 
@@ -35,8 +33,7 @@
             ssh,
         },
         props: {
-            connectId: String,
-            connect: Object,
+            conn: Object,
         },
         data() {
             return {
