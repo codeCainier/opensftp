@@ -4,6 +4,14 @@ import {
     BrowserWindow,
     nativeTheme
 } from 'electron'
+import { autoUpdater } from 'electron-updater'
+
+autoUpdater.checkForUpdatesAndNotify()
+    .then((res) => {
+        console.log('--------------------')
+        console.log(res)
+        console.log('--------------------')
+    })
 
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {

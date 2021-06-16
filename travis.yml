@@ -1,0 +1,18 @@
+language: node_js
+os: osx
+osx_image: xcode12.5
+node_js:
+    - 14
+before_script:
+    - npm install -g @quasar/cli
+install:
+    - npm install
+script:
+    - quasar build -m electron
+deploy:
+    provider: releases
+    api_key: GH_TOKEN
+    file: "dist"
+    skip_cleanup: true
+    on:
+        tags: true
