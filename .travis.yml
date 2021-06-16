@@ -12,7 +12,10 @@ script:
 deploy:
     provider: releases
     api_key: ${GH_TOKEN}
-    file: "dist"
+    file_glob: true
+    file:
+        - "dist/electron/Packaged/*"
+        - "dist/electron/Packaged/mac/*"
     skip_cleanup: true
     on:
         tags: true
