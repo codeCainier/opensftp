@@ -1,4 +1,4 @@
-name: Neeto-Vue Release Action
+name: OpenSFTP CI
 
 # 仅通过 master 分支打标签 v* 时触发
 on:
