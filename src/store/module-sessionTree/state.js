@@ -1,12 +1,11 @@
 const state = {
+    focusNode: null,
+    selectedNode: {},
     renameItem: {},
     loading: null,
     dragMove: null,
     dragInto: null,
     dragList: {},
-    openMenu: null,
-    selected: {},
-    stopBlur: false,
     showPoster: null,
     showDetail: null,
 }

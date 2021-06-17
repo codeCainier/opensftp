@@ -1,3 +1,3 @@
-export function sessionPool (state) {
-
+export function selectedNodeNum ({ selectedNode }) {
+    return () => Object.keys(selectedNode).length
 }

@@ -4,8 +4,14 @@ import {
     BrowserWindow,
     nativeTheme
 } from 'electron'
+import { autoUpdater } from 'electron-updater'
 
-const os = require('os');
+autoUpdater.checkForUpdatesAndNotify()
+    .then((res) => {
+        console.log('--------------------')
+        console.log(res)
+        console.log('--------------------')
+    })
 
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
@@ -17,6 +23,7 @@ try {
  * Set `__statics` path to static files in production;
  * The reason we are setting it here is that the path needs to be evaluated at runtime
  */
+// FIXME: 实测即使在新创建 Quasar Electron 项目中，也会出现时而有效时而无效的情况
 if (process.env.PROD) {
     global.__statics = __dirname
 }
@@ -38,6 +45,7 @@ function createWindow() {
         webPreferences: {
             // Change from /quasar.conf.js > electron > nodeIntegration;
             // More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration
+            // FIXME: 校验安全度
             nodeIntegration: process.env.QUASAR_NODE_INTEGRATION,
             nodeIntegrationInWorker: process.env.QUASAR_NODE_INTEGRATION,
 
@@ -47,6 +55,7 @@ function createWindow() {
     })
 
     mainWindow.loadURL(process.env.APP_URL)
+        .then()
 
     mainWindow.on('closed', () => {
         mainWindow = null

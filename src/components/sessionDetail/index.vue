@@ -26,7 +26,7 @@
                         <input type="text"
                                spellcheck="false"
                                class="form-input full-width"
-                               v-model="name" autofocus>
+                               v-model.trim="name" autofocus>
                     </div>
                 </div>
 
@@ -35,12 +35,12 @@
                     <div class="form-component full-width q-pl-sm">
                         <input type="text"
                                class="form-input full-width q-mr-sm"
-                               v-model="host"
+                               v-model.trim="host"
                                spellcheck="false"
                                placeholder="支持域名 / IPv4 / IPv6">
                         <input type="text"
                                class="form-input q-ml-sm" v
-                               v-model="port"
+                               v-model.trim="port"
                                style="width: 100px"
                                placeholder="22">
                     </div>
@@ -52,7 +52,7 @@
                         <input type="text"
                                class="form-input full-width"
                                spellcheck="false"
-                               v-model="username"
+                               v-model.trim="username"
                                placeholder="root">
                     </div>
                 </div>
@@ -70,7 +70,15 @@
                 <div class="form-row q-mb-sm" v-if="authMode === 'password'">
                     <div class="form-label">密码:</div>
                     <div class="form-component full-width q-pl-sm">
-                        <input type="password" class="form-input full-width q-mr-sm" v-model="password">
+                        <input :type="showPassword ? 'text' : 'password'"
+                               class="form-input full-width q-mr-sm"
+                               v-model.trim="password"
+                               @keydown.enter="createQuick">
+                        <button type="button" class="input-append-btn"
+                                v-show="password && enableShowPassword"
+                                @click="showPassword = !showPassword">
+                            <q-icon :name="showPassword ? 'visibility_off' : 'visibility'" class="cursor-pointer"/>
+                        </button>
                     </div>
                 </div>
 
@@ -82,8 +90,7 @@
                                spellcheck="false"
                                class="form-input full-width q-mr-sm"
                                v-model="privateKey"
-                               placeholder="请选择 SSH Key 路径"
-                               @click="selectPrivateKey">
+                               placeholder="请选择 SSH Key 路径">
                         <button class="input-slot-btn q-ml-sm"
                                 type="button"
                                 v-ripple
@@ -101,7 +108,7 @@
                         <input type="text"
                                class="form-input full-width"
                                spellcheck="false"
-                               v-model="remotePath"
+                               v-model.trim="remotePath"
                                placeholder="/">
                     </div>
                 </div>
@@ -111,9 +118,11 @@
                 <div class="form-row q-mb-sm">
                     <div class="form-label">默认打开的本地目录:</div>
                     <div class="form-component full-width q-pl-sm">
-                        <input type="text" readonly class="form-input full-width q-mr-sm" v-model="localPath"
-                               spellcheck="false"
-                               @click="selectLocalPath">
+                        <input type="text"
+                               readonly
+                               class="form-input full-width q-mr-sm"
+                               v-model="localPath"
+                               spellcheck="false">
                         <button class="input-slot-btn q-ml-sm"
                                 type="button"
                                 v-ripple
@@ -144,24 +153,26 @@ export default {
     name: 'SessionDetail',
     data() {
         return {
-            show        : false,
-            updateItem  : null,
-            authMode    : 'password',
-            name        : '',
-            icon        : './statics/icons/server-icons/default.svg',
-            host        : '',
-            port        : '22',
-            username    : 'root',
-            password    : '',
-            privateKey  : path.join(this.$q.electron.remote.app.getPath('home'), '.ssh', 'id_rsa.pub'),
-            remotePath  : '/',
-            localPath   : path.join(this.$q.electron.remote.app.getPath('home')),
+            show                : false,
+            updateItem          : null,
+            authMode            : 'password',
+            name                : '',
+            icon                : './statics/icons/server-icons/default.svg',
+            host                : '',
+            port                : '22',
+            username            : 'root',
+            password            : '',
+            privateKey          : path.join(this.$q.electron.remote.app.getPath('home'), '.ssh', 'id_rsa.pub'),
+            remotePath          : '/',
+            localPath           : path.join(this.$q.electron.remote.app.getPath('home')),
+            showPassword        : false,
+            enableShowPassword  : true,
         }
     },
     watch: {
         show(newVal) {
             if (!newVal) this.$emit('close')
-        }
+        },
     },
     methods: {
         open(item) {
@@ -197,16 +208,10 @@ export default {
                 remotePath  : this.remotePath,
             })
             this.show = false
-            const sessionInfo = this.$store.getters['session/sessionInfo']({ id })
-            this.confirm(`会话创建成功，是否连接 ${sessionInfo.name}？`)
+            const sessionItem = this.$store.getters['session/sessionInfo']({ id })
+            this.confirm(`会话创建成功，是否连接 ${sessionItem.name}？`)
                 .then(() => {
-                    // FIXME: item value
-                    // this.$store.commit('sessionTree/SET_SELECTED', { [id]: true })
-                    this.$store.commit('sessionTree/SET_LOADING', id)
-                    this.$store.dispatch('session/LOGIN', sessionInfo)
-                        .then(() => this.$router.push({ path: '/session' }))
-                        .catch(err => this.alert(err))
-                        .finally(() => this.$store.commit('sessionTree/SET_LOADING', null))
+                    this.$store.dispatch('session/CONNECT', sessionItem)
                 })
         },
         update() {
@@ -253,6 +258,24 @@ export default {
                 })
                 .catch(err => console.error(err))
         },
+        createQuick() {
+            // 创建模式
+            if (!this.updateItem) {
+                this.confirm({
+                    message: '是否进行创建？',
+                    confirm: () => this.create(),
+                    cancel: () => {},
+                })
+            }
+            // 编辑模式
+            if (this.updateItem) {
+                this.confirm({
+                    message: '是否保存编辑？',
+                    confirm: () => this.update(),
+                    cancel: () => {},
+                })
+            }
+        },
     },
 };
 </script>
@@ -270,6 +293,9 @@ export default {
             color: $dark
         .input-slot-btn
             background: rgba($primary ,.8)
+        .input-append-btn
+            &:hover
+                color: $dark
     .card-footer
         background: #EEEEEE
         border-top: 1px solid #DDDDDD
@@ -286,6 +312,9 @@ export default {
             color: #FFFFFF
         .input-slot-btn
             background: rgba($primary ,.3)
+        .input-append-btn
+            &:hover
+                color: #FFFFFF
     .card-footer
         background: #282828
         border-top: 1px solid #000000
@@ -354,5 +383,15 @@ export default {
                 background: $primary
             &:active
                 background: $primary
-    .card-footer
+        .input-append-btn
+            position: absolute
+            right: 0
+            top: 0
+            height: 100%
+            outline: none
+            background: none
+            border: 0
+            padding: 0 10px
+            color: $grey
+            transition: all .3s
 </style>
