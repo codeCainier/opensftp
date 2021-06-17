@@ -5,8 +5,10 @@
     "productName": "OpenSFTP",
     "author": "xingrong.dev@gmail.com",
     "contributors": [],
-    "homepage": "https://opensftp.com",
-    "repository": "github:openSFTP/opensftp",
+    "repository": {
+        "type": "github",
+        "url": "https://github.com/openSFTP/opensftp"
+    },
     "private": true,
     "scripts": {
         "test": "echo \"No test specified\" && exit 0"

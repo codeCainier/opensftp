@@ -1,10 +1,8 @@
 name: OpenSFTP CI
 
-# 仅通过 master 分支打标签 v* 时触发
+# 仅通过打标签 v* 时触发
 on:
     push:
-        branches:
-            - master
         tags:
             - v*
 
@@ -16,13 +14,16 @@ jobs:
         if: contains(github.ref, 'refs/tags/v')
         # 构建步骤
         steps:
-            # 1. 检出 master 分支
+            # 1. 检出分支
             - name: Check out branch
+              # 使用 Actions 进行分支检出 [actions/checkout](https://github.com/marketplace/actions/checkout)
               uses: actions/checkout@master
-            # 2. 安装 Node 14.x 版本
+            # 2. 安装 Node
             - name: Install Node
-              uses: actions/setup-node@v1
+              # 使用 Actions 进行 Node 安装 [actions/setup-node](https://github.com/marketplace/actions/setup-node-js-environment)
+              uses: actions/setup-node@master
               with:
+                  # 指定 Node 版本为 14.x 版本
                   node-version: 14
             # 3. 安装 Quasar
             - name: Install Quasar
@@ -42,11 +43,14 @@ jobs:
                   npm install -g bestzip
                   cd dist/electron
                   bestzip opensftp-windows.zip Packaged/*
-            # 7. 上传制品
+            # 7. 上传制品至临时公共空间
             - name: Upload Windows Package
+                # 使用 Actions 进行制品上传 [actions/upload-artifact](https://github.com/marketplace/actions/upload-a-build-artifact)
               uses: actions/upload-artifact@v1
               with:
+                  # 制品名称
                   name: Windows_Dist
+                  # 要上传的制品文件路径
                   path: dist/electron/opensftp-windows.zip
     # Mac 构建任务
     build-mac:
@@ -57,18 +61,21 @@ jobs:
         steps:
             # 1. 检出 master 分支
             - name: Check out branch
+                # 使用 Actions 进行分支检出 [actions/checkout](https://github.com/marketplace/actions/checkout)
               uses: actions/checkout@master
-            # 2. 安装 Node 14.x 版本
+            # 2. 安装 Node
             - name: Install Node
-              uses: actions/setup-node@v1
+                # 使用 Actions 进行 Node 安装 [actions/setup-node](https://github.com/marketplace/actions/setup-node-js-environment)
+              uses: actions/setup-node@master
               with:
+                  # 指定 Node 版本为 14.x 版本
                   node-version: 14
             # 3. 安装 Quasar
             - name: Install Quasar
               run: |
                   npm install -g @quasar/cli
             # 4. 安装依赖
-            - name: Install node_modules
+            - name: Install node modules
               run: |
                   npm install
             # 5. 构建 electron 制品
@@ -81,34 +88,74 @@ jobs:
                   npm install -g bestzip
                   cd dist/electron
                   bestzip opensftp-macos.zip Packaged/*
-            # 7. 上传制品
+            # 7. 上传制品至临时公共空间
             - name: Upload Mac Package
+              # 使用 Actions 进行制品上传 [actions/upload-artifact](https://github.com/marketplace/actions/upload-a-build-artifact)
               uses: actions/upload-artifact@v1
               with:
+                  # 制品名称
                   name: MacOS_Dist
+                  # 要上传的制品文件路径
                   path: dist/electron/opensftp-macos.zip
-
+    # 发布
     release:
+        # 需要 windows & mac 平台全部构建完成后进行
         needs: [build-windows, build-mac]
+        # 使用最新版本 Ubuntu 构建收集
         runs-on: ubuntu-latest
         if: contains(github.ref, 'refs/tags/v')
+        # 构建步骤
         steps:
+            # 1. 从临时公共空间下载 Windows 制品至 opensftp 目录
             - name: Download pre-built packages for Windows
+              # 使用 Actions 进行制品下载 [actions/download-artifact](https://github.com/marketplace/actions/download-a-build-artifact)
               uses: actions/download-artifact@v1
               with:
+                  # 制品名称
                   name: Windows_Dist
-                  path: artifacts
+                  # 保存目录
+                  path: opensftp
+            # 2. 从临时公共空间下载 MacOS 制品至 opensftp 目录
             - name: Download pre-built packages for MacOS
+              # 使用 Actions 进行制品下载 [actions/download-artifact](https://github.com/marketplace/actions/download-a-build-artifact)
               uses: actions/download-artifact@v1
               with:
+                  # 制品名称
                   name: MacOS_Dist
-                  path: artifacts
+                  # 保存目录
+                  path: opensftp
+            # 3. 发行制品
             - name: Create Release
+              # 发行标识符
               id: create_release
+              # 使用 Action 进行发行 https://github.com/marketplace/actions/create-release
               uses: ncipollo/release-action@v1
               with:
-                  name: OpenSFTP
+                  # 发行名称
+                  # name: OpenSFTP
+                  # 发行正文
+                  # body: Temp content
+                  # 保留名称
+                  omitName: true
+                  # 保留正文
+                  omitBody: true
+                  # 发行制品
+                  artifacts: opensftp/*
+                  # 是否为草稿
+                  draft: false
+                  # 是否为预发行
+                  prerelease: false
+                  # 是否允许更新现有版本
+                  allowUpdates: true
+                  # GitHub Access Token
                   token: ${{ secrets.GH_TOKEN }}
-                  artifacts: "artifacts/*"
-                  draft: true
-                  prerelease: true
+
+
+# 依赖 Actions:
+# - actions/checkout
+# - actions/setup-node
+# - actions/upload-artifact
+# - actions/download-artifact
+# - ncipollo/release-action
+
+# v2 版本 upload-artifact 支持多文件上传 / 目录上传，但由于 GitHub 限制上传 HTTP 请求次数，为防止目录下文件数目过多导致上传失败，所以仍使用先进行 zip 压缩再上传 zip 包的方法
