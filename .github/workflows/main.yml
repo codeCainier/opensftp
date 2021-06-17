@@ -46,7 +46,7 @@ jobs:
             - name: Upload Windows Package
               uses: actions/upload-artifact@v1
               with:
-                  name: MacOS_Dist
+                  name: Windows_Dist
                   path: dist/electron/opensftp-windows.zip
     # Mac 构建任务
     build-mac:
