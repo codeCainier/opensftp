@@ -196,7 +196,7 @@ module.exports = function (ctx) {
             builder: {
                 // https://www.electron.build/configuration/configuration
 
-                appId: 'opensftp',
+                appId: 'com.github.opensftp.opensftp',
                 asar: true,
             },
 

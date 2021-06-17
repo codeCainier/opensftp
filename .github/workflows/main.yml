@@ -131,10 +131,6 @@ jobs:
               # 使用 Action 进行发行 https://github.com/marketplace/actions/create-release
               uses: ncipollo/release-action@v1
               with:
-                  # 发行名称
-                  # name: OpenSFTP
-                  # 发行正文
-                  # body: Temp content
                   # 保留名称
                   omitName: true
                   # 保留正文
