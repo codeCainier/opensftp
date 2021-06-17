@@ -2,16 +2,39 @@ import {
     app,
     ipcMain,
     BrowserWindow,
-    nativeTheme
+    nativeTheme,
 } from 'electron'
+
+
 import { autoUpdater } from 'electron-updater'
 
-autoUpdater.checkForUpdatesAndNotify()
-    .then((res) => {
-        console.log('--------------------')
-        console.log(res)
-        console.log('--------------------')
-    })
+autoUpdater.on('checking-for-update', () => {
+    console.log('-------------------------------------')
+    console.log('Checking for update...');
+})
+autoUpdater.on('update-available', (info) => {
+    console.log('-------------------------------------')
+    console.log('Update available.');
+})
+autoUpdater.on('update-not-available', (info) => {
+    console.log('-------------------------------------')
+    console.log('Update not available.');
+})
+autoUpdater.on('error', (err) => {
+    console.log('-------------------------------------')
+    console.log('Error in auto-updater. ' + err);
+})
+autoUpdater.on('download-progress', (progressObj) => {
+    console.log('-------------------------------------')
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    console.log(log_message);
+})
+autoUpdater.on('update-downloaded', (info) => {
+    console.log('-------------------------------------')
+    console.log('Update downloaded');
+});
 
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
@@ -55,7 +78,14 @@ function createWindow() {
     })
 
     mainWindow.loadURL(process.env.APP_URL)
-        .then()
+        .then(() => {
+            autoUpdater.checkForUpdatesAndNotify()
+                .then(res => {
+                    console.log('------------')
+                    console.log(res)
+                    console.log('------------')
+                })
+        })
 
     mainWindow.on('closed', () => {
         mainWindow = null
