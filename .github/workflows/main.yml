@@ -1,0 +1,114 @@
+name: Neeto-Vue Release Action
+
+# 仅通过 master 分支打标签 v* 时触发
+on:
+    push:
+        branches:
+            - master
+        tags:
+            - v*
+
+jobs:
+    # Windows 构建任务
+    build-windows:
+        # 使用最新版本 windows 进行构建
+        runs-on: windows-latest
+        if: contains(github.ref, 'refs/tags/v')
+        # 构建步骤
+        steps:
+            # 1. 检出 master 分支
+            - name: Check out branch
+              uses: actions/checkout@master
+            # 2. 安装 Node 14.x 版本
+            - name: Install Node
+              uses: actions/setup-node@v1
+              with:
+                  node-version: 14
+            # 3. 安装 Quasar
+            - name: Install Quasar
+              run: |
+                  npm install -g @quasar/cli
+            # 4. 安装依赖
+            - name: Install node modules
+              run: |
+                  npm install
+            # 5. 构建 electron 制品
+            - name: Build
+              run: |
+                  quasar build -m electron
+            # 6. 压缩制品
+            - name: Compress
+              run: |
+                  npm install -g bestzip
+                  cd dist/electron
+                  bestzip opensftp-windows.zip Packaged/*
+            # 7. 上传制品
+            - name: Upload Windows Package
+              uses: actions/upload-artifact@v1
+              with:
+                  name: MacOS_Dist
+                  path: dist/electron/opensftp-windows.zip
+    # Mac 构建任务
+    build-mac:
+        # 使用最新版本 MacOS 进行构建
+        runs-on: macos-latest
+        if: contains(github.ref, 'refs/tags/v')
+        # 构建步骤
+        steps:
+            # 1. 检出 master 分支
+            - name: Check out branch
+              uses: actions/checkout@master
+            # 2. 安装 Node 14.x 版本
+            - name: Install Node
+              uses: actions/setup-node@v1
+              with:
+                  node-version: 14
+            # 3. 安装 Quasar
+            - name: Install Quasar
+              run: |
+                  npm install -g @quasar/cli
+            # 4. 安装依赖
+            - name: Install node_modules
+              run: |
+                  npm install
+            # 5. 构建 electron 制品
+            - name: Build
+              run: |
+                  quasar build -m electron
+            # 6. 压缩制品
+            - name: Compress
+              run: |
+                  npm install -g bestzip
+                  cd dist/electron
+                  bestzip opensftp-macos.zip Packaged/*
+            # 7. 上传制品
+            - name: Upload Mac Package
+              uses: actions/upload-artifact@v1
+              with:
+                  name: MacOS_Dist
+                  path: dist/electron/opensftp-macos.zip
+
+    release:
+        needs: [build-windows, build-mac]
+        runs-on: ubuntu-latest
+        if: contains(github.ref, 'refs/tags/v')
+        steps:
+            - name: Download pre-built packages for Windows
+              uses: actions/download-artifact@v1
+              with:
+                  name: Windows_Dist
+                  path: artifacts
+            - name: Download pre-built packages for MacOS
+              uses: actions/download-artifact@v1
+              with:
+                  name: MacOS_Dist
+                  path: artifacts
+            - name: Create Release
+              id: create_release
+              uses: ncipollo/release-action@v1
+              with:
+                  name: OpenSFTP
+                  token: ${{ secrets.ACCESS_TOKEN }}
+                  artifacts: "artifacts/*"
+                  draft: true
+                  prerelease: true
