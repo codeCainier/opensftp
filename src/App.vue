@@ -9,8 +9,10 @@
 <script>
 import path from 'path'
 import connect from 'src/process/connect'
-import { remote } from 'electron'
+import electron from 'electron'
 import fs from 'fs'
+
+const { remote } = electron
 
 // FIXME: 本地删除大目录时，可能出现处理时间过长导致进程间 timeout 情况
 // FIXME: Confirm 组件取消回调 Promise 报错
@@ -75,11 +77,10 @@ export default {
         // TODO: 要做到主渲染进程刷新时，关闭所有后期开启的 window
     },
     mounted() {
-        // IMPORTANT! 注意，生命周期中的代码若不加以判断，所有渲染进程中都会执行
-        if (this.isMainRenderProcess) {
-            this.closeAllConnect()
-            this.clearEditRemoteCache()
-        }
+        // 若不是主渲染进程，则不执行后续函数
+        if (!this.isMainRenderProcess) return
+        this.closeAllConnect()
+        this.clearEditRemoteCache()
     },
 }
 </script>

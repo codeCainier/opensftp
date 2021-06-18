@@ -5,36 +5,51 @@ import {
     nativeTheme,
 } from 'electron'
 
-
 import { autoUpdater } from 'electron-updater'
 
-autoUpdater.on('checking-for-update', () => {
-    console.log('-------------------------------------')
-    console.log('Checking for update...');
+import log from 'electron-log'
+
+log.transports.file.level = 'debug'
+
+autoUpdater.logger = log
+
+// 监听来自渲染进程的自动更新请求
+ipcMain.on('autoUpdate', () => {
+    // 检查是否存在更新并自动下载安装，给出提示
+    autoUpdater.checkForUpdatesAndNotify()
+        .then()
 })
-autoUpdater.on('update-available', (info) => {
-    console.log('-------------------------------------')
-    console.log('Update available.');
-})
-autoUpdater.on('update-not-available', (info) => {
-    console.log('-------------------------------------')
-    console.log('Update not available.');
-})
-autoUpdater.on('error', (err) => {
-    console.log('-------------------------------------')
-    console.log('Error in auto-updater. ' + err);
-})
-autoUpdater.on('download-progress', (progressObj) => {
-    console.log('-------------------------------------')
-    let log_message = "Download speed: " + progressObj.bytesPerSecond;
-    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-    console.log(log_message);
-})
-autoUpdater.on('update-downloaded', (info) => {
-    console.log('-------------------------------------')
-    console.log('Update downloaded');
-});
+
+// // 检查是否有更新
+// autoUpdater.on('checking-for-update', () => {
+//     log.info('Checking for update...');
+// })
+// // 有更新可用
+// autoUpdater.on('update-available', (info) => {
+//     log.info('Update available.');
+// })
+// // 更新不可用
+// autoUpdater.on('update-not-available', (info) => {
+//     log.info('Update not available.');
+//     log.info(info);
+// })
+// // 更新错误
+// autoUpdater.on('error', (err) => {
+//     log.info('Error in auto-updater. ' + err);
+//
+// })
+// // 更新下载进度
+// autoUpdater.on('download-progress', (progressObj) => {
+//     let log_message = "Download speed: " + progressObj.bytesPerSecond;
+//     log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+//     log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+//     log.info(log_message);
+// })
+// // 更新下载完成
+// autoUpdater.on('update-downloaded', (info) => {
+//     log.info('Update downloaded');
+//     log.info(info);
+// });
 
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
@@ -78,14 +93,7 @@ function createWindow() {
     })
 
     mainWindow.loadURL(process.env.APP_URL)
-        .then(() => {
-            autoUpdater.checkForUpdatesAndNotify()
-                .then(res => {
-                    console.log('------------')
-                    console.log(res)
-                    console.log('------------')
-                })
-        })
+        .then()
 
     mainWindow.on('closed', () => {
         mainWindow = null

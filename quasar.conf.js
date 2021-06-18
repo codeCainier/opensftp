@@ -198,6 +198,12 @@ module.exports = function (ctx) {
 
                 appId: 'com.github.opensftp.opensftp',
                 asar: true,
+                publish: [
+                    {
+                        provider: 'generic',
+                        url: 'http://localhost/statics/dist/opensftp/v0.0.1'
+                    }
+                ],
             },
 
             // More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration

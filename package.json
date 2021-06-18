@@ -1,6 +1,6 @@
 {
     "name": "opensftp",
-    "version": "0.0.2",
+    "version": "0.0.1",
     "description": "基于 Electron 与 Vue 开发的 SFTP / SSH 跨平台客户端",
     "productName": "OpenSFTP",
     "author": "xingrong.dev@gmail.com",
@@ -9,12 +9,6 @@
         "type": "github",
         "url": "https://github.com/openSFTP/opensftp"
     },
-    "publish": [
-        {
-            "provider": "generic",
-            "url": "http://localhost/dist/"
-        }
-    ],
     "private": true,
     "scripts": {
         "test": "echo \"No test specified\" && exit 0"
@@ -24,6 +18,7 @@
         "axios": "^0.21.1",
         "core-js": "^3.6.5",
         "echarts": "^5.0.2",
+        "electron-log": "^4.3.5",
         "electron-updater": "^4.3.9",
         "node-pty": "^0.9.0",
         "ping": "^0.4.0",
