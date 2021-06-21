@@ -135,6 +135,42 @@
                         </q-tab-panel>
 
                         <q-tab-panel class="full-height" name="other">
+                            <div class="title-main q-my-md">其他设置</div>
+                            <div class="row q-col-gutter-md-lg">
+                                <div class="col-6 q-gutter-md">
+                                    <div class="title-sec">版本更新</div>
+                                    <q-card class="setting-card shadow-transition">
+                                        <q-card-section>
+                                            <div class="row">
+                                                <div class="text-subtitle2 flex items-center">自动更新版本</div>
+                                                <q-space/>
+                                                <q-toggle v-model="autoUpdate" color="blue" size="sm"/>
+                                            </div>
+                                            <div class="text-subtitle2 text-weight-regular text-grey">开启后将自动下载并安装最新版本</div>
+                                        </q-card-section>
+
+                                        <q-card-section v-if="!autoUpdate">
+                                            <div class="row">
+                                                <div class="text-subtitle2 flex items-center">开启版本检查</div>
+                                                <q-space/>
+                                                <q-toggle v-model="checkUpdate" color="blue" size="sm"/>
+                                            </div>
+                                            <div class="text-subtitle2 text-weight-regular text-grey">有新版本时进行弹窗提示</div>
+                                        </q-card-section>
+
+                                        <q-separator/>
+
+                                        <q-card-section class="cursor-pointer" @click="checkVersion">
+                                            <div class="row">
+                                                <div class="text-subtitle2 flex items-center">当前版本</div>
+                                                <q-space/>
+                                                <div>v{{ config.version }}</div>
+                                            </div>
+                                            <q-tooltip>点击检查版本</q-tooltip>
+                                        </q-card-section>
+                                    </q-card>
+                                </div>
+                            </div>
                         </q-tab-panel>
                     </q-tab-panels>
 
@@ -145,14 +181,16 @@
 </template>
 
 <script>
+import updater from 'src/core/updater'
+
 export default {
     name: 'Setting',
     components: {
     },
     data() {
         return {
-            show: false,
-            activeItem: 'user',
+            show: true,
+            activeItem: 'other',
             settingList: [
                 { name: 'user',   label: '用户',  icon: 'ion-md-person' },
                 { name: 'ui',     label: '界面',  icon: 'ion-md-shirt' },
@@ -161,9 +199,7 @@ export default {
                 { name: 'other',  label: '其他',  icon: 'ion-md-cube' },
             ],
             nickname: 'Test User',
-            aeroBlur: {
-                enable: true,
-            },
+            updateDownloadProgress: updater.downloadProgress,
         };
     },
     watch: {
@@ -172,6 +208,9 @@ export default {
         },
         show(newVal) {
             if (!newVal) this.$store.commit('setting/SETTING_TOGGLE', false)
+        },
+        updateDownloadProgress(newVal) {
+            log.info('download progress' + newVal)
         },
     },
     computed: {
@@ -231,11 +270,33 @@ export default {
                 this.$store.commit('setting/UPDATE', { sshTextColor })
             },
         },
+        autoUpdate: {
+            get () {
+                return this.$store.state.setting.autoUpdate
+            },
+            set (autoUpdate) {
+                this.$store.commit('setting/UPDATE', { autoUpdate })
+            },
+        },
+        checkUpdate: {
+            get () {
+                return this.$store.state.setting.checkUpdate
+            },
+            set (checkUpdate) {
+                this.$store.commit('setting/UPDATE', { checkUpdate })
+            },
+        },
+    },
+    methods: {
+        checkVersion() {
+            updater.checkUpdate()
+        },
     },
 }
 </script>
 
 <style lang="sass" scoped>
+@import "~quasar/dist/quasar"
 .body--light
     .panel-setting
         color: $dark

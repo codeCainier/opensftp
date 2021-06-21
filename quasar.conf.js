@@ -24,6 +24,7 @@ module.exports = function (ctx) {
             'i18n',
             'axios',
             'utils',
+            'config',
             'echarts',
             'directive',
             'components',
@@ -201,7 +202,7 @@ module.exports = function (ctx) {
                 publish: [
                     {
                         provider: 'generic',
-                        url: 'http://localhost/statics/dist/opensftp/v0.0.1'
+                        url: 'http://localhost/statics/download/opensftp'
                     }
                 ],
             },

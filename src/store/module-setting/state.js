@@ -5,7 +5,6 @@ const state = {
     show               : false,
     autoUpdate         : readCache('autoUpdate',         false),        // 自动更新
     checkUpdate        : readCache('checkUpdate',        true),         // 版本检查
-    disableUpdate      : readCache('disableUpdate',      false),        // 禁止更新
     dark               : readCache('dark',               'auto'),       // 深色模式
     aeroEnable         : readCache('aeroEnable',         true),         // Aero 毛玻璃效果
     sessionPoolOpacity : readCache('sessionPoolOpacity', 85),           // 会话管理面板透明度

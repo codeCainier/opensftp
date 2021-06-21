@@ -32,7 +32,7 @@ export function alert (props) {
             defaultId       : 0,
         })
             .then(res => resolve(res))
-            .catch(err => console.error(err))
+            .catch(err => log.error(err))
     })
 }
 
@@ -70,7 +70,7 @@ export function confirm (props) {
                 // 取消回调
                 if (res.response === 1) return reject(res)
             })
-            .catch(err => console.error(err))
+            .catch(err => log.error(err))
     })
 }
 

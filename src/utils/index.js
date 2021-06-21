@@ -1,5 +1,6 @@
 import { extend } from 'quasar'
 import crypto from 'crypto'
+import config from 'src/config'
 
 function clone (obj) {
     return extend(true, {}, obj);
@@ -14,7 +15,7 @@ function clone (obj) {
  * @param       {String}    iv          向量 16 位
  * @return      {String}                加密后字符串
  */
-function aesEncode(str, algorithm = 'aes-192-cbc', key= 'APP_AES_192_CBC_KEY_____', iv = 'APP_AES_IV______') {
+function aesEncode(str, algorithm = 'aes-192-cbc', key= config.aes.key, iv = config.aes.iv) {
     const cipher = crypto.createCipheriv(algorithm, key, iv)
     let encrypted = cipher.update(str, 'utf8', 'hex')
     encrypted += cipher.final('hex')
@@ -30,7 +31,7 @@ function aesEncode(str, algorithm = 'aes-192-cbc', key= 'APP_AES_192_CBC_KEY____
  * @param       {String}    iv          向量 16 位
  * @return      {String}                解密后字符串
  */
-function aesDecode(str, algorithm = 'aes-192-cbc', key = 'APP_AES_192_CBC_KEY_____', iv = 'APP_AES_IV______') {
+function aesDecode(str, algorithm = 'aes-192-cbc', key = config.aes.key, iv = config.aes.iv) {
     const cipher = crypto.createDecipheriv(algorithm, key, iv)
     let decrypted = cipher.update(str, 'hex', 'utf8')
     decrypted += cipher.final('utf8')

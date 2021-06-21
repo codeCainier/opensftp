@@ -5,20 +5,10 @@ import {
     nativeTheme,
 } from 'electron'
 
-import { autoUpdater } from 'electron-updater'
-
 import log from 'electron-log'
+import updater from '../core/updater'
 
-log.transports.file.level = 'debug'
-
-autoUpdater.logger = log
-
-// 监听来自渲染进程的自动更新请求
-ipcMain.on('autoUpdate', () => {
-    // 检查是否存在更新并自动下载安装，给出提示
-    autoUpdater.checkForUpdatesAndNotify()
-        .then()
-})
+updater()
 
 // // 检查是否有更新
 // autoUpdater.on('checking-for-update', () => {
@@ -64,6 +54,7 @@ try {
 // FIXME: 实测即使在新创建 Quasar Electron 项目中，也会出现时而有效时而无效的情况
 if (process.env.PROD) {
     global.__statics = __dirname
+    global.log = log
 }
 
 let mainWindow
