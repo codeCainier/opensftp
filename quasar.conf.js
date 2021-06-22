@@ -1,5 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
+const config = require('./src/config')
 
 /*
  * This file runs in a Node context (it's NOT transpiled by Babel), so use only
@@ -202,7 +203,7 @@ module.exports = function (ctx) {
                 publish: [
                     {
                         provider: 'generic',
-                        url: 'http://localhost/statics/download/opensftp'
+                        url: config.homepage + config.distPath
                     }
                 ],
             },

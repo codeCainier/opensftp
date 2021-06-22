@@ -1,5 +1,6 @@
 import Vue    from 'vue'
-import config from 'src/config'
+
+const config = require('src/config')
 
 Vue.prototype.config = config
 
