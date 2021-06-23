@@ -199,7 +199,6 @@ export default {
                 { name: 'other',  label: '其他',  icon: 'ion-md-cube' },
             ],
             nickname: 'Test User',
-            updateDownloadProgress: updater.downloadProgress,
         };
     },
     watch: {
@@ -208,9 +207,6 @@ export default {
         },
         show(newVal) {
             if (!newVal) this.$store.commit('setting/SETTING_TOGGLE', false)
-        },
-        updateDownloadProgress(newVal) {
-            log.info('download progress' + newVal)
         },
     },
     computed: {

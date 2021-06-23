@@ -1,14 +1,11 @@
 <template>
-    <div id='q-app'
-         v-if="isMainRenderProcess"
-         :class="{ 'disable-aero-blur': !$store.state.setting.aeroEnable }">
+    <div id='q-app' :class="{ 'disable-aero-blur': !$store.state.setting.aeroEnable }">
         <router-view/>
     </div>
 </template>
 
 <script>
 import path from 'path'
-import connect from 'src/process/connect'
 import electron from 'electron'
 import fs from 'fs'
 
@@ -73,7 +70,9 @@ export default {
         this.isMainRenderProcess = templateName === '' || templateName === 'index'
         // 根据不同模版，执行不同渲染进程所需代码
         // 若模版为 connect
-        if (templateName === 'connect') connect()
+        if (templateName === 'connect') this.$router.push('/connect')
+        // 若模版为 update
+        if (templateName === 'update') this.$router.push('/update')
         // TODO: 要做到主渲染进程刷新时，关闭所有后期开启的 window
     },
     mounted() {

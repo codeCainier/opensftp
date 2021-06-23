@@ -148,7 +148,7 @@
  */
 import path      from 'path'
 import iconMatch from 'src/utils/iconMatch'
-import session   from 'src/core/Session'
+import session   from 'src/core/session'
 
 const fs = require('fs');
 const { exec } = require('child_process')

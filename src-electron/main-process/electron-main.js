@@ -8,39 +8,6 @@ import {
 import log from 'electron-log'
 import updater from '../core/updater'
 
-updater()
-
-// // 检查是否有更新
-// autoUpdater.on('checking-for-update', () => {
-//     log.info('Checking for update...');
-// })
-// // 有更新可用
-// autoUpdater.on('update-available', (info) => {
-//     log.info('Update available.');
-// })
-// // 更新不可用
-// autoUpdater.on('update-not-available', (info) => {
-//     log.info('Update not available.');
-//     log.info(info);
-// })
-// // 更新错误
-// autoUpdater.on('error', (err) => {
-//     log.info('Error in auto-updater. ' + err);
-//
-// })
-// // 更新下载进度
-// autoUpdater.on('download-progress', (progressObj) => {
-//     let log_message = "Download speed: " + progressObj.bytesPerSecond;
-//     log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-//     log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-//     log.info(log_message);
-// })
-// // 更新下载完成
-// autoUpdater.on('update-downloaded', (info) => {
-//     log.info('Update downloaded');
-//     log.info(info);
-// });
-
 try {
     if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
         require('fs').unlinkSync(require('path').join(app.getPath('userData'), 'DevTools Extensions'))
@@ -54,7 +21,6 @@ try {
 // FIXME: 实测即使在新创建 Quasar Electron 项目中，也会出现时而有效时而无效的情况
 if (process.env.PROD) {
     global.__statics = __dirname
-    global.log = log
 }
 
 let mainWindow
@@ -84,7 +50,10 @@ function createWindow() {
     })
 
     mainWindow.loadURL(process.env.APP_URL)
-        .then()
+        .then(() => {
+            log.info('OpenSFTP mainWindow is running')
+            updater(mainWindow)
+        })
 
     mainWindow.on('closed', () => {
         mainWindow = null
@@ -94,9 +63,11 @@ function createWindow() {
 app.on('ready', createWindow)
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit()
-    }
+    // if (process.platform !== 'darwin') {
+    //     app.quit()
+    // }
+
+    app.quit()
 })
 
 app.on('activate', () => {
@@ -105,13 +76,13 @@ app.on('activate', () => {
     }
 })
 
-ipcMain.on('dragFile', (event, item) => {
-    item = JSON.parse(item)
-
-    event.sender.startDrag({
-        file: `${process.cwd()}/README.md`,
-        icon: `${process.cwd()}/public/icons/favicon-128x128.png`,
-    })
-
-    // if (item.rm) fs.rm(`${process.cwd()}/${item.name}`)
-})
+// ipcMain.on('dragFile', (event, item) => {
+//     item = JSON.parse(item)
+//
+//     event.sender.startDrag({
+//         file: `${process.cwd()}/README.md`,
+//         icon: `${process.cwd()}/public/icons/favicon-128x128.png`,
+//     })
+//
+//     // if (item.rm) fs.rm(`${process.cwd()}/${item.name}`)
+// })

@@ -1,6 +1,7 @@
 import { ipcRenderer } from 'electron'
 import { remote } from 'electron'
 import Connect  from 'src/core/Connect'
+import router from 'src/router'
 
 const { BrowserWindow } = remote
 
@@ -123,4 +124,4 @@ ipcRenderer.on('connect-init-req', (event, connectId, winId) => {
     })
 })
 
-export default () => {}
+export default async () => {}

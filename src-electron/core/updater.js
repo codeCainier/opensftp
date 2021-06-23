@@ -26,7 +26,7 @@ autoUpdater.allowDowngrade = false
 
 let UpdateCheckResult
 
-export default () => {
+export default mainWindow => {
     // 监听来自渲染进程的自动更新请求
     // 询问服务器是否有更新，下载并通知是否有更新
     ipcMain.on('autoUpdate', () => {
@@ -45,7 +45,11 @@ export default () => {
         autoUpdater.checkForUpdates()
             .then(data => {
                 UpdateCheckResult = data
-                event.reply('update-available', JSON.stringify(data))
+                // TODO: 确认是否可以用 cancellationToken 判断版本可更新
+                // 存在可用新版本
+                if (UpdateCheckResult.cancellationToken)  event.reply('update-available')
+                // 没有可用新版本
+                if (!UpdateCheckResult.cancellationToken) event.reply('update-not-available')
             })
     })
 
@@ -64,11 +68,16 @@ export default () => {
         autoUpdater.quitAndInstall(true, true)
     })
 
+    ipcMain.on('get-update-info-req', event => {
+        event.reply('get-update-info-res', JSON.stringify(UpdateCheckResult))
+    })
+
     autoUpdater.on('download-progress', progressObj => {
-        let log_message = "Download speed: " + progressObj.bytesPerSecond;
-        log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-        log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-        log.info(log_message);
-        log.info(progressObj)
+        // let log_message = "Download speed: " + progressObj.bytesPerSecond;
+        // log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+        // log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+        // log.info(log_message);
+        // log.info(progressObj)
+        mainWindow.webContents.send('updater-download-progress', JSON.stringify(progressObj))
     })
 }

@@ -59,36 +59,46 @@ jobs:
         if: contains(github.ref, 'refs/tags/v')
         # 构建步骤
         steps:
-            # 1. 检出 master 分支
+            # 1. 生成 p12 签名
+            - name: Create p12
+              run: |
+                  echo -n "${{ secrets.APPLE_CERT_P12 }}" | base64 --decode --output ~/developerID_opensftp.p12
+            # 2. 配置签名环境变量
+            - name: Set Cert Env
+              run: |
+                  echo "export CSC_LINK=~/developerID_opensftp.p12" >> ~/.bash_profile
+                  echo "export CSC_KEY_PASSWORD=${{ secrets.APPLE_CERT_P12_PASSWORD }}" >> ~/.bash_profile
+                  source ~/.bash_profile
+            # 3. 检出 master 分支
             - name: Check out branch
                 # 使用 Actions 进行分支检出 [actions/checkout](https://github.com/marketplace/actions/checkout)
               uses: actions/checkout@master
-            # 2. 安装 Node
+            # 4. 安装 Node
             - name: Install Node
                 # 使用 Actions 进行 Node 安装 [actions/setup-node](https://github.com/marketplace/actions/setup-node-js-environment)
               uses: actions/setup-node@master
               with:
                   # 指定 Node 版本为 14.x 版本
                   node-version: 14
-            # 3. 安装 Quasar
+            # 5. 安装 Quasar
             - name: Install Quasar
               run: |
                   npm install -g @quasar/cli
-            # 4. 安装依赖
+            # 6. 安装依赖
             - name: Install node modules
               run: |
                   npm install
-            # 5. 构建 electron 制品
+            # 7. 构建 electron 制品
             - name: Build
               run: |
                   quasar build -m electron
-            # 6. 压缩制品
+            # 8. 压缩制品
             - name: Compress
               run: |
                   npm install -g bestzip
                   cd dist/electron
                   bestzip opensftp-macos.zip Packaged/*
-            # 7. 上传制品至临时公共空间
+            # 9. 上传制品至临时公共空间
             - name: Upload Mac Package
               # 使用 Actions 进行制品上传 [actions/upload-artifact](https://github.com/marketplace/actions/upload-a-build-artifact)
               uses: actions/upload-artifact@v1
@@ -97,6 +107,10 @@ jobs:
                   name: MacOS_Dist
                   # 要上传的制品文件路径
                   path: dist/electron/opensftp-macos.zip
+            # 10. 删除 p12 签名
+            - name: Remove p12
+              run: |
+                  rm -rf ~/developerID_opensftp.p12
     # 发布
     release:
         # 需要 windows & mac 平台全部构建完成后进行

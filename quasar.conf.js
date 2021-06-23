@@ -72,16 +72,22 @@ module.exports = function (ctx) {
 
             // https://quasar.dev/quasar-cli/handling-webpack
             extendWebpack(cfg) {
-                const template = path.join(__dirname, 'src', 'connect.template.html')
+                const templates = [
+                    'connect',
+                    'update',
+                ]
 
-                cfg.plugins.push(
-                    new HtmlWebpackPlugin({
-                        template: template,
-                        filename: 'connect.html',
-                        inject: true,
-                        minify: false,
-                    })
-                );
+                templates.forEach(item => {
+                    const template = path.join(__dirname, 'src', `${item}.template.html`)
+                    cfg.plugins.push(
+                        new HtmlWebpackPlugin({
+                            template: template,
+                            filename: `${item}.html`,
+                            inject: true,
+                            minify: false,
+                        })
+                    )
+                })
             },
         },
 

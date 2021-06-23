@@ -11,7 +11,13 @@ const routes = [{
         meta: {
             keepAlive: true,
         },
-    }]
+    }],
+}, {
+    path: '/connect',
+    component: () => import('pages/connect'),
+}, {
+    path: '/update',
+    component: () => import('pages/update'),
 },
 
 // Always leave this as last one,
