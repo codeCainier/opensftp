@@ -37,7 +37,7 @@ import electron from 'electron'
 import 'highlight.js/styles/atom-one-dark.css'
 import marked from 'marked'
 import hLight from 'highlight.js'
-import {alert, confirm} from "src/utils/dialog";
+import { alert, confirm } from 'src/utils/dialog'
 
 const { ipcRenderer } = electron
 
