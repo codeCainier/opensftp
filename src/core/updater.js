@@ -106,8 +106,8 @@ class Updater {
         this.loadUrlPath = process.env.NODE_ENV === 'development'
             ? path.join(location.origin, 'update.html')
             : location.origin + path.join(path.dirname(location.pathname), 'update.html')
-        // TODO: 开发模式开启 DevTools
-        this.win.webContents.openDevTools()
+        // 开发模式开启 DevTools
+        // this.win.webContents.openDevTools()
         // 加载 connect 文件
         await this.win.loadURL(this.loadUrlPath)
     }

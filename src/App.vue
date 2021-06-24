@@ -7,6 +7,7 @@
 <script>
 import path from 'path'
 import electron from 'electron'
+import log from 'electron-log'
 import fs from 'fs'
 
 const { remote } = electron
@@ -31,6 +32,8 @@ if (process.env.NODE_ENV === 'development') global.__statics = __statics
 // FIXME: 新创建的 Quasar Electron 项目，生产环境中，__statics 为空，但 F12 Console __statics 有值
 if (process.env.NODE_ENV !== 'development') global.__statics = __dirname
 
+global.log = log
+
 export default {
     name: 'App',
     data() {
@@ -48,7 +51,8 @@ export default {
                 connectedList.forEach(item => item.close())
                 window.removeEventListener('beforeunload', closeAllConnect);
             }
-            window.addEventListener('beforeunload', closeAllConnect);
+            window.addEventListener('beforeunload', closeAllConnect)
+            // FIXME: 不能以隐藏窗口为条件进行判断
             if (remote.BrowserWindow.getAllWindows().length !== 1) this.alert('窗口错误，点击刷新窗口')
                 .then(() => {
                     location.reload()
@@ -73,7 +77,6 @@ export default {
         if (templateName === 'connect') this.$router.push('/connect')
         // 若模版为 update
         if (templateName === 'update') this.$router.push('/update')
-        // TODO: 要做到主渲染进程刷新时，关闭所有后期开启的 window
     },
     mounted() {
         // 若不是主渲染进程，则不执行后续函数
