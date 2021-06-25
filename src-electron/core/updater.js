@@ -56,7 +56,6 @@ export default mainWindow => {
     // 监听来自渲染进程的下载更新请求
     // 从向服务器下载更新
     ipcMain.on('download-update', event => {
-        // autoUpdater.downloadUpdate(UpdateCheckResult.cancellationToken)
         autoUpdater.downloadUpdate()
             .then(() => event.reply('updater-download-success'))
             .catch(err => event.reply('updater-download-error'))

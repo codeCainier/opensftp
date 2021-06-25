@@ -13,20 +13,27 @@
             </q-inner-loading>
             <div class="markdown-preview" v-html="mdPreview(updateLog)"></div>
         </div>
-        <div class="row">
-            <q-linear-progress stripe rounded size="10px" :value="progress" class="q-my-md"/>
-            <div>{{ speed }}</div>
-        </div>
+        <!-- Progress -->
+        <q-linear-progress stripe rounded size="10px" :value="progress" class="q-my-md"/>
         <!-- Footer -->
-        <div class="panel-footer row">
-            <div class="auto-update-switch flex items-center q-gutter-x-xs">
-                <input v-model="autoUpdate" id="auto-update-switch" type="checkbox"/>
-                <label for="auto-update-switch">以后自动下载并安装更新</label>
+        <div class="panel-footer">
+            <!-- 控制按钮 -->
+            <div class="row" v-if="progress === 0">
+                <div class="auto-update-switch flex items-center q-gutter-x-xs">
+                    <input v-model="autoUpdate" id="auto-update-switch" type="checkbox"/>
+                    <label for="auto-update-switch">以后自动下载并安装更新</label>
+                </div>
+                <q-space/>
+                <div class="q-gutter-x-md">
+                    <button type="button" @click="cancel">取消</button>
+                    <button type="button" class="bg-primary" @click="startUpdate">开始更新</button>
+                </div>
             </div>
-            <q-space/>
-            <div class="q-gutter-x-md">
-                <button type="button" @click="cancel">取消</button>
-                <button type="button" class="bg-primary">开始更新</button>
+            <!-- 下载信息 -->
+            <div class="row" v-else>
+                <div>{{ speedLabel() }}</div>
+                <q-space/>
+                <div>{{ progressLabel() }}</div>
             </div>
         </div>
     </div>
@@ -49,7 +56,7 @@ export default {
             autoUpdate: false,
             updateLog: '',
             loading: true,
-            progress: 0.5,
+            progress: 0,
             speed: 0,
         }
     },
@@ -64,8 +71,14 @@ export default {
             }
         },
         formatFlow() {
-            return () => this.tools.formatFlow(this.speed)
-        }
+            return flow => this.tools.formatFlow(flow)
+        },
+        speedLabel() {
+            return () => this.formatFlow(this.speed).toLocaleLowerCase() + '/s'
+        },
+        progressLabel() {
+            return () => (this.progress * 100).toFixed(2) + '%'
+        },
     },
     methods: {
         // 获取更新日志
@@ -94,11 +107,8 @@ export default {
         },
         // 开始更新
         startUpdate() {
-            if (this.autoUpdate) {
-                this.$store.commit('setting/UPDATE', { autoUpdate: true })
-                this.notify.info('已开启自动更新版本功能')
-            }
-
+            // 若勾选了自动更新功能
+            if (this.autoUpdate) this.$store.commit('setting/UPDATE', { autoUpdate: true })
             // 下载进度初始化
             this.progress = 0
             this.speed = 0
@@ -123,6 +133,7 @@ export default {
                     textCancel: '稍后重启',
                 })
                     .then(() => ipcRenderer.send('quit-and-install'))
+                    .finally(() => window.close())
             })
             // 监听更新包下载失败
             ipcRenderer.once('updater-download-error', async () => {
